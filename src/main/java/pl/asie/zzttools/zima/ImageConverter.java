@@ -19,6 +19,7 @@
 package pl.asie.zzttools.zima;
 
 import pl.asie.zzttools.util.Coord2D;
+import pl.asie.zzttools.util.ImageUtils;
 import pl.asie.zzttools.util.Pair;
 import pl.asie.zzttools.zzt.Board;
 import pl.asie.zzttools.zzt.Element;
@@ -65,11 +66,7 @@ public class ImageConverter {
 		int pixelHeight = height * visual.getCharHeight();
 
 		if (inputImage.getWidth() != pixelWidth || inputImage.getHeight() != pixelHeight) {
-			BufferedImage scaledImage = new BufferedImage(pixelWidth, pixelHeight, BufferedImage.TYPE_INT_RGB);
-			AffineTransform transform = AffineTransform.getScaleInstance((float) pixelWidth / inputImage.getWidth(), (float) pixelHeight / inputImage.getHeight());
-			AffineTransformOp transformOp = new AffineTransformOp(transform, AffineTransformOp.TYPE_BICUBIC);
-			scaledImage = transformOp.filter(inputImage, scaledImage);
-			inputImage = scaledImage;
+			inputImage = ImageUtils.scale(inputImage, pixelWidth, pixelHeight, AffineTransformOp.TYPE_BICUBIC);
 		}
 		final BufferedImage image = inputImage;
 

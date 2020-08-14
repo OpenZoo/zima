@@ -260,7 +260,7 @@ public class ZimaFrontendSwing {
 
 	public void updateCanvas() {
 		if (isShowInputImage()) {
-			this.profile.updateFilteredImage(inputImage);
+			this.profile.updateImage(inputImage);
 			this.previewCanvas.setCentered(false);
 			this.previewCanvas.setImage(this.profile.getFilteredImage());
 		} else {

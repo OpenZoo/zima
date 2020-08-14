@@ -18,9 +18,9 @@
  */
 package pl.asie.zzttools.zima.gui;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import pl.asie.zzttools.util.ImageUtils;
 import pl.asie.zzttools.util.Pair;
 import pl.asie.zzttools.zima.ImageConverter;
 import pl.asie.zzttools.zima.ImageConverterRules;
@@ -31,6 +31,7 @@ import pl.asie.zzttools.zzt.Board;
 import pl.asie.zzttools.zzt.TextVisualData;
 import pl.asie.zzttools.zzt.TextVisualRenderer;
 
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.util.function.Function;
 
@@ -40,8 +41,9 @@ public class ZimaConversionProfile implements Cloneable {
 	private TextVisualData visual;
 	private ImageConverterRuleset ruleset;
 	private Function<TextVisualData, ImageMseCalculator> mseCalculatorBuilder;
+	private int charsWidth = 60, charsHeight = 25;
 	@Setter
-	private int boardX = 1, boardY = 1, playerX = 60, playerY = 25, charsWidth = 60, charsHeight = 25;
+	private int boardX = 1, boardY = 1, playerX = 60, playerY = 25;
 	@Setter
 	private int maxStatCount = 149;
 	@Setter
@@ -54,6 +56,7 @@ public class ZimaConversionProfile implements Cloneable {
 	private float saturation = 0.0f;
 
 	// generated
+	private BufferedImage scaledImage;
 	private BufferedImage filteredImage;
 	private ImageMseCalculator mseCalculator;
 	private TextVisualRenderer renderer;
@@ -78,6 +81,16 @@ public class ZimaConversionProfile implements Cloneable {
 	public void setMseCalculatorBuilder(Function<TextVisualData, ImageMseCalculator> mseCalculatorBuilder) {
 		this.mseCalculatorBuilder = mseCalculatorBuilder;
 		this.mseCalculator = null;
+	}
+
+	public void setCharsWidth(int charsWidth) {
+		this.charsWidth = charsWidth;
+		this.scaledImage = null;
+	}
+
+	public void setCharsHeight(int charsHeight) {
+		this.charsHeight = charsHeight;
+		this.scaledImage = null;
 	}
 
 	public void setAllowFaces(boolean allowFaces) {
@@ -162,23 +175,34 @@ public class ZimaConversionProfile implements Cloneable {
 		return output;
 	}
 
-	public void updateFilteredImage(BufferedImage input) {
+	public void updateImage(BufferedImage input) {
 		if (input == null) {
 			return;
 		}
 
 		if (this.inputImage == null || this.inputImage != input) {
 			this.inputImage = input;
+			this.scaledImage = null;
+		}
+
+		if (this.scaledImage == null) {
+			int width = visual.getCharWidth() * charsWidth;
+			int height = visual.getCharHeight() * charsHeight;
+			if (this.inputImage.getWidth() == width && this.inputImage.getHeight() == height) {
+				this.scaledImage = this.inputImage;
+			} else {
+				this.scaledImage = ImageUtils.scale(this.inputImage, width, height, AffineTransformOp.TYPE_BICUBIC);
+			}
 			this.filteredImage = null;
 		}
 
 		if (this.filteredImage == null) {
-			this.filteredImage = filterImage(input);
+			this.filteredImage = filterImage(this.scaledImage);
 		}
 	}
 
 	public Pair<Board, BufferedImage> convert(BufferedImage input, ProgressCallback progressCallback, boolean fast) {
-		updateFilteredImage(input);
+		updateImage(input);
 
 		if (this.renderer == null) {
 			setRenderer(new TextVisualRenderer(visual));

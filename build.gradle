@@ -1,0 +1,38 @@
+plugins {
+    id 'java'
+    id "io.freefair.lombok" version "5.1.1"
+    id "com.github.hierynomus.license" version "0.15.0"
+}
+
+group 'pl.asie.zzttools.zima'
+version '0.1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+}
+
+license {
+    header = file('docs/licenses/COPYING')
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDirs "src/main/resources", "docs"
+        }
+    }
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'pl.asie.zzttools.zima.ImageConverterMain'
+    }
+}

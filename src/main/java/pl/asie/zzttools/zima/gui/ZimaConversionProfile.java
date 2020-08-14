@@ -48,6 +48,8 @@ public class ZimaConversionProfile implements Cloneable {
 	private int maxStatCount = 149;
 	@Setter
 	private boolean colorsBlink = true;
+	@Setter
+	private float contrastReduction = 0.005f;
 
 	private boolean allowFaces = false;
 
@@ -213,6 +215,9 @@ public class ZimaConversionProfile implements Cloneable {
 		if (this.converter == null) {
 			setConverter(new ImageConverter(visual, mseCalculator, allowFaces));
 		}
-		return converter.convert(this.filteredImage, fast ? ImageConverterRules.RULES_BLOCKS : this.ruleset, boardX, boardY, charsWidth, charsHeight, playerX, playerY, maxStatCount, colorsBlink, this.renderer, progressCallback);
+		return converter.convert(this.filteredImage, fast ? ImageConverterRules.RULES_BLOCKS : this.ruleset,
+				boardX, boardY, charsWidth, charsHeight, playerX, playerY, maxStatCount, colorsBlink,
+				contrastReduction,
+				this.renderer, progressCallback);
 	}
 }

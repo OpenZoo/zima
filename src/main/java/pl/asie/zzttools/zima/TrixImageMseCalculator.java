@@ -27,7 +27,6 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 	private final TextVisualData visual;
 	private final int[] charLutPrecalc;
 	private final int[][] charLutIndexPrecalc;
-	private float[] colDistPrecalc;
 
 	private static class ImageLutHolder {
 		private final int[] lutData;
@@ -75,13 +74,6 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 				}
 			}
 		}
-
-		/* colDistPrecalc = new float[256];
-		for (int i = 0; i < 256; i++) {
-			int bg = visual.getPalette()[(i >> 4) & 0x0F];
-			int fg = visual.getPalette()[i & 0x0F];
-			colDistPrecalc[i] = ColorUtils.distance(bg, fg);
-		} */
 	}
 	
 	@Override
@@ -102,7 +94,8 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 				}
 			}
 
-			return proposed.withMse(mse);
+			proposed.setMse(mse);
+			return proposed;
 		};
 	}
 }

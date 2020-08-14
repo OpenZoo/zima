@@ -57,6 +57,7 @@ public class ImageConverter {
 
 	public Pair<Board, BufferedImage> convert(BufferedImage inputImage, ImageConverterRuleset ruleset,
 	                                          int x, int y, int width, int height, int playerX, int playerY, int maxStatCount, boolean noBlinking,
+	                                          float contrastReduction,
 	                                          TextVisualRenderer previewRenderer,
 	                                          ProgressCallback progressCallback) {
 		Board board = new Board(playerX, playerY);
@@ -73,6 +74,7 @@ public class ImageConverter {
 		List<Pair<Coord2D, ElementResult>> statfulStrategies = new ArrayList<>();
 		List<ElementRule> rules = ruleset.getRules();
 		ElementResult[] previewResults = new ElementResult[width * height];
+		ImageContrastReducer contrastReducer = new ImageContrastReducer(visual, contrastReduction);
 
 		IntStream.range(0, width * height).parallel().forEach(pos -> {
 			synchronized (progressCallback) {
@@ -127,12 +129,14 @@ public class ImageConverter {
 				Iterator<ElementResult> it = proposals.iterator();
 				while (it.hasNext()) {
 					ElementResult result = it.next();
-					result = applyMseFunc.apply(result, lowestMse);
 
 					if (!allowFaces && (result.getCharacter() == 1 || result.getCharacter() == 2)) {
 						// block faces for now...
 						continue;
 					}
+
+					result = applyMseFunc.apply(result, lowestMse);
+					result = contrastReducer.apply(result);
 
 					float localMse = (result.getMse() * weight);
 					if (localMse < lowestMse) {

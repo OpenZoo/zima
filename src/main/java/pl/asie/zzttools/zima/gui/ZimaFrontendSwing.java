@@ -77,6 +77,8 @@ public class ZimaFrontendSwing {
 			new Pair<>("Blocks", ImageConverterRules.RULES_BLOCKS),
 			new Pair<>("Default+Statless", ImageConverterRules.RULES_UNSAFE_STATLESS)
 	);
+	private JSlider contrastReductionEdit;
+	private JButton contrastReductionReset;
 
 	// "Image" tab
 	private JCheckBox showInputImageEdit;
@@ -171,6 +173,13 @@ public class ZimaFrontendSwing {
 			appendTabRow(this.optionsBoardPanel, gbc, "Elements", this.rulesetEdit = new JComboBox<>(this.rulesetOptions.stream().map(Pair::getFirst).toArray(String[]::new)));
 			this.rulesetEdit.setSelectedIndex(0);
 			this.rulesetEdit.addActionListener(rerenderAndCallA(() -> this.profile.setRuleset(this.rulesetOptions.get(this.rulesetEdit.getSelectedIndex()).getSecond())));
+
+			float defContrastReductionValue = this.profile.getContrastReduction();
+			appendTabRow(this.optionsBoardPanel, gbc, "HC Reduction",
+					this.contrastReductionEdit = new JSlider(JSlider.HORIZONTAL, 0, 1000, (int) Math.sqrt(defContrastReductionValue * 10000000.0f)),
+					this.contrastReductionReset = new JButton("Reset"));
+			this.contrastReductionEdit.addChangeListener(rerenderAndCall(() -> this.profile.setContrastReduction((this.contrastReductionEdit.getValue() * this.contrastReductionEdit.getValue()) / 10000000.0f)));
+			this.contrastReductionReset.addActionListener((e) -> { this.profile.setContrastReduction(defContrastReductionValue); this.contrastReductionEdit.setValue((int) Math.sqrt(defContrastReductionValue * 10000000.0f)); rerender(); });
 		}
 
 		{

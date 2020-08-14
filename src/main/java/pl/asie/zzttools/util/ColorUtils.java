@@ -25,6 +25,10 @@ public final class ColorUtils {
 
 	// https://www.compuphase.com/cmetric.htm
 	public static float distance(int a, int b) {
+		if (a == b) {
+			return 0.0f;
+		}
+
 		int ar = (a >> 16) & 0xFF;
 		int ag = (a >> 8) & 0xFF;
 		int ab = a & 0xFF;

@@ -298,13 +298,14 @@ public class ZimaFrontendSwing {
 					BufferedImage inputImageFixed = new BufferedImage(inputImage.getWidth(), inputImage.getHeight(), BufferedImage.TYPE_INT_RGB);
 					Graphics2D gfx = (Graphics2D) inputImageFixed.getGraphics();
 					gfx.setColor(Color.BLACK);
-					gfx.fillRect(0, 0, inputImage.getWidth(), inputImageFixed.getHeight());
-					gfx.drawImage(inputImageFixed, 0, 0, null);
+					gfx.fillRect(0, 0, inputImage.getWidth(), inputImage.getHeight());
+					gfx.drawImage(inputImage, 0, 0, null);
 					gfx.dispose();
+					inputImage = inputImageFixed;
 				}
 				rerender();
-			} catch (IOException e) {
-				JOptionPane.showMessageDialog(this.window, "Error loading file!", "Error", JOptionPane.ERROR_MESSAGE);
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 			}
 		}
 	}
@@ -335,8 +336,8 @@ public class ZimaFrontendSwing {
 						this.asyncRenderer.getOutputBoard().writeZ(zos);
 					}
 				}
-			} catch (IOException e) {
-				JOptionPane.showMessageDialog(this.window, "Error loading file!");
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(this.window, "Error saving file: " + e.getMessage());
 			}
 		}
 	}

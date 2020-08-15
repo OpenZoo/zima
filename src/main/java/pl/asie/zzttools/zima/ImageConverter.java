@@ -21,6 +21,7 @@ package pl.asie.zzttools.zima;
 import pl.asie.zzttools.util.Coord2D;
 import pl.asie.zzttools.util.ImageUtils;
 import pl.asie.zzttools.util.Pair;
+import pl.asie.zzttools.util.Triplet;
 import pl.asie.zzttools.zzt.Board;
 import pl.asie.zzttools.zzt.Element;
 import pl.asie.zzttools.zzt.Stat;
@@ -32,8 +33,11 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.IntPredicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -44,13 +48,6 @@ public class ImageConverter {
 	public ImageConverter(TextVisualData visual, ImageMseCalculator mseCalculator) {
 		this.visual = visual;
 		this.mseCalculator = mseCalculator;
-	}
-
-	private ElementResult min(ElementResult existing, ElementResult newResult) {
-		if (existing == null) {
-			return newResult;
-		}
-		return newResult.getMse() < existing.getMse() ? newResult : existing;
 	}
 
 	public Pair<Board, BufferedImage> convert(BufferedImage inputImage, ImageConverterRuleset ruleset,
@@ -69,13 +66,57 @@ public class ImageConverter {
 		}
 		final BufferedImage image = inputImage;
 
-		List<Pair<Coord2D, ElementResult>> statfulStrategies = new ArrayList<>();
-		List<ElementRule> rules = ruleset.getRules();
+		List<Triplet<Coord2D, ElementResult, Float>> statfulStrategies = new ArrayList<>();
+		Map<ElementRule, List<ElementResult>> ruleResultMap = new LinkedHashMap<>();
 		ElementResult[] previewResults = new ElementResult[width * height];
+		float[] previewMse = new float[width * height];
+		final int progressSize = width * height;
+
+		// generate ruleResultMap
+		for (ElementRule rule : ruleset.getRules()) {
+			if (rule.getStrategy().isRequiresStat() && maxStatCount <= 0) {
+				// no stats - no stat strategies!
+				continue;
+			}
+
+			Stream<ElementResult> proposals = null;
+			switch (rule.getStrategy()) {
+				case EMPTY:
+					proposals = Stream.of(ElementResult.EMPTY);
+					break;
+				case ELEMENT:
+					if (charCheck != null && !charCheck.test(rule.getChr())) {
+						continue;
+					}
+					proposals = IntStream.range(0, noBlinking ? 128 : 256).mapToObj(i -> new ElementResult(rule.getElement(), false, false, rule.getChr(), i));
+					break;
+				case TEXT:
+					if (colorCheck != null && !colorCheck.test(rule.getColor())) {
+						continue;
+					}
+					proposals = IntStream.of(ruleset.getAllowedTextCharIndices()).mapToObj(i -> new ElementResult(rule.getElement(), false, true, i, rule.getColor()));
+					break;
+				case USE_STAT_P1:
+					proposals = IntStream.of(ruleset.getAllowedObjectIndices(noBlinking)).filter(i -> {
+						if (charCheck != null && !charCheck.test(i & 0xFF)) {
+							return false;
+						}
+
+						if (colorCheck != null && !colorCheck.test(i >> 8)) {
+							return false;
+						}
+
+						return true;
+					}).mapToObj(i -> new ElementResult(rule.getElement(), true, false, i & 0xFF, i >> 8));
+					break;
+			}
+
+			ruleResultMap.put(rule, proposals.collect(Collectors.toList()));
+		}
 
 		IntStream.range(0, width * height).parallel().forEach(pos -> {
 			synchronized (progressCallback) {
-				progressCallback.step(width * height);
+				progressCallback.step(progressSize);
 			}
 
 			int ix = pos % width;
@@ -87,74 +128,42 @@ public class ImageConverter {
 			}
 
 			if (spaceForbidden) {
-				previewResults[iy * width + ix] = new ElementResult(Element.EMPTY, false, false, 32, 0);
+				previewResults[iy * width + ix] = ElementResult.EMPTY;
 				return;
 			}
 
 			ElementResult statlessResult = null;
+			float statlessMse = Float.MAX_VALUE;
 			ElementResult statfulResult = null;
+			float statfulMse = Float.MAX_VALUE;
 			ImageMseCalculator.Applier applyMseFunc = mseCalculator.applyMse(image, ix * visual.getCharWidth(), iy * visual.getCharHeight());
-			float lowestGlobalMse = Float.MAX_VALUE;
 
-			for (ElementRule rule : rules) {
-				if (rule.getStrategy().isRequiresStat() && maxStatCount <= 0) {
-					// no stats - no stat strategies!
-					continue;
-				}
+			for (Map.Entry<ElementRule, List<ElementResult>> ruleResult : ruleResultMap.entrySet()) {
+				List<ElementResult> proposals = ruleResult.getValue();
 
-				Stream<ElementResult> proposals = null;
-				switch (rule.getStrategy()) {
-					case EMPTY:
-						proposals = Stream.of(new ElementResult(Element.EMPTY, false, false, 32, 0));
-						break;
-					case ELEMENT:
-						if (charCheck != null && !charCheck.test(rule.getChr())) {
-							continue;
-						}
-						proposals = IntStream.range(0, noBlinking ? 128 : 256).mapToObj(i -> new ElementResult(rule.getElement(), false, false, rule.getChr(), i));
-						break;
-					case TEXT:
-						if (colorCheck != null && !colorCheck.test(rule.getColor())) {
-							continue;
-						}
-						proposals = IntStream.of(ruleset.getAllowedTextCharIndices()).mapToObj(i -> new ElementResult(rule.getElement(), false, true, i, rule.getColor()));
-						break;
-					case USE_STAT_P1:
-						proposals = IntStream.of(ruleset.getAllowedObjectIndices(noBlinking)).mapToObj(i -> new ElementResult(rule.getElement(), true, false, i & 0xFF, i >> 8));
-						break;
-				}
-
-				float lowestMse = lowestGlobalMse;
-				ElementResult lowestResult = null;
+				float lowestLocalMse = statlessMse;
+				ElementResult lowestLocalResult = null;
 				float weight = 1.0f;
 
-				Iterator<ElementResult> it = proposals.iterator();
-				while (it.hasNext()) {
-					ElementResult result = it.next();
-
-					if (charCheck != null && !charCheck.test(result.getCharacter())) {
-						continue;
-					}
-
-					if (colorCheck != null && !colorCheck.test(result.getColor())) {
-						continue;
-					}
-
-					result = applyMseFunc.apply(result, lowestMse);
-
-					float localMse = (result.getMse() * weight);
-					if (localMse < lowestMse) {
-						lowestMse = localMse;
-						lowestResult = result;
+				for (ElementResult result : proposals) {
+					float localMse = applyMseFunc.apply(result, lowestLocalMse) * weight;
+					if (localMse < lowestLocalMse) {
+						lowestLocalMse = localMse;
+						lowestLocalResult = result;
 					}
 				}
 
-				if (lowestResult != null) {
-					if (!lowestResult.isHasStat()) {
-						statlessResult = min(statlessResult, lowestResult);
-						lowestGlobalMse = lowestMse;
+				if (lowestLocalResult != null) {
+					if (!lowestLocalResult.isHasStat()) {
+						if (lowestLocalMse < statlessMse) {
+							statlessResult = lowestLocalResult;
+							statlessMse = lowestLocalMse;
+						}
 					}
-					statfulResult = min(statfulResult, lowestResult);
+					if (lowestLocalMse < statfulMse) {
+						statfulResult = lowestLocalResult;
+						statfulMse = lowestLocalMse;
+					}
 				}
 			}
 
@@ -163,32 +172,34 @@ public class ImageConverter {
 				throw new RuntimeException();
 			}
 
-			previewResults[iy * width + ix] = statlessResult;
+			int idx = iy * width + ix;
+			previewResults[idx] = statlessResult;
+			previewMse[idx] = statlessMse;
 			board.setElement(x + ix, y + iy, statlessResult.getElement());
 			board.setColor(x + ix, y + iy, statlessResult.isText() ? statlessResult.getCharacter() : statlessResult.getColor());
 
-			if (statfulResult.isHasStat() && statfulResult.getMse() < statlessResult.getMse()) {
+			if (statfulResult.isHasStat() && statfulMse < statlessMse) {
 				synchronized (statfulStrategies) {
 					// lowest result has stat, add to statfulStrategies
-					statfulStrategies.add(new Pair<>(new Coord2D(ix, iy), statfulResult));
+					statfulStrategies.add(new Triplet<>(new Coord2D(ix, iy), statfulResult, statfulMse));
 				}
 			}
 		});
 
 		// apply statful strategies - lowest to highest MSE
 		statfulStrategies.sort(Comparator.comparing(c -> {
-			ElementResult past = previewResults[c.getFirst().getY() * width + c.getFirst().getX()];
-			ElementResult proposed = c.getSecond();
-			return proposed.getMse() - past.getMse();
+			float pastMse = previewMse[c.getFirst().getY() * width + c.getFirst().getX()];
+		    float proposedMse = c.getThird();
+			return proposedMse - pastMse;
 		}));
 
 		for (int i = 0; i < maxStatCount; i++) {
 			if (i >= statfulStrategies.size()) {
 				break;
 			}
-			Pair<Coord2D, ElementResult> pair = statfulStrategies.get(i);
-			Coord2D coords = pair.getFirst();
-			ElementResult result = pair.getSecond();
+			Triplet<Coord2D, ElementResult, Float> strategyData = statfulStrategies.get(i);
+			Coord2D coords = strategyData.getFirst();
+			ElementResult result = strategyData.getSecond();
 
 			// only one mode - set stat P1
 			previewResults[coords.getY() * width + coords.getX()] = result;

@@ -16,16 +16,15 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.zzttools.zima;
+package pl.asie.zzttools.util;
 
-import java.awt.image.BufferedImage;
-import java.util.function.Function;
+import lombok.Data;
+import lombok.With;
 
-public interface ImageMseCalculator {
-	@FunctionalInterface
-	interface Applier {
-		float apply(ElementResult result, float max);
-	}
-
-	Applier applyMse(BufferedImage image, int px, int py);
+@Data
+@With
+public final class Triplet<A, B, C> {
+	private final A first;
+	private final B second;
+	private final C third;
 }

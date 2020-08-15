@@ -23,16 +23,11 @@ import pl.asie.zzttools.zzt.Element;
 
 @Data
 public class ElementResult {
+	public static final ElementResult EMPTY = new ElementResult(Element.EMPTY, false, false, 32, 0);
+
 	private final Element element;
 	private final boolean hasStat;
 	private final boolean text;
 	private final int character;
 	private final int color;
-	private float mse;
-
-	public ElementResult withMse(float mse) {
-		ElementResult result = new ElementResult(element, hasStat, text, character, color);
-		result.setMse(mse);
-		return result;
-	}
 }

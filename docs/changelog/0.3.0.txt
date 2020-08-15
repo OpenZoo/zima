@@ -3,6 +3,8 @@ Improvements:
 * Added a new slider bar - "Board -> Accurate/Approximate".
 * Added a status bar, showing the board size in bytes and the amount of stats used.
 * Algorithm improvements.
+    * To get a result closer to 0.2.0 defaults, move "Board -> Accurate/Approximate" all the way towards "Approximate".
+* Major performance improvements.
 
 Removals:
 

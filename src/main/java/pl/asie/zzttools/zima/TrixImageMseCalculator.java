@@ -29,6 +29,7 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 	private final float accurateApproximate;
 	private final int[] charLutPrecalc;
 	private final int[][] charLut2x2Precalc;
+	private final boolean[][] charLut1x1Precalc;
 	private final float[] colDistPrecalc;
 
 	private static class ImageLutHolder {
@@ -99,6 +100,17 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 			}
 		}
 
+		charLut1x1Precalc = new boolean[256][visual.getCharWidth() * visual.getCharHeight()];
+		for (int c = 0; c < 256; c++) {
+			int coff = c * visual.getCharHeight();
+			for (int cy = 0; cy < visual.getCharHeight(); cy++) {
+				int charLine = (int) visual.getCharData()[coff + cy] & 0xFF;
+				for (int cx = 0; cx < visual.getCharWidth(); cx++) {
+					charLut1x1Precalc[c][cy * visual.getCharWidth() + cx] = (charLine & (1 << (7 - cx))) != 0;
+				}
+			}
+		}
+
 		colDistPrecalc = new float[256];
 		for (int i = 0; i < 256; i++) {
 			int bg = visual.getPalette()[(i >> 4) & 0x0F];
@@ -115,9 +127,7 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 			int col = proposed.getColor();
 
 			float mse = 0.0f;
-			float[][] dataMacro1x1 = holder.dataMacro1x1;
 			int[] dataMacro2x2 = holder.dataMacro2x2;
-			int[] charLutData = charLut2x2Precalc[chr];
 
 			float imgContrast = holder.maxDistance;
 			float chrContrast = colDistPrecalc[col];
@@ -130,36 +140,36 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 
 			mse += dataMacro2x2.length * mseContrastReduction;
 			if (mse <= maxMse) {
-				int dm1p = 0;
-				int coff = chr * visual.getCharHeight();
 				if (macroRatio < 1.0f) {
-					for (int cy = 0; cy < visual.getCharHeight(); cy++) {
-						int charLine = (int) visual.getCharData()[coff + cy] & 0xFF;
-						for (int cx = 0; cx < visual.getCharWidth(); cx++, dm1p++) {
-							int charColor = (charLine & (1 << (7 - cx))) != 0 ? (col & 0x0F) : (col >> 4);
-							mse += dataMacro1x1[dm1p][charColor] * ((1 - macroRatio) * 0.25f);
-							if (mse > maxMse) {
-								break;
-							}
+					float invMacroRatio = ((1 - macroRatio) * 0.25f);
+					float[][] dataMacro1x1 = holder.dataMacro1x1;
+					boolean[] charData = charLut1x1Precalc[chr];
+
+					for (int dm1p = 0; dm1p < charData.length; dm1p++) {
+						int charColor = charData[dm1p] ? (col & 0x0F) : (col >> 4);
+						mse += dataMacro1x1[dm1p][charColor] * invMacroRatio;
+						if (mse > maxMse) {
+							return mse;
 						}
 					}
 				}
 
 				if (macroRatio > 0.0f) {
+					int[] charLutData = charLut2x2Precalc[chr];
+
 					for (int i = 0; i < dataMacro2x2.length; i++) {
 						int charLutIdx = charLutData[i];
 						int char2x2Lut = charLutPrecalc[col << 4 | charLutIdx];
 						float dist2x2 = ColorUtils.distance(char2x2Lut, dataMacro2x2[i]);
 						mse += dist2x2 * macroRatio;
 						if (mse > maxMse) {
-							break;
+							return mse;
 						}
 					}
 				}
 			}
 
-			proposed.setMse(mse);
-			return proposed;
+			return mse;
 		};
 	}
 }

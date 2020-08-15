@@ -18,34 +18,12 @@
  */
 package pl.asie.zzttools.zzt;
 
-import pl.asie.zzttools.util.ColorUtils;
+import lombok.Data;
 
-public class TextVisualData {
+@Data
+public final class TextVisualData {
 	private final int charWidth;
 	private final int charHeight;
 	private final byte[] charData;
 	private final int[] palette;
-
-	public TextVisualData(int charWidth, int charHeight, byte[] charData, int[] palette) {
-		this.charWidth = charWidth;
-		this.charHeight = charHeight;
-		this.charData = charData;
-		this.palette = palette;
-	}
-
-	public int getCharWidth() {
-		return charWidth;
-	}
-
-	public int getCharHeight() {
-		return charHeight;
-	}
-
-	public byte[] getCharData() {
-		return charData;
-	}
-
-	public int[] getPalette() {
-		return palette;
-	}
 }

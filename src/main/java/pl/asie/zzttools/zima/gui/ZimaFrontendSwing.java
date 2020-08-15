@@ -24,7 +24,6 @@ import pl.asie.zzttools.util.Pair;
 import pl.asie.zzttools.zima.ImageConverterRules;
 import pl.asie.zzttools.zima.ImageConverterRuleset;
 import pl.asie.zzttools.zima.ImageMseCalculator;
-import pl.asie.zzttools.zima.NaiveImageMseCalculator;
 import pl.asie.zzttools.zima.TrixImageMseCalculator;
 import pl.asie.zzttools.zzt.Board;
 import pl.asie.zzttools.zzt.PaletteLoaderUtils;
@@ -68,6 +67,8 @@ public class ZimaFrontendSwing {
 	private final JPanel optionsAdvancedPanel;
 	private final SimpleCanvas previewCanvas;
 	@Getter
+	private final JLabel statusLabel;
+	@Getter
 	private JProgressBar renderProgress;
 	@Getter
 	private CharacterSelector characterSelector;
@@ -91,6 +92,8 @@ public class ZimaFrontendSwing {
 	);
 	private JSlider contrastReductionEdit;
 	private JButton contrastReductionReset;
+	private JSlider accurateApproximateEdit;
+	private JButton accurateApproximateReset;
 
 	// "Image" tab
 	private JCheckBox showInputImageEdit;
@@ -110,8 +113,7 @@ public class ZimaFrontendSwing {
 	private JCheckBox allowFacesEdit;
 	private JComboBox<String> mseConverterEdit;
 	private final List<Pair<String, Function<ZimaConversionProfile, ImageMseCalculator>>> mseConverterOptions = List.of(
-			new Pair<>("Trix", p -> new TrixImageMseCalculator(p.getVisual(), p.getContrastReduction())),
-			new Pair<>("Simple", p -> new NaiveImageMseCalculator(p.getVisual()))
+			new Pair<>("Trix", p -> new TrixImageMseCalculator(p.getVisual(), p.getContrastReduction(), p.getAccurateApproximate()))
 	);
 
 	// TextVisualData blerbs
@@ -143,9 +145,11 @@ public class ZimaFrontendSwing {
 
 		this.previewCanvas = new SimpleCanvas(true);
 		this.mainPanel = new JPanel(new GridBagLayout());
+		this.statusLabel = new JLabel("Ready.");
 		addGridBag(this.mainPanel, this.previewCanvas, (c) -> { c.gridx = 0; c.gridy = 0; });
 		addGridBag(this.mainPanel, this.optionsPane = new JTabbedPane(), (c) -> { c.gridx = 1; c.gridy = 0; c.gridheight = 2; });
 		addGridBag(this.mainPanel, this.renderProgress = new JProgressBar(), (c) -> { c.gridx = 0; c.gridy = 1; });
+		addGridBag(this.mainPanel, this.statusLabel, (c) -> { c.gridx = 0; c.gridy = 2; c.gridwidth = GridBagConstraints.REMAINDER; c.fill = GridBagConstraints.BOTH; c.anchor = GridBagConstraints.WEST; });
 
 		this.optionsBoardPanel = new JPanel(new GridBagLayout());
 		this.optionsPane.addTab("Board", new JScrollPane(this.optionsBoardPanel));
@@ -206,6 +210,13 @@ public class ZimaFrontendSwing {
 			appendTabRow(this.optionsBoardPanel, gbc, "Elements", this.rulesetEdit = new JComboBox<>(this.rulesetOptions.stream().map(Pair::getFirst).toArray(String[]::new)));
 			this.rulesetEdit.setSelectedIndex(0);
 			this.rulesetEdit.addActionListener(rerenderAndCallA(() -> this.profile.setRuleset(this.rulesetOptions.get(this.rulesetEdit.getSelectedIndex()).getSecond())));
+
+			float defAccurateApproximateValue = this.profile.getAccurateApproximate();
+			appendTabRow(this.optionsBoardPanel, gbc, "Accurate/Approximate",
+					this.accurateApproximateEdit = new JSlider(JSlider.HORIZONTAL, 0, 1000, (int) (defAccurateApproximateValue * 1000.0f)),
+					this.accurateApproximateReset = new JButton("Reset"));
+			this.accurateApproximateEdit.addChangeListener(rerenderAndCall(() -> this.profile.setAccurateApproximate(this.accurateApproximateEdit.getValue() / 1000.0f)));
+			this.accurateApproximateReset.addActionListener((e) -> { this.profile.setAccurateApproximate(defAccurateApproximateValue); this.accurateApproximateEdit.setValue((int) (defAccurateApproximateValue * 1000.0f)); rerender(); });
 		}
 
 		{
@@ -314,10 +325,10 @@ public class ZimaFrontendSwing {
 			this.asyncRenderer.setUseFastPreview(this.fastPreviewEdit.isSelected());
 			rerenderAndSet(this.fastPreviewEdit, this.asyncRenderer::setUseFastPreview);
 
-			appendTabRow(this.optionsAdvancedPanel, gbc, "Error calculator", this.mseConverterEdit = new JComboBox<>(this.mseConverterOptions.stream().map(Pair::getFirst).toArray(String[]::new)));
-			this.mseConverterEdit.setSelectedIndex(0);
 			this.profile.setMseCalculatorFunction(this.mseConverterOptions.get(0).getSecond());
-			this.mseConverterEdit.addActionListener(rerenderAndCallA(() -> this.profile.setMseCalculatorFunction(this.mseConverterOptions.get(this.mseConverterEdit.getSelectedIndex()).getSecond())));
+/*			appendTabRow(this.optionsAdvancedPanel, gbc, "Error calculator", this.mseConverterEdit = new JComboBox<>(this.mseConverterOptions.stream().map(Pair::getFirst).toArray(String[]::new)));
+			this.mseConverterEdit.setSelectedIndex(0);
+			this.mseConverterEdit.addActionListener(rerenderAndCallA(() -> this.profile.setMseCalculatorFunction(this.mseConverterOptions.get(this.mseConverterEdit.getSelectedIndex()).getSecond()))); */
 
 			float defContrastReductionValue = this.profile.getContrastReduction();
 			appendTabRow(this.optionsAdvancedPanel, gbc, "Tile contrast reduction",

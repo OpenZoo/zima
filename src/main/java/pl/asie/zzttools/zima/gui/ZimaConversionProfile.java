@@ -52,6 +52,7 @@ public class ZimaConversionProfile implements Cloneable {
 	@Setter
 	private boolean colorsBlink = true;
 	private float contrastReduction = 0.0035f;
+	private float accurateApproximate = 0.45f;
 
 	private float brightness = 0.0f;
 	private float contrast = 0.0f;
@@ -102,6 +103,11 @@ public class ZimaConversionProfile implements Cloneable {
 
 	public void setContrastReduction(float contrastReduction) {
 		this.contrastReduction = contrastReduction;
+		this.mseCalculator = null;
+	}
+
+	public void setAccurateApproximate(float accurateApproximate) {
+		this.accurateApproximate = accurateApproximate;
 		this.mseCalculator = null;
 	}
 

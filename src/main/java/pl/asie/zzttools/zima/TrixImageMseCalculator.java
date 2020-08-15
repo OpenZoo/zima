@@ -26,19 +26,32 @@ import java.awt.image.BufferedImage;
 public class TrixImageMseCalculator implements ImageMseCalculator {
 	private final TextVisualData visual;
 	private final float contrastReduction;
+	private final float accurateApproximate;
 	private final int[] charLutPrecalc;
-	private final int[][] charLutIndexPrecalc;
+	private final int[][] charLut2x2Precalc;
 	private final float[] colDistPrecalc;
 
 	private static class ImageLutHolder {
-		private final int[] lutData;
+		private final float[][] dataMacro1x1;
+		private final int[] dataMacro2x2;
 		private float maxDistance;
 
-		public ImageLutHolder(BufferedImage image, int px, int py, int width, int height) {
-			lutData = new int[(width >> 1) * (height >> 1)];
+		public ImageLutHolder(TextVisualData visual, BufferedImage image, int px, int py, int width, int height) {
+			dataMacro1x1 = new float[width * height][16];
+			for (int cy = 0; cy < height; cy++) {
+				for (int cx = 0; cx < width; cx++) {
+					int col = image.getRGB(px + cx, py + cy);
+					float[] lut = dataMacro1x1[cy * width + cx];
+					for (int cc = 0; cc < 16; cc++) {
+						lut[cc] = ColorUtils.distance(col, visual.getPalette()[cc]);
+					}
+				}
+			}
+
+			dataMacro2x2 = new int[(width >> 1) * (height >> 1)];
 			for (int cy = 0; cy < height; cy+=2) {
 				for (int cx = 0; cx < width; cx+=2) {
-					lutData[(cy >> 1) * (width >> 1) + (cx >> 1)] = ColorUtils.mix4equal(
+					dataMacro2x2[(cy >> 1) * (width >> 1) + (cx >> 1)] = ColorUtils.mix4equal(
 							image.getRGB(px + cx, py + cy),
 							image.getRGB(px + cx + 1, py + cy),
 							image.getRGB(px + cx, py + cy + 1),
@@ -48,9 +61,9 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 			}
 
 			maxDistance = 0.0f;
-			for (int i = 0; i < lutData.length; i++) {
-				for (int j = i + 1; j < lutData.length; j++) {
-					float distance = ColorUtils.distance(lutData[i], lutData[j]);
+			for (int i = 0; i < dataMacro2x2.length; i++) {
+				for (int j = i + 1; j < dataMacro2x2.length; j++) {
+					float distance = ColorUtils.distance(dataMacro2x2[i], dataMacro2x2[j]);
 					if (distance > maxDistance) {
 						maxDistance = distance;
 					}
@@ -59,9 +72,10 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 		}
 	}
 
-	public TrixImageMseCalculator(TextVisualData visual, float contrastReduction) {
+	public TrixImageMseCalculator(TextVisualData visual, float contrastReduction, float accurateApproximate) {
 		this.visual = visual;
 		this.contrastReduction = contrastReduction;
+		this.accurateApproximate = accurateApproximate;
 
 		charLutPrecalc = new int[256 * 16];
 		for (int i = 0; i < 256 * 16; i++) {
@@ -71,7 +85,7 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 			charLutPrecalc[i] = ColorUtils.mix(bg, fg, fgColored / 4.0f);
 		}
 
-		charLutIndexPrecalc = new int[256][(visual.getCharWidth() >> 1) * (visual.getCharHeight() >> 1)];
+		charLut2x2Precalc = new int[256][(visual.getCharWidth() >> 1) * (visual.getCharHeight() >> 1)];
 		for (int c = 0; c < 256; c++) {
 			int coff = c * visual.getCharHeight();
 			for (int cy = 0; cy < visual.getCharHeight(); cy += 2) {
@@ -80,7 +94,7 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 
 				for (int cx = 0; cx < visual.getCharWidth(); cx += 2) {
 					int charLutIdx = ((charLine1 >> (6 - cx)) & 3) | (((charLine2 >> (6 - cx)) & 3) << 2);
-					charLutIndexPrecalc[c][(cy >> 1) * (visual.getCharWidth() >> 1) + (cx >> 1)] = charLutIdx;
+					charLut2x2Precalc[c][(cy >> 1) * (visual.getCharWidth() >> 1) + (cx >> 1)] = charLutIdx;
 				}
 			}
 		}
@@ -95,28 +109,51 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 	
 	@Override
 	public Applier applyMse(BufferedImage image, int px, int py) {
-		final ImageLutHolder holder = new ImageLutHolder(image, px, py, visual.getCharWidth(), visual.getCharHeight());
+		final ImageLutHolder holder = new ImageLutHolder(visual, image, px, py, visual.getCharWidth(), visual.getCharHeight());
 		return (proposed, maxMse) -> {
 			int chr = proposed.getCharacter();
 			int col = proposed.getColor();
 
 			float mse = 0.0f;
-			int[] imageLutData = holder.lutData;
-			int[] charLutData = charLutIndexPrecalc[chr];
+			float[][] dataMacro1x1 = holder.dataMacro1x1;
+			int[] dataMacro2x2 = holder.dataMacro2x2;
+			int[] charLutData = charLut2x2Precalc[chr];
 
 			float imgContrast = holder.maxDistance;
 			float chrContrast = colDistPrecalc[col];
 			float mseContrastReduction = contrastReduction * Math.abs(imgContrast - chrContrast);
 
-			mse += imageLutData.length * mseContrastReduction;
+			float macroRatio = accurateApproximate;
+			if (chr >= 176 && chr <= 178) {
+				macroRatio = 1.0f; // use only macro when blending
+			}
+
+			mse += dataMacro2x2.length * mseContrastReduction;
 			if (mse <= maxMse) {
-				for (int i = 0; i < imageLutData.length; i++) {
-					int charLutIdx = charLutData[i];
-					int charHalfLut = charLutPrecalc[col << 4 | charLutIdx];
-					float dist = ColorUtils.distance(charHalfLut, imageLutData[i]);
-					mse += dist;
-					if (mse > maxMse) {
-						break;
+				int dm1p = 0;
+				int coff = chr * visual.getCharHeight();
+				if (macroRatio < 1.0f) {
+					for (int cy = 0; cy < visual.getCharHeight(); cy++) {
+						int charLine = (int) visual.getCharData()[coff + cy] & 0xFF;
+						for (int cx = 0; cx < visual.getCharWidth(); cx++, dm1p++) {
+							int charColor = (charLine & (1 << (7 - cx))) != 0 ? (col & 0x0F) : (col >> 4);
+							mse += dataMacro1x1[dm1p][charColor] * ((1 - macroRatio) * 0.25f);
+							if (mse > maxMse) {
+								break;
+							}
+						}
+					}
+				}
+
+				if (macroRatio > 0.0f) {
+					for (int i = 0; i < dataMacro2x2.length; i++) {
+						int charLutIdx = charLutData[i];
+						int char2x2Lut = charLutPrecalc[col << 4 | charLutIdx];
+						float dist2x2 = ColorUtils.distance(char2x2Lut, dataMacro2x2[i]);
+						mse += dist2x2 * macroRatio;
+						if (mse > maxMse) {
+							break;
+						}
 					}
 				}
 			}

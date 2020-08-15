@@ -20,10 +20,13 @@ package pl.asie.zzttools.zima.gui;
 
 import lombok.Getter;
 import lombok.Setter;
+import pl.asie.zzttools.util.CountOutputStream;
 import pl.asie.zzttools.util.Pair;
 import pl.asie.zzttools.zzt.Board;
+import pl.asie.zzttools.zzt.ZOutputStream;
 
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 
 public class ZimaAsynchronousRenderer {
 	private final ZimaFrontendSwing parent;
@@ -71,6 +74,21 @@ public class ZimaAsynchronousRenderer {
 					}
 				}
 				this.parent.updateCanvas();
+			}
+
+			if (!fast) {
+				// calculate board data
+				int statCount = output.getFirst().getStats().size() - 1;
+				int boardSize = -1;
+
+				try (CountOutputStream cos = new CountOutputStream(); ZOutputStream stream = new ZOutputStream(cos, false)) {
+					output.getFirst().writeZ(stream);
+					boardSize = cos.getCount();
+				} catch (IOException e) {
+					// pass
+				}
+
+				this.parent.getStatusLabel().setText(String.format("%d bytes, %d stats", boardSize, statCount));
 			}
 		}
 	}

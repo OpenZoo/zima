@@ -1,0 +1,10 @@
+Improvements:
+
+* Added a new slider bar - "Board -> Accurate/Approximate".
+* Added a status bar, showing the board size in bytes and the amount of stats used.
+* Algorithm improvements.
+
+Removals:
+
+* The "Simple" error calculator. It is more-or-less equivalent to the new "Trix" with contrast reduction disabled
+  and the "Board -> Accurate/Approximate" slider dragged all the way towards "Accurate".

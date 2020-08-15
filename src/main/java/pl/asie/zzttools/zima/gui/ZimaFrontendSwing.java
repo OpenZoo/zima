@@ -27,6 +27,7 @@ import pl.asie.zzttools.zima.ImageMseCalculator;
 import pl.asie.zzttools.zima.NaiveImageMseCalculator;
 import pl.asie.zzttools.zima.TrixImageMseCalculator;
 import pl.asie.zzttools.zzt.Board;
+import pl.asie.zzttools.zzt.PaletteLoaderUtils;
 import pl.asie.zzttools.zzt.TextVisualData;
 import pl.asie.zzttools.zzt.ZOutputStream;
 
@@ -70,6 +71,8 @@ public class ZimaFrontendSwing {
 	private JProgressBar renderProgress;
 	@Getter
 	private CharacterSelector characterSelector;
+	@Getter
+	private PaletteSelector paletteSelector;
 
 	// "Board" tab
 	private JSpinner boardXEdit;
@@ -283,7 +286,22 @@ public class ZimaFrontendSwing {
 			gbc.gridx = 0;
 			gbc.gridy = 0;
 
-			optionsPalettePanel.add(new JLabel("TODO"), gbc);
+			paletteSelector = new PaletteSelector(this::rerender);
+
+			gbc.insets = new Insets(2, 4, 2, 4);
+			gbc.gridwidth = GridBagConstraints.REMAINDER;
+			gbc.fill = GridBagConstraints.BOTH;
+			optionsPalettePanel.add(paletteSelector, gbc);
+
+			// create toggle buttons
+			gbc.gridy = 1;
+			gbc.gridwidth = 1;
+			gbc.gridx = GridBagConstraints.RELATIVE;
+
+			appendPalSelToggle(optionsPalettePanel, "All", gbc, 0, 15);
+			gbc.gridy = 2;
+			appendCharSelButton(optionsPalettePanel, "Load default", gbc, this::onLoadDefaultPalette);
+			appendCharSelButton(optionsPalettePanel, "Load custom", gbc, this::onLoadCustomPalette);
 		}
 
 		{
@@ -349,6 +367,7 @@ public class ZimaFrontendSwing {
 		this.visual = new TextVisualData(8, charset.length / 256, charset, palette);
 		this.profile.setVisual(this.visual);
 		this.characterSelector.setVisual(this.visual);
+		this.paletteSelector.setVisual(this.visual);
 		rerender();
 	}
 
@@ -409,6 +428,43 @@ public class ZimaFrontendSwing {
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			try (FileInputStream fis = new FileInputStream(fc.getSelectedFile())) {
 				this.charset = FileUtils.readAll(fis);
+				updateVisual();
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			}
+		}
+	}
+
+	public void onLoadDefaultPalette(ActionEvent event) {
+		this.palette = null;
+		updateVisual();
+	}
+
+	public void onLoadCustomPalette(ActionEvent event) {
+		JFileChooser fc = new JFileChooser();
+		fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
+		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		fc.addChoosableFileFilter(new FileNameExtensionFilter("MegaZeux palette file", "pal"));
+		fc.addChoosableFileFilter(new FileNameExtensionFilter("PLD palette file", "pld"));
+		int returnVal = fc.showOpenDialog(this.window);
+
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			try (FileInputStream fis = new FileInputStream(fc.getSelectedFile())) {
+				String name = fc.getSelectedFile().getName().toLowerCase(Locale.ROOT);
+				int[] colors = null;
+				if (name.endsWith(".pld")) {
+					colors = PaletteLoaderUtils.readPldFile(fis);
+				} else {
+					// default - .pal
+					colors = PaletteLoaderUtils.readPalFile(fis);
+				}
+				//noinspection ConstantConditions
+				if (colors != null && colors.length == 16) {
+					this.palette = colors;
+				} else {
+					JOptionPane.showMessageDialog(this.window, "Error loading file: invalid palette data", "Error", JOptionPane.ERROR_MESSAGE);
+					this.palette = null;
+				}
 				updateVisual();
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -520,6 +576,10 @@ public class ZimaFrontendSwing {
 
 	private void appendCharSelToggle(JPanel panel, String name, GridBagConstraints gbc, int... ranges) {
 		appendCharSelButton(panel, name, gbc, (e) -> this.characterSelector.toggleCharAllowed(ranges));
+	}
+
+	private void appendPalSelToggle(JPanel panel, String name, GridBagConstraints gbc, int... ranges) {
+		appendCharSelButton(panel, name, gbc, (e) -> this.paletteSelector.toggleColorAllowed(ranges));
 	}
 
 	private void appendCharSelButton(JPanel panel, String name, GridBagConstraints gbc, ActionListener al) {

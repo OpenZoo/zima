@@ -37,7 +37,6 @@ import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
-import java.util.function.Supplier;
 
 @Getter
 public class ZimaConversionProfile implements Cloneable {
@@ -64,14 +63,14 @@ public class ZimaConversionProfile implements Cloneable {
 	private int cropBottom = 0;
 
 	// generated
-	private BufferedImage scaledImage;
-	private BufferedImage filteredImage;
-	private ImageMseCalculator mseCalculator;
-	private TextVisualRenderer renderer;
-	private ImageConverter converter;
+	private transient BufferedImage scaledImage;
+	private transient BufferedImage filteredImage;
+	private transient ImageMseCalculator mseCalculator;
+	private transient TextVisualRenderer renderer;
+	private transient ImageConverter converter;
 
 	// misc
-	private BufferedImage inputImage;
+	private transient BufferedImage inputImage;
 
 	// setters - provided
 

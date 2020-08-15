@@ -31,27 +31,37 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class CharacterSelector extends JComponent implements MouseListener, MouseMotionListener {
+public class PaletteSelector extends JComponent implements MouseListener {
+    private static final int PALETTE_WIDTH = 16;
+    private static final int PALETTE_HEIGHT = 64;
+
     private TextVisualData visual;
-    private final boolean[] allowedChars = new boolean[256];
-    private Boolean settingMode = null;
+    private final boolean[] allowedColors = new boolean[16];
     private final Runnable changeListener;
 
-    public CharacterSelector(Runnable changeListener) {
-        Arrays.fill(allowedChars, true);
+    public PaletteSelector(Runnable changeListener) {
+        Arrays.fill(allowedColors, true);
         addMouseListener(this);
-        addMouseMotionListener(this);
         this.changeListener = changeListener;
     }
 
     @Override
     public void paintComponent(Graphics graphics) {
-        TextVisualRenderer renderer = new TextVisualRenderer(visual);
-        BufferedImage image = renderer.render(32, 8,
-                (x, y) -> (y << 5) | x,
-                (x, y) -> allowedChars[(y << 5) | x] ? 0x2F : 0x04
-        );
-        graphics.drawImage(image, 0, 0, null);
+        graphics.setColor(Color.BLACK);
+        graphics.fillRect(0, 0, PALETTE_WIDTH * 16, PALETTE_HEIGHT);
+        for (int i = 0; i < 16; i++) {
+            int rgb = visual.getPalette()[i];
+            graphics.setColor(new Color((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF));
+            graphics.fillRect(i * PALETTE_WIDTH, 0, PALETTE_WIDTH, PALETTE_HEIGHT - 16);
+            graphics.setColor(Color.GRAY);
+            graphics.fillRect(i * PALETTE_WIDTH, PALETTE_HEIGHT - 2, PALETTE_WIDTH, 2);
+            graphics.fillRect(i * PALETTE_WIDTH + (PALETTE_WIDTH - 2), PALETTE_HEIGHT - 16, 2, 16);
+            graphics.setColor(Color.LIGHT_GRAY);
+            graphics.fillRect(i * PALETTE_WIDTH, PALETTE_HEIGHT - 16, PALETTE_WIDTH, 2);
+            graphics.fillRect(i * PALETTE_WIDTH, PALETTE_HEIGHT - 16, 2, 16);
+            graphics.setColor(allowedColors[i] ? Color.GREEN : Color.BLACK);
+            graphics.fillRect(i * PALETTE_WIDTH + 2, PALETTE_HEIGHT - 16 + 2, PALETTE_WIDTH - 4, 16 - 4);
+        }
     }
 
     public TextVisualData getVisual() {
@@ -60,24 +70,28 @@ public class CharacterSelector extends JComponent implements MouseListener, Mous
 
     public void setVisual(TextVisualData visual) {
         this.visual = visual;
-        Dimension dims = new Dimension(32 * visual.getCharWidth(), 8 * visual.getCharHeight());
+        Dimension dims = new Dimension(16 * PALETTE_WIDTH, PALETTE_HEIGHT);
         setMinimumSize(dims);
         setMaximumSize(dims);
         setPreferredSize(dims);
         repaint();
     }
 
-    public boolean isCharAllowed(int c) {
-        return allowedChars[c];
+    public boolean isTwoColorAllowed(int c) {
+        return allowedColors[c >> 4] && allowedColors[c & 0xF];
     }
 
-    public void setCharAllowed(int c, boolean v) {
-        allowedChars[c] = v;
+    public boolean isColorAllowed(int c) {
+        return allowedColors[c];
+    }
+
+    public void setColorAllowed(int c, boolean v) {
+        allowedColors[c] = v;
         repaint();
         changeListener.run();
     }
 
-    public void toggleCharAllowed(int... ranges) {
+    public void toggleColorAllowed(int... ranges) {
         List<Integer> valuesInRanges = new ArrayList<>();
         for (int i = 0; i < ranges.length; i += 2) {
             for (int j = ranges[i]; j <= ranges[i+1]; j++) {
@@ -85,16 +99,17 @@ public class CharacterSelector extends JComponent implements MouseListener, Mous
             }
         }
 
-        boolean isAllSet = valuesInRanges.stream().allMatch(i -> allowedChars[i]);
+        boolean isAllSet = valuesInRanges.stream().allMatch(i -> allowedColors[i]);
         boolean settingMode = !isAllSet;
-        valuesInRanges.forEach(i -> setCharAllowed(i, settingMode));
+        valuesInRanges.forEach(i -> setColorAllowed(i, settingMode));
     }
+
 
     // input
 
-    private int mcToChar(int x, int y) {
-        int p = ((y / visual.getCharHeight()) << 5) | (x / visual.getCharWidth());
-        if (p < 0 || p >= 256) return -1;
+    private int mcToColor(int x, int y) {
+        int p = x / PALETTE_WIDTH;
+        if (p < 0 || p >= 16) return -1;
         else return p;
     }
 
@@ -106,17 +121,15 @@ public class CharacterSelector extends JComponent implements MouseListener, Mous
     @Override
     public void mousePressed(MouseEvent mouseEvent) {
         if (mouseEvent.getButton() == MouseEvent.BUTTON1) {
-            int c = mcToChar(mouseEvent.getX(), mouseEvent.getY());
-            settingMode = (c >= 0) ? !allowedChars[c] : null;
+            int c = mcToColor(mouseEvent.getX(), mouseEvent.getY());
             if (c >= 0) {
-                setCharAllowed(c, settingMode);
+                setColorAllowed(c, !allowedColors[c]);
             }
         }
     }
 
     @Override
     public void mouseReleased(MouseEvent mouseEvent) {
-        settingMode = null;
     }
 
     @Override
@@ -126,19 +139,6 @@ public class CharacterSelector extends JComponent implements MouseListener, Mous
 
     @Override
     public void mouseExited(MouseEvent mouseEvent) {
-
-    }
-
-    @Override
-    public void mouseDragged(MouseEvent mouseEvent) {
-        int c = mcToChar(mouseEvent.getX(), mouseEvent.getY());
-        if (c >= 0 && settingMode != null) {
-            setCharAllowed(c, settingMode);
-        }
-    }
-
-    @Override
-    public void mouseMoved(MouseEvent mouseEvent) {
 
     }
 }

@@ -54,14 +54,12 @@ public class ZimaAsynchronousRenderer {
 		if (this.parent.getInputImage() != null) {
 			if (!fast) {
 				this.parent.getRenderProgress().setValue(0);
-				this.parent.getRenderProgress().setMinimum(0);
-				this.parent.getRenderProgress().setMaximum(100);
 			}
 
 			Pair<Board, BufferedImage> output = this.parent.getProfile().convert(this.parent.getInputImage(), !fast ? ((max) -> {
 				this.parent.getRenderProgress().setMaximum(max);
 				this.parent.getRenderProgress().setValue(this.parent.getRenderProgress().getValue() + 1);
-			}) : ((max) -> {}), fast, this.parent.getCharacterSelector()::isCharAllowed, null);
+			}) : ((max) -> {}), fast, this.parent.getCharacterSelector()::isCharAllowed, this.parent.getPaletteSelector()::isTwoColorAllowed);
 
 			synchronized (outputWriteLock) {
 				if (fast) {
@@ -105,7 +103,11 @@ public class ZimaAsynchronousRenderer {
 				continue;
 			}
 
-			rerenderOnce(false);
+			try {
+				rerenderOnce(false);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -129,7 +131,11 @@ public class ZimaAsynchronousRenderer {
 			}
 
 			if (queued) {
-				rerenderOnce(true);
+				try {
+					rerenderOnce(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			} else {
 				try {
 					Thread.sleep(32);

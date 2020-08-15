@@ -23,22 +23,21 @@ public final class ColorUtils {
 
 	}
 
-	// TODO: fix me - non-linear?
 	public static float lumaDistance(int a, int b) {
 		if (a == b) {
 			return 0.0f;
 		}
 
-		int ar = (a >> 16) & 0xFF;
-		int ag = (a >> 8) & 0xFF;
-		int ab = a & 0xFF;
-		int br = (b >> 16) & 0xFF;
-		int bg = (b >> 8) & 0xFF;
-		int bb = b & 0xFF;
+		float ar = sRtoR((a >> 16) & 0xFF);
+		float ag = sRtoR((a >> 8) & 0xFF);
+		float ab = sRtoR(a & 0xFF);
+		float br = sRtoR((b >> 16) & 0xFF);
+		float bg = sRtoR((b >> 8) & 0xFF);
+		float bb = sRtoR(b & 0xFF);
 
 		float ay = 0.299f * ar + 0.587f * ag + 0.114f * ab;
 		float by = 0.299f * br + 0.587f * bg + 0.114f * bb;
-		float yd = (ay - by) / 255.0f;
+		float yd = ay - by;
 
 		return yd * yd;
 	}
@@ -126,19 +125,6 @@ public final class ColorUtils {
 		float cb = ((ab * (1 - amount)) + (bb * amount));
 
 		return (RtosR(cr) << 16) | (RtosR(cg) << 8) | (RtosR(cb));
-
-		/* int ar = (a >> 16) & 0xFF;
-		int ag = (a >> 8) & 0xFF;
-		int ab = a & 0xFF;
-		int br = (b >> 16) & 0xFF;
-		int bg = (b >> 8) & 0xFF;
-		int bb = b & 0xFF;
-
-		int cr = (int) ((ar * (1 - amount)) + (br * amount));
-		int cg = (int) ((ag * (1 - amount)) + (bg * amount));
-		int cb = (int) ((ab * (1 - amount)) + (bb * amount));
-
-		return ((cr & 0xFF) << 16) | ((cg & 0xFF) << 8) | (cb & 0xFF); */
 	}
 
 	public static void main(String[] args) {

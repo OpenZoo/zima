@@ -104,22 +104,22 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 			int[] imageLutData = holder.lutData;
 			int[] charLutData = charLutIndexPrecalc[chr];
 
-			for (int i = 0; i < imageLutData.length; i++) {
-				int charLutIdx = charLutData[i];
-				int charHalfLut = charLutPrecalc[col << 4 | charLutIdx];
-				float dist = ColorUtils.distance(charHalfLut, imageLutData[i]);
-				mse += dist;
-				if (mse > maxMse) {
-					break;
-				}
-			}
-
-			int bg = visual.getPalette()[(col >> 4) & 0x0F];
-			int fg = visual.getPalette()[col & 0x0F];
 			float imgContrast = holder.maxDistance;
 			float chrContrast = colDistPrecalc[col];
+			float mseContrastReduction = contrastReduction * Math.abs(imgContrast - chrContrast);
 
-			mse += imageLutData.length * contrastReduction * Math.abs(imgContrast - chrContrast);
+			mse += imageLutData.length * mseContrastReduction;
+			if (mse <= maxMse) {
+				for (int i = 0; i < imageLutData.length; i++) {
+					int charLutIdx = charLutData[i];
+					int charHalfLut = charLutPrecalc[col << 4 | charLutIdx];
+					float dist = ColorUtils.distance(charHalfLut, imageLutData[i]);
+					mse += dist;
+					if (mse > maxMse) {
+						break;
+					}
+				}
+			}
 
 			proposed.setMse(mse);
 			return proposed;

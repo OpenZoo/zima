@@ -18,6 +18,8 @@
  */
 package pl.asie.zzttools.zzt;
 
+import pl.asie.zzttools.util.ColorUtils;
+
 public class TextVisualData {
 	private final int charWidth;
 	private final int charHeight;

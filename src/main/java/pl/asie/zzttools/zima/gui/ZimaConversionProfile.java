@@ -20,6 +20,7 @@ package pl.asie.zzttools.zima.gui;
 
 import lombok.Getter;
 import lombok.Setter;
+import pl.asie.zzttools.util.ColorUtils;
 import pl.asie.zzttools.util.ImageUtils;
 import pl.asie.zzttools.util.Pair;
 import pl.asie.zzttools.zima.ImageConverter;
@@ -34,13 +35,14 @@ import pl.asie.zzttools.zzt.TextVisualRenderer;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 @Getter
 public class ZimaConversionProfile implements Cloneable {
 	// provided
 	private TextVisualData visual;
 	private ImageConverterRuleset ruleset;
-	private Function<TextVisualData, ImageMseCalculator> mseCalculatorBuilder;
+	private Function<ZimaConversionProfile, ImageMseCalculator> mseCalculatorFunction;
 	private int charsWidth = 60, charsHeight = 25;
 	@Setter
 	private int boardX = 1, boardY = 1, playerX = 60, playerY = 25;
@@ -48,8 +50,7 @@ public class ZimaConversionProfile implements Cloneable {
 	private int maxStatCount = 149;
 	@Setter
 	private boolean colorsBlink = true;
-	@Setter
-	private float contrastReduction = 0.005f;
+	private float contrastReduction = 0.0035f;
 
 	private boolean allowFaces = false;
 
@@ -80,8 +81,8 @@ public class ZimaConversionProfile implements Cloneable {
 		this.ruleset = ruleset;
 	}
 
-	public void setMseCalculatorBuilder(Function<TextVisualData, ImageMseCalculator> mseCalculatorBuilder) {
-		this.mseCalculatorBuilder = mseCalculatorBuilder;
+	public void setMseCalculatorFunction(Function<ZimaConversionProfile, ImageMseCalculator> mseCalculatorFunction) {
+		this.mseCalculatorFunction = mseCalculatorFunction;
 		this.mseCalculator = null;
 	}
 
@@ -93,6 +94,11 @@ public class ZimaConversionProfile implements Cloneable {
 	public void setCharsHeight(int charsHeight) {
 		this.charsHeight = charsHeight;
 		this.scaledImage = null;
+	}
+
+	public void setContrastReduction(float contrastReduction) {
+		this.contrastReduction = contrastReduction;
+		this.mseCalculator = null;
 	}
 
 	public void setAllowFaces(boolean allowFaces) {
@@ -130,12 +136,6 @@ public class ZimaConversionProfile implements Cloneable {
 		this.converter = null;
 	}
 
-	private int floatToComp(float v) {
-		if (v < 0.0f) return 0;
-		if (v > 1.0f) return 255;
-		return (int) ((v * 255.0f) + 0.5f);
-	}
-
 	private BufferedImage filterImage(BufferedImage input) {
 		BufferedImage output = new BufferedImage(input.getWidth(), input.getHeight(), BufferedImage.TYPE_INT_RGB);
 		float contrastMul = (1.05f * (1.0f + contrast)) / (1.0f * (1.05f - contrast));
@@ -145,9 +145,9 @@ public class ZimaConversionProfile implements Cloneable {
 		for (int y = 0; y < input.getHeight(); y++) {
 			for (int x = 0; x < input.getWidth(); x++) {
 				int rgbIn = input.getRGB(x, y);
-				float rIn = ((rgbIn >> 16) & 0xFF) / 255.0f;
-				float gIn = ((rgbIn >> 8) & 0xFF) / 255.0f;
-				float bIn = (rgbIn & 0xFF) / 255.0f;
+				float rIn = ColorUtils.sRtoR((rgbIn >> 16) & 0xFF);
+				float gIn = ColorUtils.sRtoR((rgbIn >> 8) & 0xFF);
+				float bIn = ColorUtils.sRtoR(rgbIn & 0xFF);
 
 				rIn = rIn + brightness;
 				gIn = gIn + brightness;
@@ -170,7 +170,7 @@ public class ZimaConversionProfile implements Cloneable {
 					bIn = yIn + 2.03211f * uIn;
 				}
 
-				int rgbOut = (floatToComp(rIn) << 16) | (floatToComp(gIn) << 8) | (floatToComp(bIn));
+				int rgbOut = (ColorUtils.RtosR(rIn) << 16) | (ColorUtils.RtosR(gIn) << 8) | (ColorUtils.RtosR(bIn));
 				output.setRGB(x, y, rgbOut);
 			}
 		}
@@ -210,7 +210,7 @@ public class ZimaConversionProfile implements Cloneable {
 			setRenderer(new TextVisualRenderer(visual));
 		}
 		if (this.mseCalculator == null) {
-			setMseCalculator(this.mseCalculatorBuilder.apply(visual));
+			setMseCalculator(this.mseCalculatorFunction.apply(this));
 		}
 		if (this.converter == null) {
 			setConverter(new ImageConverter(visual, mseCalculator, allowFaces));

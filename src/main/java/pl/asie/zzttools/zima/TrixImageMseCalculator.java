@@ -25,11 +25,14 @@ import java.awt.image.BufferedImage;
 
 public class TrixImageMseCalculator implements ImageMseCalculator {
 	private final TextVisualData visual;
+	private final float contrastReduction;
 	private final int[] charLutPrecalc;
 	private final int[][] charLutIndexPrecalc;
+	private final float[] colDistPrecalc;
 
 	private static class ImageLutHolder {
 		private final int[] lutData;
+		private float maxDistance;
 
 		public ImageLutHolder(BufferedImage image, int px, int py, int width, int height) {
 			lutData = new int[(width >> 1) * (height >> 1)];
@@ -43,22 +46,29 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 					);
 				}
 			}
+
+			maxDistance = 0.0f;
+			for (int i = 0; i < lutData.length; i++) {
+				for (int j = i + 1; j < lutData.length; j++) {
+					float distance = ColorUtils.distance(lutData[i], lutData[j]);
+					if (distance > maxDistance) {
+						maxDistance = distance;
+					}
+				}
+			}
 		}
 	}
 
-	public TrixImageMseCalculator(TextVisualData visual) {
+	public TrixImageMseCalculator(TextVisualData visual, float contrastReduction) {
 		this.visual = visual;
+		this.contrastReduction = contrastReduction;
 
 		charLutPrecalc = new int[256 * 16];
 		for (int i = 0; i < 256 * 16; i++) {
 			int bg = visual.getPalette()[(i >> 8) & 0x0F];
 			int fg = visual.getPalette()[(i >> 4) & 0x0F];
-			charLutPrecalc[i] = ColorUtils.mix4equal(
-					(i & 1) != 0 ? fg : bg,
-					(i & 2) != 0 ? fg : bg,
-					(i & 4) != 0 ? fg : bg,
-					(i & 8) != 0 ? fg : bg
-			);
+			int fgColored = (i & 1) + ((i >> 1) & 1) + ((i >> 2) & 1) + ((i >> 3) & 1);
+			charLutPrecalc[i] = ColorUtils.mix(bg, fg, fgColored / 4.0f);
 		}
 
 		charLutIndexPrecalc = new int[256][(visual.getCharWidth() >> 1) * (visual.getCharHeight() >> 1)];
@@ -74,25 +84,42 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 				}
 			}
 		}
+
+		colDistPrecalc = new float[256];
+		for (int i = 0; i < 256; i++) {
+			int bg = visual.getPalette()[(i >> 4) & 0x0F];
+			int fg = visual.getPalette()[i & 0x0F];
+			colDistPrecalc[i] = ColorUtils.distance(bg, fg);
+		}
 	}
 	
 	@Override
 	public Applier applyMse(BufferedImage image, int px, int py) {
 		final ImageLutHolder holder = new ImageLutHolder(image, px, py, visual.getCharWidth(), visual.getCharHeight());
 		return (proposed, maxMse) -> {
+			int chr = proposed.getCharacter();
+			int col = proposed.getColor();
+
 			float mse = 0.0f;
 			int[] imageLutData = holder.lutData;
-			int[] charLutData = charLutIndexPrecalc[proposed.getCharacter()];
+			int[] charLutData = charLutIndexPrecalc[chr];
 
 			for (int i = 0; i < imageLutData.length; i++) {
 				int charLutIdx = charLutData[i];
-				int charHalfLut = charLutPrecalc[proposed.getColor() << 4 | charLutIdx];
+				int charHalfLut = charLutPrecalc[col << 4 | charLutIdx];
 				float dist = ColorUtils.distance(charHalfLut, imageLutData[i]);
 				mse += dist;
 				if (mse > maxMse) {
 					break;
 				}
 			}
+
+			int bg = visual.getPalette()[(col >> 4) & 0x0F];
+			int fg = visual.getPalette()[col & 0x0F];
+			float imgContrast = holder.maxDistance;
+			float chrContrast = colDistPrecalc[col];
+
+			mse += imageLutData.length * contrastReduction * Math.abs(imgContrast - chrContrast);
 
 			proposed.setMse(mse);
 			return proposed;

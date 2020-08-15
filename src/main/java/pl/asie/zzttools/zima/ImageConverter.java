@@ -27,7 +27,6 @@ import pl.asie.zzttools.zzt.Stat;
 import pl.asie.zzttools.zzt.TextVisualData;
 import pl.asie.zzttools.zzt.TextVisualRenderer;
 
-import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -74,7 +73,6 @@ public class ImageConverter {
 		List<Pair<Coord2D, ElementResult>> statfulStrategies = new ArrayList<>();
 		List<ElementRule> rules = ruleset.getRules();
 		ElementResult[] previewResults = new ElementResult[width * height];
-		ImageContrastReducer contrastReducer = new ImageContrastReducer(visual, contrastReduction);
 
 		IntStream.range(0, width * height).parallel().forEach(pos -> {
 			synchronized (progressCallback) {
@@ -136,7 +134,6 @@ public class ImageConverter {
 					}
 
 					result = applyMseFunc.apply(result, lowestMse);
-					result = contrastReducer.apply(result);
 
 					float localMse = (result.getMse() * weight);
 					if (localMse < lowestMse) {
@@ -164,8 +161,10 @@ public class ImageConverter {
 			board.setColor(x + ix, y + iy, statlessResult.isText() ? statlessResult.getCharacter() : statlessResult.getColor());
 
 			if (statfulResult.isHasStat() && statfulResult.getMse() < statlessResult.getMse()) {
-				// lowest result has stat, add to statfulStrategies
-				statfulStrategies.add(new Pair<>(new Coord2D(ix, iy), statfulResult));
+				synchronized (statfulStrategies) {
+					// lowest result has stat, add to statfulStrategies
+					statfulStrategies.add(new Pair<>(new Coord2D(ix, iy), statfulResult));
+				}
 			}
 		});
 

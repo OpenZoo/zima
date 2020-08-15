@@ -93,9 +93,9 @@ public class ZimaFrontendSwing {
 	private JCheckBox fastPreviewEdit;
 	private JCheckBox allowFacesEdit;
 	private JComboBox<String> mseConverterEdit;
-	private final List<Pair<String, Function<TextVisualData, ImageMseCalculator>>> mseConverterOptions = List.of(
-			new Pair<>("Trix", TrixImageMseCalculator::new),
-			new Pair<>("Simple", NaiveImageMseCalculator::new)
+	private final List<Pair<String, Function<ZimaConversionProfile, ImageMseCalculator>>> mseConverterOptions = List.of(
+			new Pair<>("Trix", p -> new TrixImageMseCalculator(p.getVisual(), p.getContrastReduction())),
+			new Pair<>("Simple", p -> new NaiveImageMseCalculator(p.getVisual()))
 	);
 
 	private final String zimaVersion;
@@ -173,13 +173,6 @@ public class ZimaFrontendSwing {
 			appendTabRow(this.optionsBoardPanel, gbc, "Elements", this.rulesetEdit = new JComboBox<>(this.rulesetOptions.stream().map(Pair::getFirst).toArray(String[]::new)));
 			this.rulesetEdit.setSelectedIndex(0);
 			this.rulesetEdit.addActionListener(rerenderAndCallA(() -> this.profile.setRuleset(this.rulesetOptions.get(this.rulesetEdit.getSelectedIndex()).getSecond())));
-
-			float defContrastReductionValue = this.profile.getContrastReduction();
-			appendTabRow(this.optionsBoardPanel, gbc, "HC Reduction",
-					this.contrastReductionEdit = new JSlider(JSlider.HORIZONTAL, 0, 1000, (int) Math.sqrt(defContrastReductionValue * 10000000.0f)),
-					this.contrastReductionReset = new JButton("Reset"));
-			this.contrastReductionEdit.addChangeListener(rerenderAndCall(() -> this.profile.setContrastReduction((this.contrastReductionEdit.getValue() * this.contrastReductionEdit.getValue()) / 10000000.0f)));
-			this.contrastReductionReset.addActionListener((e) -> { this.profile.setContrastReduction(defContrastReductionValue); this.contrastReductionEdit.setValue((int) Math.sqrt(defContrastReductionValue * 10000000.0f)); rerender(); });
 		}
 
 		{
@@ -222,8 +215,15 @@ public class ZimaFrontendSwing {
 
 			appendTabRow(this.optionsAdvancedPanel, gbc, "Error calculator", this.mseConverterEdit = new JComboBox<>(this.mseConverterOptions.stream().map(Pair::getFirst).toArray(String[]::new)));
 			this.mseConverterEdit.setSelectedIndex(0);
-			this.profile.setMseCalculatorBuilder(this.mseConverterOptions.get(0).getSecond());
-			this.mseConverterEdit.addActionListener(rerenderAndCallA(() -> this.profile.setMseCalculatorBuilder(this.mseConverterOptions.get(this.mseConverterEdit.getSelectedIndex()).getSecond())));
+			this.profile.setMseCalculatorFunction(this.mseConverterOptions.get(0).getSecond());
+			this.mseConverterEdit.addActionListener(rerenderAndCallA(() -> this.profile.setMseCalculatorFunction(this.mseConverterOptions.get(this.mseConverterEdit.getSelectedIndex()).getSecond())));
+
+			float defContrastReductionValue = this.profile.getContrastReduction();
+			appendTabRow(this.optionsAdvancedPanel, gbc, "Tile contrast reduction",
+					this.contrastReductionEdit = new JSlider(JSlider.HORIZONTAL, 0, 1000, (int) Math.sqrt(defContrastReductionValue * 10000000.0f)),
+					this.contrastReductionReset = new JButton("Reset"));
+			this.contrastReductionEdit.addChangeListener(rerenderAndCall(() -> this.profile.setContrastReduction((this.contrastReductionEdit.getValue() * this.contrastReductionEdit.getValue()) / 10000000.0f)));
+			this.contrastReductionReset.addActionListener((e) -> { this.profile.setContrastReduction(defContrastReductionValue); this.contrastReductionEdit.setValue((int) Math.sqrt(defContrastReductionValue * 10000000.0f)); rerender(); });
 
 			appendTabRow(this.optionsAdvancedPanel, gbc, "Allow faces", this.allowFacesEdit = new JCheckBox());
 			this.showInputImageEdit.setSelected(false);

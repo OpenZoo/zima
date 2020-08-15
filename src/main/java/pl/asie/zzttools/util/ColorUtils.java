@@ -23,6 +23,26 @@ public final class ColorUtils {
 
 	}
 
+	// TODO: fix me - non-linear?
+	public static float lumaDistance(int a, int b) {
+		if (a == b) {
+			return 0.0f;
+		}
+
+		int ar = (a >> 16) & 0xFF;
+		int ag = (a >> 8) & 0xFF;
+		int ab = a & 0xFF;
+		int br = (b >> 16) & 0xFF;
+		int bg = (b >> 8) & 0xFF;
+		int bb = b & 0xFF;
+
+		float ay = 0.299f * ar + 0.587f * ag + 0.114f * ab;
+		float by = 0.299f * br + 0.587f * bg + 0.114f * bb;
+		float yd = (ay - by) / 255.0f;
+
+		return yd * yd;
+	}
+
 	// https://www.compuphase.com/cmetric.htm
 	public static float distance(int a, int b) {
 		if (a == b) {
@@ -58,15 +78,56 @@ public final class ColorUtils {
 		int dg = (d >> 8) & 0xFF;
 		int db = d & 0xFF;
 
-		int xr = (ar + br + cr + dr) >> 2;
+		float xr = (sRtoR(ar) + sRtoR(br) + sRtoR(cr) + sRtoR(dr)) / 4.0f;
+		float xg = (sRtoR(ag) + sRtoR(bg) + sRtoR(cg) + sRtoR(dg)) / 4.0f;
+		float xb = (sRtoR(ab) + sRtoR(bb) + sRtoR(cb) + sRtoR(db)) / 4.0f;
+
+		return (RtosR(xr) << 16) | (RtosR(xg) << 8) | (RtosR(xb));
+		
+		/* int xr = (ar + br + cr + dr) >> 2;
 		int xg = (ag + bg + cg + dg) >> 2;
 		int xb = (ab + bb + cb + db) >> 2;
 
-		return ((xr & 0xFF) << 16) | ((xg & 0xFF) << 8) | (xb & 0xFF);
+		return ((xr & 0xFF) << 16) | ((xg & 0xFF) << 8) | (xb & 0xFF); */
+	}
+
+	public static float sRtoR(int v) {
+		float r;
+		if (v < 0.04045f) {
+			r = (v / 255.0f) / 12.92f;
+		} else {
+			r = (float) Math.pow(((v / 255.0f) + 0.055f) / 1.055f, 2.4f);
+		}
+		return r;
+	}
+
+	public static int RtosR(float v) {
+		float r;
+		if (v < 0.0031308f) {
+			r =  12.92f * v;
+		} else {
+			r = (float) (1.055f * Math.pow(v, 1/2.4f)) - 0.055f;
+		}
+		if (r < 0.0f) return 0;
+		if (r > 1.0f) return 255;
+		return (int) (r * 255.0f) & 0xFF;
 	}
 
 	public static int mix(int a, int b, float amount) {
-		int ar = (a >> 16) & 0xFF;
+		float ar = sRtoR((a >> 16) & 0xFF);
+		float ag = sRtoR((a >> 8) & 0xFF);
+		float ab = sRtoR(a & 0xFF);
+		float br = sRtoR((b >> 16) & 0xFF);
+		float bg = sRtoR((b >> 8) & 0xFF);
+		float bb = sRtoR(b & 0xFF);
+
+		float cr = ((ar * (1 - amount)) + (br * amount));
+		float cg = ((ag * (1 - amount)) + (bg * amount));
+		float cb = ((ab * (1 - amount)) + (bb * amount));
+
+		return (RtosR(cr) << 16) | (RtosR(cg) << 8) | (RtosR(cb));
+
+		/* int ar = (a >> 16) & 0xFF;
 		int ag = (a >> 8) & 0xFF;
 		int ab = a & 0xFF;
 		int br = (b >> 16) & 0xFF;
@@ -77,7 +138,7 @@ public final class ColorUtils {
 		int cg = (int) ((ag * (1 - amount)) + (bg * amount));
 		int cb = (int) ((ab * (1 - amount)) + (bb * amount));
 
-		return ((cr & 0xFF) << 16) | ((cg & 0xFF) << 8) | (cb & 0xFF);
+		return ((cr & 0xFF) << 16) | ((cg & 0xFF) << 8) | (cb & 0xFF); */
 	}
 
 	public static void main(String[] args) {

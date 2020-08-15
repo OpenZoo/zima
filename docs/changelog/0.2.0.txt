@@ -1,0 +1,16 @@
+Improvements:
+
+* Added clipboard support ("Edit -> Copy" copies the preview image, "Edit -> Paste" pastes an input image).
+* Added image cropping options to "Image".
+* Added the "Charset" tab.
+    * Added "Charset -> ...", allowing fine-tuning which characters get used.
+    * Added "Charset -> Load custom", allowing loading custom character sets.
+    * Replaces the "Advanced -> Allow faces" option.
+* Added the "Advanced -> Tile contrast reduction" option.
+    * Setting it higher makes the converter more likely to avoid tiles with mismatched contrast relative to the source image.
+* Algorithm improvements.
+* Minor performance tweaks.
+
+Bugfixes:
+
+* Fixed certain types of (non-RGB) images failing to load.

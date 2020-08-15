@@ -16,6 +16,7 @@ dependencies {
 
 license {
     header = file('docs/licenses/COPYING')
+    exclude "**/*.txt"
 }
 
 java {

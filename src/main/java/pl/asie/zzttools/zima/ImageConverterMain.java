@@ -29,10 +29,10 @@ public class ImageConverterMain {
 	public static final String VERSION = "0.1.0";
 
 	public static void main(String[] args) throws Exception {
-		TextVisualData visual = new TextVisualData(8, 14,
+		ZimaFrontendSwing frontend = new ZimaFrontendSwing(
 				FileUtils.readAll(Objects.requireNonNull(ImageConverterMain.class.getClassLoader().getResourceAsStream("8x14.bin"))),
-				Constants.EGA_PALETTE);
-
-		ZimaFrontendSwing frontend = new ZimaFrontendSwing(visual, VERSION);
+				Constants.EGA_PALETTE,
+				VERSION
+		);
 	}
 }

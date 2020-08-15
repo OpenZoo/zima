@@ -19,6 +19,7 @@
 package pl.asie.zzttools.zima.gui;
 
 import lombok.Getter;
+import pl.asie.zzttools.util.FileUtils;
 import pl.asie.zzttools.util.Pair;
 import pl.asie.zzttools.zima.ImageConverterRules;
 import pl.asie.zzttools.zima.ImageConverterRuleset;
@@ -34,14 +35,16 @@ import javax.swing.*;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -52,15 +55,21 @@ public class ZimaFrontendSwing {
 	private final JFrame window;
 	private final JPanel mainPanel;
 	private final JMenuBar menuBar;
-	private final JMenu fileMenu, helpMenu;
-	private final JMenuItem openItem, saveBrdItem, savePngItem, aboutItem;
+	private final JMenu fileMenu, editMenu, helpMenu;
+	private final JMenuItem openItem, saveBrdItem, savePngItem;
+	private final JMenuItem copyItem ,pasteItem;
+	private final JMenuItem aboutItem;
 	private final JTabbedPane optionsPane;
 	private final JPanel optionsBoardPanel;
 	private final JPanel optionsImagePanel;
+	private final JPanel optionsCharsetPanel;
+	private final JPanel optionsPalettePanel;
 	private final JPanel optionsAdvancedPanel;
 	private final SimpleCanvas previewCanvas;
 	@Getter
 	private JProgressBar renderProgress;
+	@Getter
+	private CharacterSelector characterSelector;
 
 	// "Board" tab
 	private JSpinner boardXEdit;
@@ -88,6 +97,10 @@ public class ZimaFrontendSwing {
 	private JButton contrastReset;
 	private JSlider saturationEdit;
 	private JButton saturationReset;
+	private JSpinner cropLeftEdit;
+	private JSpinner cropRightEdit;
+	private JSpinner cropTopEdit;
+	private JSpinner cropBottomEdit;
 
 	// "Advanced" tab
 	private JCheckBox fastPreviewEdit;
@@ -98,6 +111,13 @@ public class ZimaFrontendSwing {
 			new Pair<>("Simple", p -> new NaiveImageMseCalculator(p.getVisual()))
 	);
 
+	// TextVisualData blerbs
+	private final byte[] defaultCharset;
+	private final int[] defaultPalette;
+	private byte[] charset;
+	private int[] palette;
+	private TextVisualData visual;
+
 	private final String zimaVersion;
 
 	@Getter
@@ -106,10 +126,12 @@ public class ZimaFrontendSwing {
 	private final ZimaConversionProfile profile;
 	private final ZimaAsynchronousRenderer asyncRenderer;
 
-	public ZimaFrontendSwing(TextVisualData visual, String zimaVersion) {
+	public ZimaFrontendSwing(byte[] defaultCharset, int[] defaultPalette, String zimaVersion) {
 		this.zimaVersion = zimaVersion;
+		this.defaultCharset = defaultCharset;
+		this.defaultPalette = defaultPalette;
+
 		this.profile = new ZimaConversionProfile();
-		this.profile.setVisual(visual);
 		this.profile.setRuleset(ImageConverterRules.RULES_SAFE);
 		this.asyncRenderer = new ZimaAsynchronousRenderer(this);
 
@@ -126,6 +148,10 @@ public class ZimaFrontendSwing {
 		this.optionsPane.addTab("Board", new JScrollPane(this.optionsBoardPanel));
 		this.optionsImagePanel = new JPanel(new GridBagLayout());
 		this.optionsPane.addTab("Image", new JScrollPane(this.optionsImagePanel));
+		this.optionsCharsetPanel = new JPanel(new GridBagLayout());
+		this.optionsPane.addTab("Charset", new JScrollPane(this.optionsCharsetPanel));
+		this.optionsPalettePanel = new JPanel(new GridBagLayout());
+		this.optionsPane.addTab("Palette", new JScrollPane(this.optionsPalettePanel));
 		this.optionsAdvancedPanel = new JPanel(new GridBagLayout());
 		this.optionsPane.addTab("Advanced", new JScrollPane(this.optionsAdvancedPanel));
 
@@ -136,6 +162,10 @@ public class ZimaFrontendSwing {
 		this.fileMenu.add(this.openItem = new JMenuItem("Open"));
 		this.fileMenu.add(this.saveBrdItem = new JMenuItem("Save (.brd)"));
 		this.fileMenu.add(this.savePngItem = new JMenuItem("Save (.png)"));
+
+		this.menuBar.add(this.editMenu = new JMenu("Edit"));
+		this.editMenu.add(this.copyItem = new JMenuItem("Copy preview"));
+		this.editMenu.add(this.pasteItem = new JMenuItem("Paste"));
 
 		this.menuBar.add(this.helpMenu = new JMenu("Help"));
 		this.helpMenu.add(this.aboutItem = new JMenuItem("About"));
@@ -201,6 +231,59 @@ public class ZimaFrontendSwing {
 					this.saturationReset = new JButton("Reset"));
 			this.saturationEdit.addChangeListener(rerenderAndCall(() -> this.profile.setSaturation(this.saturationEdit.getValue() / 240.0f)));
 			this.saturationReset.addActionListener((e) -> { this.profile.setSaturation(0.0f); this.saturationEdit.setValue(0); rerender(); });
+
+			appendTabRow(this.optionsImagePanel, gbc, "Crop left", this.cropLeftEdit = new JSpinner(new SpinnerNumberModel(0, 0, null, 1)));
+			rerenderAndSet(this.cropLeftEdit, this.profile::setCropLeft);
+
+			appendTabRow(this.optionsImagePanel, gbc, "Crop right", this.cropRightEdit = new JSpinner(new SpinnerNumberModel(0, 0, null, 1)));
+			rerenderAndSet(this.cropRightEdit, this.profile::setCropRight);
+
+			appendTabRow(this.optionsImagePanel, gbc, "Crop top", this.cropTopEdit = new JSpinner(new SpinnerNumberModel(0, 0, null, 1)));
+			rerenderAndSet(this.cropTopEdit, this.profile::setCropTop);
+
+			appendTabRow(this.optionsImagePanel, gbc, "Crop bottom", this.cropBottomEdit = new JSpinner(new SpinnerNumberModel(0, 0, null, 1)));
+			rerenderAndSet(this.cropBottomEdit, this.profile::setCropBottom);
+		}
+
+		{
+			GridBagConstraints gbc = new GridBagConstraints();
+			gbc.gridx = 0;
+			gbc.gridy = 0;
+
+			characterSelector = new CharacterSelector(this::rerender);
+
+			// block faces by default
+			characterSelector.setCharAllowed(1, false);
+			characterSelector.setCharAllowed(2, false);
+
+			gbc.insets = new Insets(2, 4, 2, 4);
+			gbc.gridwidth = GridBagConstraints.REMAINDER;
+			gbc.fill = GridBagConstraints.BOTH;
+			optionsCharsetPanel.add(characterSelector, gbc);
+
+			// create toggle buttons
+			gbc.gridy = 1;
+			gbc.gridwidth = 1;
+			gbc.gridx = GridBagConstraints.RELATIVE;
+
+			appendCharSelToggle(optionsCharsetPanel, "All", gbc, 0, 255);
+			appendCharSelToggle(optionsCharsetPanel, "Faces", gbc, 1, 2);
+			gbc.gridy = 2;
+			appendCharSelToggle(optionsCharsetPanel, "Blocks", gbc, 176, 178, 219, 219);
+			appendCharSelToggle(optionsCharsetPanel, "Half-Blocks", gbc, 219, 223);
+			gbc.gridy = 3;
+			appendCharSelToggle(optionsCharsetPanel, "Lines", gbc, 179, 218);
+			gbc.gridy = 4;
+			appendCharSelButton(optionsCharsetPanel, "Load default", gbc, this::onLoadDefaultCharset);
+			appendCharSelButton(optionsCharsetPanel, "Load custom", gbc, this::onLoadCustomCharset);
+		}
+
+		{
+			GridBagConstraints gbc = new GridBagConstraints();
+			gbc.gridx = 0;
+			gbc.gridy = 0;
+
+			optionsPalettePanel.add(new JLabel("TODO"), gbc);
 		}
 
 		{
@@ -224,20 +307,22 @@ public class ZimaFrontendSwing {
 					this.contrastReductionReset = new JButton("Reset"));
 			this.contrastReductionEdit.addChangeListener(rerenderAndCall(() -> this.profile.setContrastReduction((this.contrastReductionEdit.getValue() * this.contrastReductionEdit.getValue()) / 10000000.0f)));
 			this.contrastReductionReset.addActionListener((e) -> { this.profile.setContrastReduction(defContrastReductionValue); this.contrastReductionEdit.setValue((int) Math.sqrt(defContrastReductionValue * 10000000.0f)); rerender(); });
-
-			appendTabRow(this.optionsAdvancedPanel, gbc, "Allow faces", this.allowFacesEdit = new JCheckBox());
-			this.showInputImageEdit.setSelected(false);
-			rerenderAndSet(this.allowFacesEdit, this.profile::setAllowFaces);
 		}
+
+		updateVisual();
 
 		this.openItem.addActionListener(this::onOpen);
 		this.saveBrdItem.addActionListener((e) -> this.onSave(e, false));
 		this.savePngItem.addActionListener((e) -> this.onSave(e, true));
+		this.copyItem.addActionListener(this::onCopy);
+		this.pasteItem.addActionListener(this::onPaste);
 		this.aboutItem.addActionListener(this::onAbout);
 
 		this.openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK));
 		this.saveBrdItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK));
 		this.savePngItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
+		this.copyItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK));
+		this.pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK));
 
 		this.previewCanvas.setPreferredSize(new Dimension(480, 350));
 		this.previewCanvas.setMinimumSize(this.previewCanvas.getPreferredSize());
@@ -252,6 +337,19 @@ public class ZimaFrontendSwing {
 		this.window.setMaximumSize(this.window.getSize());
 		this.window.setResizable(false);
 		this.window.setVisible(true);
+	}
+
+	public void updateVisual() {
+		if (this.charset == null) {
+			this.charset = this.defaultCharset;
+		}
+		if (this.palette == null) {
+			this.palette = this.defaultPalette;
+		}
+		this.visual = new TextVisualData(8, charset.length / 256, charset, palette);
+		this.profile.setVisual(this.visual);
+		this.characterSelector.setVisual(this.visual);
+		rerender();
 	}
 
 	public boolean isShowInputImage() {
@@ -279,7 +377,69 @@ public class ZimaFrontendSwing {
 		}
 	}
 
+	public void setInputImage(Image image) {
+		if (!(image instanceof BufferedImage) || ((BufferedImage) image).getType() != BufferedImage.TYPE_INT_RGB) {
+			BufferedImage inputImageFixed = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
+			Graphics2D gfx = (Graphics2D) inputImageFixed.getGraphics();
+			gfx.setColor(Color.BLACK);
+			gfx.fillRect(0, 0, image.getWidth(null), image.getHeight(null));
+			gfx.drawImage(image, 0, 0, null);
+			gfx.dispose();
+			inputImage = inputImageFixed;
+		} else {
+			inputImage = (BufferedImage) image;
+		}
+		rerender();
+	}
+
 	// Menu options
+
+	public void onLoadDefaultCharset(ActionEvent event) {
+		this.charset = null;
+		updateVisual();
+	}
+
+	public void onLoadCustomCharset(ActionEvent event) {
+		JFileChooser fc = new JFileChooser();
+		fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
+		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		fc.setFileFilter(new FileNameExtensionFilter("Character set file", "chr", "bin"));
+		int returnVal = fc.showOpenDialog(this.window);
+
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			try (FileInputStream fis = new FileInputStream(fc.getSelectedFile())) {
+				this.charset = FileUtils.readAll(fis);
+				updateVisual();
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			}
+		}
+	}
+
+	public void onCopy(ActionEvent event) {
+		Image outputImage = asyncRenderer.getOutputImage();
+		if (outputImage != null) {
+			try {
+				TransferableImage transferableImage = new TransferableImage(outputImage);
+				window.getToolkit().getSystemClipboard().setContents(transferableImage, (clipboard, contents) -> {
+					// pass
+				});
+			} catch (Exception e) {
+				// pass
+			}
+		}
+	}
+
+	public void onPaste(ActionEvent event) {
+		try {
+			Transferable clipboardContents = window.getToolkit().getSystemClipboard().getContents(null);
+			if (clipboardContents != null && clipboardContents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+				setInputImage((Image) clipboardContents.getTransferData(DataFlavor.imageFlavor));
+			}
+		} catch (Exception e) {
+			// pass
+		}
+	}
 
 	public void onAbout(ActionEvent event) {
 		JOptionPane.showMessageDialog(this.window, "zima " + zimaVersion + " - Copyright (c) 2020 asie", "About", JOptionPane.INFORMATION_MESSAGE);
@@ -293,17 +453,7 @@ public class ZimaFrontendSwing {
 
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			try {
-				inputImage = ImageIO.read(fc.getSelectedFile());
-				if (inputImage.getType() != BufferedImage.TYPE_INT_RGB) {
-					BufferedImage inputImageFixed = new BufferedImage(inputImage.getWidth(), inputImage.getHeight(), BufferedImage.TYPE_INT_RGB);
-					Graphics2D gfx = (Graphics2D) inputImageFixed.getGraphics();
-					gfx.setColor(Color.BLACK);
-					gfx.fillRect(0, 0, inputImage.getWidth(), inputImage.getHeight());
-					gfx.drawImage(inputImage, 0, 0, null);
-					gfx.dispose();
-					inputImage = inputImageFixed;
-				}
-				rerender();
+				setInputImage(ImageIO.read(fc.getSelectedFile()));
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 			}
@@ -366,7 +516,17 @@ public class ZimaFrontendSwing {
 		box.addActionListener(rerenderAndCallA(() -> valueConsumer.accept(box.isSelected())));
 	}
 
-	// Swing layyout utils
+	// Swing layout utils
+
+	private void appendCharSelToggle(JPanel panel, String name, GridBagConstraints gbc, int... ranges) {
+		appendCharSelButton(panel, name, gbc, (e) -> this.characterSelector.toggleCharAllowed(ranges));
+	}
+
+	private void appendCharSelButton(JPanel panel, String name, GridBagConstraints gbc, ActionListener al) {
+		JButton toggle = new JButton(name);
+		toggle.addActionListener(al);
+		panel.add(toggle, gbc);
+	}
 
 	private void appendTabRow(JPanel panel, GridBagConstraints gbc, String label, Component... c) {
 		gbc.gridx = 0;

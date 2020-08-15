@@ -33,17 +33,16 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class ImageConverter {
 	private final TextVisualData visual;
 	private final ImageMseCalculator mseCalculator;
-	private final boolean allowFaces;
 
-	public ImageConverter(TextVisualData visual, ImageMseCalculator mseCalculator, boolean allowFaces) {
+	public ImageConverter(TextVisualData visual, ImageMseCalculator mseCalculator) {
 		this.visual = visual;
-		this.allowFaces = allowFaces;
 		this.mseCalculator = mseCalculator;
 	}
 
@@ -56,7 +55,7 @@ public class ImageConverter {
 
 	public Pair<Board, BufferedImage> convert(BufferedImage inputImage, ImageConverterRuleset ruleset,
 	                                          int x, int y, int width, int height, int playerX, int playerY, int maxStatCount, boolean noBlinking,
-	                                          float contrastReduction,
+	                                          IntPredicate charCheck, IntPredicate colorCheck,
 	                                          TextVisualRenderer previewRenderer,
 	                                          ProgressCallback progressCallback) {
 		Board board = new Board(playerX, playerY);
@@ -109,10 +108,15 @@ public class ImageConverter {
 						proposals = Stream.of(new ElementResult(Element.EMPTY, false, false, 32, 0));
 						break;
 					case ELEMENT:
-						if (!allowFaces && rule.getChr() == 2) continue;
+						if (charCheck != null && !charCheck.test(rule.getChr())) {
+							continue;
+						}
 						proposals = IntStream.range(0, noBlinking ? 128 : 256).mapToObj(i -> new ElementResult(rule.getElement(), false, false, rule.getChr(), i));
 						break;
 					case TEXT:
+						if (colorCheck != null && !colorCheck.test(rule.getColor())) {
+							continue;
+						}
 						proposals = IntStream.of(ruleset.getAllowedTextCharIndices()).mapToObj(i -> new ElementResult(rule.getElement(), false, true, i, rule.getColor()));
 						break;
 					case USE_STAT_P1:
@@ -128,8 +132,11 @@ public class ImageConverter {
 				while (it.hasNext()) {
 					ElementResult result = it.next();
 
-					if (!allowFaces && (result.getCharacter() == 1 || result.getCharacter() == 2)) {
-						// block faces for now...
+					if (charCheck != null && !charCheck.test(result.getCharacter())) {
+						continue;
+					}
+
+					if (colorCheck != null && !colorCheck.test(result.getColor())) {
 						continue;
 					}
 

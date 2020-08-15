@@ -32,9 +32,11 @@ import pl.asie.zzttools.zzt.Board;
 import pl.asie.zzttools.zzt.TextVisualData;
 import pl.asie.zzttools.zzt.TextVisualRenderer;
 
+import java.awt.*;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.util.function.Function;
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 @Getter
@@ -52,11 +54,14 @@ public class ZimaConversionProfile implements Cloneable {
 	private boolean colorsBlink = true;
 	private float contrastReduction = 0.0035f;
 
-	private boolean allowFaces = false;
-
 	private float brightness = 0.0f;
 	private float contrast = 0.0f;
 	private float saturation = 0.0f;
+
+	private int cropLeft = 0;
+	private int cropRight = 0;
+	private int cropTop = 0;
+	private int cropBottom = 0;
 
 	// generated
 	private BufferedImage scaledImage;
@@ -101,11 +106,6 @@ public class ZimaConversionProfile implements Cloneable {
 		this.mseCalculator = null;
 	}
 
-	public void setAllowFaces(boolean allowFaces) {
-		this.allowFaces = allowFaces;
-		this.converter = null;
-	}
-
 	public void setBrightness(float brightness) {
 		this.brightness = brightness;
 		this.filteredImage = null;
@@ -119,6 +119,26 @@ public class ZimaConversionProfile implements Cloneable {
 	public void setSaturation(float saturation) {
 		this.saturation = saturation;
 		this.filteredImage = null;
+	}
+
+	public void setCropLeft(int cropLeft) {
+		this.cropLeft = cropLeft;
+		this.scaledImage = null;
+	}
+
+	public void setCropRight(int cropRight) {
+		this.cropRight = cropRight;
+		this.scaledImage = null;
+	}
+
+	public void setCropTop(int cropTop) {
+		this.cropTop = cropTop;
+		this.scaledImage = null;
+	}
+
+	public void setCropBottom(int cropBottom) {
+		this.cropBottom = cropBottom;
+		this.scaledImage = null;
 	}
 
 	// setters - generated
@@ -188,13 +208,22 @@ public class ZimaConversionProfile implements Cloneable {
 		}
 
 		if (this.scaledImage == null) {
+			BufferedImage img = this.inputImage;
+			if (this.cropTop != 0 || this.cropLeft != 0 || this.cropRight != 0 || this.cropBottom != 0) {
+				int croppedWidth = Math.max(1, img.getWidth() - this.cropLeft - this.cropRight);
+				int croppedHeight = Math.max(1, img.getHeight() - this.cropTop - this.cropBottom);
+
+				BufferedImage croppedImage = new BufferedImage(croppedWidth, croppedHeight, BufferedImage.TYPE_INT_RGB);
+				Graphics2D gfx = (Graphics2D) croppedImage.getGraphics();
+				gfx.drawImage(img, -this.cropLeft, -this.cropTop, null);
+				gfx.dispose();
+				img = croppedImage;
+			}
+
 			int width = visual.getCharWidth() * charsWidth;
 			int height = visual.getCharHeight() * charsHeight;
-			if (this.inputImage.getWidth() == width && this.inputImage.getHeight() == height) {
-				this.scaledImage = this.inputImage;
-			} else {
-				this.scaledImage = ImageUtils.scale(this.inputImage, width, height, AffineTransformOp.TYPE_BICUBIC);
-			}
+
+			this.scaledImage = ImageUtils.scale(img, width, height, AffineTransformOp.TYPE_BICUBIC);
 			this.filteredImage = null;
 		}
 
@@ -203,7 +232,8 @@ public class ZimaConversionProfile implements Cloneable {
 		}
 	}
 
-	public Pair<Board, BufferedImage> convert(BufferedImage input, ProgressCallback progressCallback, boolean fast) {
+	public Pair<Board, BufferedImage> convert(BufferedImage input, ProgressCallback progressCallback, boolean fast,
+											  IntPredicate charCheck, IntPredicate colorCheck) {
 		updateImage(input);
 
 		if (this.renderer == null) {
@@ -213,11 +243,11 @@ public class ZimaConversionProfile implements Cloneable {
 			setMseCalculator(this.mseCalculatorFunction.apply(this));
 		}
 		if (this.converter == null) {
-			setConverter(new ImageConverter(visual, mseCalculator, allowFaces));
+			setConverter(new ImageConverter(visual, mseCalculator));
 		}
 		return converter.convert(this.filteredImage, fast ? ImageConverterRules.RULES_BLOCKS : this.ruleset,
 				boardX, boardY, charsWidth, charsHeight, playerX, playerY, maxStatCount, colorsBlink,
-				contrastReduction,
+				charCheck, colorCheck,
 				this.renderer, progressCallback);
 	}
 }

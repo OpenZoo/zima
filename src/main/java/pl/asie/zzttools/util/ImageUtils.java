@@ -28,9 +28,13 @@ public final class ImageUtils {
     }
 
     public static BufferedImage scale(BufferedImage inputImage, int width, int height, int mode) {
+        if (inputImage.getWidth() == width && inputImage.getHeight() == height) {
+            return inputImage;
+        }
         BufferedImage scaledImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         AffineTransform transform = AffineTransform.getScaleInstance((float) width / inputImage.getWidth(), (float) height / inputImage.getHeight());
         AffineTransformOp transformOp = new AffineTransformOp(transform, mode);
         return transformOp.filter(inputImage, scaledImage);
     }
+
 }

@@ -61,7 +61,7 @@ public class ZimaAsynchronousRenderer {
 			Pair<Board, BufferedImage> output = this.parent.getProfile().convert(this.parent.getInputImage(), !fast ? ((max) -> {
 				this.parent.getRenderProgress().setMaximum(max);
 				this.parent.getRenderProgress().setValue(this.parent.getRenderProgress().getValue() + 1);
-			}) : ((max) -> {}), fast);
+			}) : ((max) -> {}), fast, this.parent.getCharacterSelector()::isCharAllowed, null);
 
 			synchronized (outputWriteLock) {
 				if (fast) {

@@ -21,12 +21,11 @@ package pl.asie.zzttools.zima;
 import pl.asie.zzttools.Constants;
 import pl.asie.zzttools.util.FileUtils;
 import pl.asie.zzttools.zima.gui.ZimaFrontendSwing;
-import pl.asie.zzttools.zzt.TextVisualData;
 
 import java.util.Objects;
 
 public class ImageConverterMain {
-	public static final String VERSION = "0.1.0";
+	public static final String VERSION = "0.2.0";
 
 	public static void main(String[] args) throws Exception {
 		ZimaFrontendSwing frontend = new ZimaFrontendSwing(

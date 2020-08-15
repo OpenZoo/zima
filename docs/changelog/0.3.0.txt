@@ -5,6 +5,13 @@ Improvements:
 * Algorithm improvements.
     * To get a result closer to 0.2.0 defaults, move "Board -> Accurate/Approximate" all the way towards "Approximate".
 * Major performance improvements.
+* Revamped rulesets to reduce confusion:
+    * "Walkable" contains only forest and fake tiles (new!),
+    * "Blocks" contains solids, normals, breakables, and water (unchanged),
+    * "Default" contains all tiles which can be used on a ZZT executable. (previously "Default+Statless")
+    * "Default (Clone-safe)" contains all tiles which can be used on a ZZT executable, but does not rely on
+      out-of-bounds memory accesses to get there. This may work better with older ZZT clones. (previously "Default")
+    * "Default (Elements only)" contains all clone-safe tiles which do not normally have a stat in ZZT. (new!)
 
 Removals:
 

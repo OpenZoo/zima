@@ -86,9 +86,11 @@ public class ZimaFrontendSwing {
 	private JCheckBox blinkCharsEdit;
 	private JComboBox<String> rulesetEdit;
 	private final List<Pair<String, ImageConverterRuleset>> rulesetOptions = List.of(
-			new Pair<>("Default", ImageConverterRules.RULES_SAFE),
+			new Pair<>("Default", ImageConverterRules.RULES_UNSAFE_STATLESS),
+			new Pair<>("Default (Clone-safe)", ImageConverterRules.RULES_SAFE_STATLESS),
+			new Pair<>("Default (Elements only)", ImageConverterRules.RULES_SAFE),
 			new Pair<>("Blocks", ImageConverterRules.RULES_BLOCKS),
-			new Pair<>("Default+Statless", ImageConverterRules.RULES_UNSAFE_STATLESS)
+			new Pair<>("Walkable", ImageConverterRules.RULES_WALKABLE)
 	);
 	private JSlider contrastReductionEdit;
 	private JButton contrastReductionReset;
@@ -116,7 +118,6 @@ public class ZimaFrontendSwing {
 			new Pair<>("Trix", p -> new TrixImageMseCalculator(p.getVisual(), p.getContrastReduction(), p.getAccurateApproximate()))
 	);
 
-	// TextVisualData blerbs
 	private final byte[] defaultCharset;
 	private final int[] defaultPalette;
 	private byte[] charset;
@@ -137,7 +138,6 @@ public class ZimaFrontendSwing {
 		this.defaultPalette = defaultPalette;
 
 		this.profile = new ZimaConversionProfile();
-		this.profile.setRuleset(ImageConverterRules.RULES_SAFE);
 		this.asyncRenderer = new ZimaAsynchronousRenderer(this);
 
 		this.window = new JFrame("zima");
@@ -209,6 +209,7 @@ public class ZimaFrontendSwing {
 
 			appendTabRow(this.optionsBoardPanel, gbc, "Elements", this.rulesetEdit = new JComboBox<>(this.rulesetOptions.stream().map(Pair::getFirst).toArray(String[]::new)));
 			this.rulesetEdit.setSelectedIndex(0);
+			this.profile.setRuleset(this.rulesetOptions.get(this.rulesetEdit.getSelectedIndex()).getSecond());
 			this.rulesetEdit.addActionListener(rerenderAndCallA(() -> this.profile.setRuleset(this.rulesetOptions.get(this.rulesetEdit.getSelectedIndex()).getSecond())));
 
 			float defAccurateApproximateValue = this.profile.getAccurateApproximate();

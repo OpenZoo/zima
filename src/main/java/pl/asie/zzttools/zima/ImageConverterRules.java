@@ -25,7 +25,9 @@ import java.util.List;
 
 public class ImageConverterRules {
 	public static final ImageConverterRuleset RULES_BLOCKS;
+	public static final ImageConverterRuleset RULES_WALKABLE;
 	public static final ImageConverterRuleset RULES_SAFE;
+	public static final ImageConverterRuleset RULES_SAFE_STATLESS;
 	public static final ImageConverterRuleset RULES_UNSAFE_STATLESS;
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
@@ -46,26 +48,29 @@ public class ImageConverterRules {
 		blockyRules.add(ElementRule.element(Element.NORMAL, 178));
 		blockyRules.add(ElementRule.element(Element.BREAKABLE, 177));
 		blockyRules.add(ElementRule.element(Element.WATER, 176));
+		// blockyRules.add(ElementRule.element(Element.FOREST, 176)); (water)
 		// blockyRules.add(ElementRule.element(Element.FAKE, 178)); (normal)
 
 		// DrawProc-safe
 		List<ElementRule> rules = new ArrayList<>();
-		rules.add(ElementRule.element(Element.LION, 234));
-		rules.add(ElementRule.element(Element.TIGER, 227));
-		rules.add(ElementRule.element(Element.CENTIPEDE_HEAD, 233));
-		rules.add(ElementRule.element(Element.CENTIPEDE_SEGMENT, 'O'));
+		List<ElementRule> statlessRules = new ArrayList<>();
+
+		statlessRules.add(ElementRule.element(Element.LION, 234));
+		statlessRules.add(ElementRule.element(Element.TIGER, 227));
+		statlessRules.add(ElementRule.element(Element.CENTIPEDE_HEAD, 233));
+		statlessRules.add(ElementRule.element(Element.CENTIPEDE_SEGMENT, 'O'));
 		rules.add(ElementRule.element(Element.BULLET, 248));
 		rules.add(ElementRule.element(Element.KEY, 12));
 		rules.add(ElementRule.element(Element.AMMO, 132));
 		rules.add(ElementRule.element(Element.GEM, 4));
-		rules.add(ElementRule.element(Element.PASSAGE, 240));
+		statlessRules.add(ElementRule.element(Element.PASSAGE, 240));
 		rules.add(ElementRule.element(Element.DOOR, 10));
-		rules.add(ElementRule.element(Element.SCROLL, 232));
+		statlessRules.add(ElementRule.element(Element.SCROLL, 232));
 		rules.add(ElementRule.element(Element.TORCH, 157));
-		rules.add(ElementRule.element(Element.RUFFIAN, 5));
-		rules.add(ElementRule.element(Element.BEAR, 153));
-		// rules.add(ElementRule.element(Element.SLIME, '*')); (ricochet)
-		rules.add(ElementRule.element(Element.SHARK, '^'));
+		statlessRules.add(ElementRule.element(Element.RUFFIAN, 5));
+		statlessRules.add(ElementRule.element(Element.BEAR, 153));
+		// statlessRules.add(ElementRule.element(Element.SLIME, '*')); (ricochet)
+		statlessRules.add(ElementRule.element(Element.SHARK, '^'));
 		rules.add(ElementRule.element(Element.BLINK_RAY_NS, 186));
 		rules.add(ElementRule.element(Element.BLINK_RAY_EW, 205));
 		rules.add(ElementRule.element(Element.RICOCHET, '*'));
@@ -80,9 +85,9 @@ public class ImageConverterRules {
 		rules.add(ElementRule.text(Element.TEXT_PURPLE, 0x5F));
 		rules.add(ElementRule.text(Element.TEXT_YELLOW, 0x6F));
 		rules.add(ElementRule.text(Element.TEXT_WHITE, 0x0F));
-		rules.add(ElementRule.statP1(Element.OBJECT));
+		statlessRules.add(ElementRule.statP1(Element.OBJECT));
 		// uses DrawProc, but with a constant variable
-		rules.add(ElementRule.element(Element.BLINK_WALL, 206));
+		statlessRules.add(ElementRule.element(Element.BLINK_WALL, 206));
 
 		// statless; rely on how ZZT does things very specifically
 		List<ElementRule> unsafeStatlessRules = new ArrayList<>();
@@ -93,6 +98,13 @@ public class ImageConverterRules {
 
 		RULES_BLOCKS = ruleset(alwaysRules, blockyRules);
 		RULES_SAFE = ruleset(alwaysRules, blockyRules, rules);
-		RULES_UNSAFE_STATLESS = ruleset(alwaysRules, blockyRules, rules, unsafeStatlessRules);
+		RULES_SAFE_STATLESS = ruleset(alwaysRules, blockyRules, rules, statlessRules);
+		RULES_UNSAFE_STATLESS = ruleset(alwaysRules, blockyRules, rules, statlessRules, unsafeStatlessRules);
+
+		// extra rulesets
+		RULES_WALKABLE = ruleset(alwaysRules, List.of(
+				ElementRule.element(Element.FAKE, 178),
+				ElementRule.element(Element.FOREST, 176)
+		));
 	}
 }

@@ -619,7 +619,11 @@ public class ZimaFrontendSwing {
 	}
 
 	public void onAbout(ActionEvent event) {
-		JOptionPane.showMessageDialog(this.window, "zima " + zimaVersion + " - Copyright (c) 2020 asie", "About", JOptionPane.INFORMATION_MESSAGE);
+		try {
+			new ZimaLicenseWindow(window, this.zimaVersion);
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(this.window, "zima " + zimaVersion + " - Copyright (c) 2020 asie", "About", JOptionPane.INFORMATION_MESSAGE);
+		}
 	}
 
 	public void onOpen(ActionEvent event) {

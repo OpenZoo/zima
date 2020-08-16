@@ -6,14 +6,14 @@ plugins {
 }
 
 group 'pl.asie.zzttools.zima'
-version '0.2.0'
+version '0.3.0'
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    shadow 'com.google.code.gson:gson:2.8.6'
+    implementation 'com.google.code.gson:gson:2.8.6'
 }
 
 license {
@@ -42,6 +42,10 @@ jar {
 
 artifacts {
     shadowJar
+}
+
+shadowJar {
+    minimize()
 }
 
 build.dependsOn(shadowJar)

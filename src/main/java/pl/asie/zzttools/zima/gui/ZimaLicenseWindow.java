@@ -34,7 +34,8 @@ public class ZimaLicenseWindow {
             new Triplet<>("gson", "licenses/3rdparty/LICENSE-GSON", "licenses/3rdparty/LICENSE-GSON.long")
     );
 
-    private static String readAllText(String classFile) throws IOException {
+    // TODO: move elsewhere
+    static String readAllText(String classFile) throws IOException {
         try (InputStream stream = ZimaLicenseWindow.class.getClassLoader().getResourceAsStream(classFile)) {
             if (stream == null) {
                 throw new IOException();

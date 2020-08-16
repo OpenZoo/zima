@@ -204,6 +204,8 @@ public class ZimaConversionProfile implements Cloneable {
 
 	public void updateImage(BufferedImage input) {
 		if (input == null) {
+			this.filteredImage = null;
+			this.scaledImage = null;
 			return;
 		}
 

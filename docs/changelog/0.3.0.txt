@@ -1,12 +1,14 @@
 Improvements:
 
 * Added a new slider bar - "Board -> Accurate/Approximate".
-* Added a new menu tab, "Profile", allowing loading (-> "Load") and saving (-> "Save") certain image conversion
-  parameters.
-* Added a new tab, "Elements", allowing selecting which elements are taken into account for processing.
-* Added a status bar, showing the board size in bytes and the amount of stats used.
 * Algorithm improvements.
     * To get a result closer to 0.2.0 defaults, move "Board -> Accurate/Approximate" all the way towards "Approximate".
+* Added a new menu option "File -> Close".
+* Added a new menu tab, "Profile", allowing loading (-> "Load") and saving (-> "Save") certain image conversion
+  parameters.
+* Added a new menu option "Help -> Changelog".
+* Added a new tab, "Elements", allowing selecting which elements are taken into account for processing.
+* Added a status bar, showing the board size in bytes and the amount of stats used.
 * Major performance improvements.
 * Revamped rulesets to reduce confusion:
     * "Walkable" contains only forest and fake tiles (new!),

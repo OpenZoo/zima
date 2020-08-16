@@ -90,6 +90,15 @@ public class ZimaAsynchronousRenderer {
 
 				this.parent.getStatusLabel().setText(String.format("%d bytes, %d stats", boardSize, statCount));
 			}
+		} else {
+			if (fast) {
+				outputPreviewImage = null;
+			} else {
+				outputBoard = null;
+				outputImage = null;
+			}
+			this.parent.updateCanvas();
+			this.parent.getStatusLabel().setText("Ready.");
 		}
 	}
 

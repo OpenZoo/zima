@@ -21,7 +21,6 @@ package pl.asie.zzttools.zima.gui;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.Getter;
-import lombok.Setter;
 import pl.asie.zzttools.util.FileUtils;
 import pl.asie.zzttools.util.Pair;
 import pl.asie.zzttools.zima.*;
@@ -53,10 +52,10 @@ public class ZimaFrontendSwing {
 	private final JPanel mainPanel;
 	private final JMenuBar menuBar;
 	private final JMenu fileMenu, editMenu, profileMenu, helpMenu;
-	private final JMenuItem openItem, saveBrdItem, savePngItem;
+	private final JMenuItem openItem, saveBrdItem, savePngItem, closeItem;
 	private final JMenuItem copyItem ,pasteItem;
 	private final JMenuItem profileLoadItem, profileSaveItem;
-	private final JMenuItem aboutItem;
+	private final JMenuItem changelogItem, aboutItem;
 	private final JTabbedPane optionsPane;
 	private final JPanel optionsBoardPanel;
 	private final JPanel optionsImagePanel;
@@ -173,6 +172,7 @@ public class ZimaFrontendSwing {
 		this.fileMenu.add(this.openItem = new JMenuItem("Open"));
 		this.fileMenu.add(this.saveBrdItem = new JMenuItem("Save (.brd)"));
 		this.fileMenu.add(this.savePngItem = new JMenuItem("Save (.png)"));
+		this.fileMenu.add(this.closeItem = new JMenuItem("Close"));
 
 		this.menuBar.add(this.editMenu = new JMenu("Edit"));
 		this.editMenu.add(this.copyItem = new JMenuItem("Copy preview"));
@@ -183,6 +183,7 @@ public class ZimaFrontendSwing {
 		this.profileMenu.add(this.profileSaveItem = new JMenuItem("Save"));
 
 		this.menuBar.add(this.helpMenu = new JMenu("Help"));
+		this.helpMenu.add(this.changelogItem = new JMenuItem("Changelog"));
 		this.helpMenu.add(this.aboutItem = new JMenuItem("About"));
 
 		{
@@ -381,10 +382,12 @@ public class ZimaFrontendSwing {
 		this.openItem.addActionListener(this::onOpen);
 		this.saveBrdItem.addActionListener((e) -> this.onSave(e, false));
 		this.savePngItem.addActionListener((e) -> this.onSave(e, true));
+		this.closeItem.addActionListener(this::onClose);
 		this.copyItem.addActionListener(this::onCopy);
 		this.pasteItem.addActionListener(this::onPaste);
 		this.profileLoadItem.addActionListener(this::onLoadSettings);
 		this.profileSaveItem.addActionListener(this::onSaveSettings);
+		this.changelogItem.addActionListener(this::onChangelog);
 		this.aboutItem.addActionListener(this::onAbout);
 
 		this.openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK));
@@ -480,7 +483,9 @@ public class ZimaFrontendSwing {
 	}
 
 	public void setInputImage(Image image) {
-		if (!(image instanceof BufferedImage) || ((BufferedImage) image).getType() != BufferedImage.TYPE_INT_RGB) {
+		if (image == null) {
+			inputImage = null;
+		} else if (!(image instanceof BufferedImage) || ((BufferedImage) image).getType() != BufferedImage.TYPE_INT_RGB) {
 			BufferedImage inputImageFixed = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
 			Graphics2D gfx = (Graphics2D) inputImageFixed.getGraphics();
 			gfx.setColor(Color.BLACK);
@@ -618,6 +623,10 @@ public class ZimaFrontendSwing {
 		}
 	}
 
+	public void onChangelog(ActionEvent event) {
+		new ZimaChangelogWindow(window);
+	}
+
 	public void onAbout(ActionEvent event) {
 		try {
 			new ZimaLicenseWindow(window, this.zimaVersion);
@@ -639,6 +648,10 @@ public class ZimaFrontendSwing {
 				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 			}
 		}
+	}
+
+	public void onClose(ActionEvent event) {
+		setInputImage(null);
 	}
 
 	public void onSave(ActionEvent event, boolean png) {

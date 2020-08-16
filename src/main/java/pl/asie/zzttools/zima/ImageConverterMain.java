@@ -20,18 +20,19 @@ package pl.asie.zzttools.zima;
 
 import pl.asie.zzttools.Constants;
 import pl.asie.zzttools.util.FileUtils;
+import pl.asie.zzttools.zima.gui.ZimaChangelogWindow;
 import pl.asie.zzttools.zima.gui.ZimaFrontendSwing;
 
+import java.util.List;
 import java.util.Objects;
 
 public class ImageConverterMain {
-	public static final String VERSION = "0.3.0";
-
 	public static void main(String[] args) throws Exception {
+		List<String> versions = ZimaChangelogWindow.getVersions();
 		ZimaFrontendSwing frontend = new ZimaFrontendSwing(
 				FileUtils.readAll(Objects.requireNonNull(ImageConverterMain.class.getClassLoader().getResourceAsStream("8x14.bin"))),
 				Constants.EGA_PALETTE,
-				VERSION
+				versions.get(versions.size() - 1)
 		);
 	}
 }

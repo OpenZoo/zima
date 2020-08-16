@@ -21,14 +21,8 @@ package pl.asie.zzttools.zima.gui;
 import lombok.Getter;
 import pl.asie.zzttools.util.FileUtils;
 import pl.asie.zzttools.util.Pair;
-import pl.asie.zzttools.zima.ImageConverterRules;
-import pl.asie.zzttools.zima.ImageConverterRuleset;
-import pl.asie.zzttools.zima.ImageMseCalculator;
-import pl.asie.zzttools.zima.TrixImageMseCalculator;
-import pl.asie.zzttools.zzt.Board;
-import pl.asie.zzttools.zzt.PaletteLoaderUtils;
-import pl.asie.zzttools.zzt.TextVisualData;
-import pl.asie.zzttools.zzt.ZOutputStream;
+import pl.asie.zzttools.zima.*;
+import pl.asie.zzttools.zzt.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -45,8 +39,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
@@ -62,6 +56,7 @@ public class ZimaFrontendSwing {
 	private final JTabbedPane optionsPane;
 	private final JPanel optionsBoardPanel;
 	private final JPanel optionsImagePanel;
+	private final JPanel optionsElementsPanel;
 	private final JPanel optionsCharsetPanel;
 	private final JPanel optionsPalettePanel;
 	private final JPanel optionsAdvancedPanel;
@@ -90,8 +85,11 @@ public class ZimaFrontendSwing {
 			new Pair<>("Default (Clone-safe)", ImageConverterRules.RULES_SAFE_STATLESS),
 			new Pair<>("Default (Elements only)", ImageConverterRules.RULES_SAFE),
 			new Pair<>("Blocks", ImageConverterRules.RULES_BLOCKS),
-			new Pair<>("Walkable", ImageConverterRules.RULES_WALKABLE)
+			new Pair<>("Walkable", ImageConverterRules.RULES_WALKABLE),
+			new Pair<>("Custom", null)
 	);
+	private Map<ElementRule, JCheckBox> rulesetBoxEdit = new HashMap<>();
+	private ImageConverterRuleset customRuleset;
 	private JSlider contrastReductionEdit;
 	private JButton contrastReductionReset;
 	private JSlider accurateApproximateEdit;
@@ -155,6 +153,8 @@ public class ZimaFrontendSwing {
 		this.optionsPane.addTab("Board", new JScrollPane(this.optionsBoardPanel));
 		this.optionsImagePanel = new JPanel(new GridBagLayout());
 		this.optionsPane.addTab("Image", new JScrollPane(this.optionsImagePanel));
+		this.optionsElementsPanel = new JPanel(new GridBagLayout());
+		this.optionsPane.addTab("Elements", new JScrollPane(this.optionsElementsPanel));
 		this.optionsCharsetPanel = new JPanel(new GridBagLayout());
 		this.optionsPane.addTab("Charset", new JScrollPane(this.optionsCharsetPanel));
 		this.optionsPalettePanel = new JPanel(new GridBagLayout());
@@ -207,11 +207,6 @@ public class ZimaFrontendSwing {
 			this.blinkCharsEdit.setSelected(this.profile.isColorsBlink());
 			rerenderAndSet(this.blinkCharsEdit, this.profile::setColorsBlink);
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Elements", this.rulesetEdit = new JComboBox<>(this.rulesetOptions.stream().map(Pair::getFirst).toArray(String[]::new)));
-			this.rulesetEdit.setSelectedIndex(0);
-			this.profile.setRuleset(this.rulesetOptions.get(this.rulesetEdit.getSelectedIndex()).getSecond());
-			this.rulesetEdit.addActionListener(rerenderAndCallA(() -> this.profile.setRuleset(this.rulesetOptions.get(this.rulesetEdit.getSelectedIndex()).getSecond())));
-
 			float defAccurateApproximateValue = this.profile.getAccurateApproximate();
 			appendTabRow(this.optionsBoardPanel, gbc, "Accurate/Approximate",
 					this.accurateApproximateEdit = new JSlider(JSlider.HORIZONTAL, 0, 1000, (int) (defAccurateApproximateValue * 1000.0f)),
@@ -258,6 +253,40 @@ public class ZimaFrontendSwing {
 
 			appendTabRow(this.optionsImagePanel, gbc, "Crop bottom", this.cropBottomEdit = new JSpinner(new SpinnerNumberModel(0, 0, null, 1)));
 			rerenderAndSet(this.cropBottomEdit, this.profile::setCropBottom);
+		}
+
+		{
+			GridBagConstraints gbc = new GridBagConstraints();
+			gbc.gridx = GridBagConstraints.RELATIVE;
+			gbc.gridy = 0;
+			gbc.gridwidth = 1;
+			gbc.insets = new Insets(0, 1, 1, 1);
+			gbc.anchor = GridBagConstraints.WEST;
+
+			int i = 0;
+			for (ElementRule rule : ImageConverterRules.ALL_RULES.getRules()) {
+				StringBuilder labelStr = new StringBuilder(rule.getElement().name());
+				if (rule.getStrategy().isRequiresStat()) {
+					labelStr.append(" (Stat)");
+				}
+				JCheckBox box = new JCheckBox();
+				JLabel label = new JLabel(labelStr.toString());
+				box.addActionListener((e) -> onChangeRulesetCheckbox());
+
+				optionsElementsPanel.add(box, gbc);
+				optionsElementsPanel.add(label, gbc);
+				rulesetBoxEdit.put(rule, box);
+
+				i++;
+				if ((i % 3) == 0) gbc.gridy++;
+			}
+
+			gbc.gridwidth = GridBagConstraints.REMAINDER;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			this.rulesetEdit = new JComboBox<>(this.rulesetOptions.stream().map(Pair::getFirst).toArray(String[]::new));
+			this.rulesetEdit.addActionListener((e) -> setRuleset(this.rulesetEdit.getSelectedIndex()));
+			optionsElementsPanel.add(this.rulesetEdit, gbc);
+			setRuleset(0); // default
 		}
 
 		{
@@ -332,7 +361,7 @@ public class ZimaFrontendSwing {
 			this.mseConverterEdit.addActionListener(rerenderAndCallA(() -> this.profile.setMseCalculatorFunction(this.mseConverterOptions.get(this.mseConverterEdit.getSelectedIndex()).getSecond()))); */
 
 			float defContrastReductionValue = this.profile.getContrastReduction();
-			appendTabRow(this.optionsAdvancedPanel, gbc, "Tile contrast reduction",
+			appendTabRow(this.optionsAdvancedPanel, gbc, "Tile contrast reduce",
 					this.contrastReductionEdit = new JSlider(JSlider.HORIZONTAL, 0, 1000, (int) Math.sqrt(defContrastReductionValue * 10000000.0f)),
 					this.contrastReductionReset = new JButton("Reset"));
 			this.contrastReductionEdit.addChangeListener(rerenderAndCall(() -> this.profile.setContrastReduction((this.contrastReductionEdit.getValue() * this.contrastReductionEdit.getValue()) / 10000000.0f)));
@@ -358,7 +387,7 @@ public class ZimaFrontendSwing {
 		this.previewCanvas.setMinimumSize(this.previewCanvas.getPreferredSize());
 		this.renderProgress.setPreferredSize(new Dimension(480, 20));
 		this.renderProgress.setMinimumSize(this.renderProgress.getPreferredSize());
-		this.optionsPane.setPreferredSize(new Dimension(480, 378));
+		this.optionsPane.setPreferredSize(new Dimension(470, 378));
 		this.optionsPane.setMinimumSize(this.optionsPane.getPreferredSize());
 
 		this.window.add(this.mainPanel);
@@ -367,6 +396,38 @@ public class ZimaFrontendSwing {
 		this.window.setMaximumSize(this.window.getSize());
 		this.window.setResizable(false);
 		this.window.setVisible(true);
+	}
+
+	public void onChangeRulesetCheckbox() {
+		int index = this.rulesetEdit.getSelectedIndex();
+		ImageConverterRuleset ruleset = this.rulesetOptions.get(index).getSecond();
+		if (ruleset == null) {
+			setRuleset(index);
+		}
+	}
+
+	public void setRuleset(int index) {
+		ImageConverterRuleset ruleset = this.rulesetOptions.get(index).getSecond();
+		List<ElementRule> customRules = new ArrayList<>();
+		// if default ruleset, disable checkboxes + copy to boxes
+		// if custom ruleset, enable checkboxes + copy from boxes
+		for (ElementRule rule : ImageConverterRules.ALL_RULES.getRules()) {
+			JCheckBox box = rulesetBoxEdit.get(rule);
+			box.setEnabled(rule.getElement() != Element.EMPTY && ruleset == null);
+			if (ruleset != null) {
+				box.setSelected(ruleset.getRules().contains(rule));
+			} else {
+				if (box.isSelected()) {
+					customRules.add(rule);
+				}
+			}
+		}
+		if (ruleset == null) {
+			customRuleset = new ImageConverterRuleset(customRules);
+			ruleset = customRuleset;
+		}
+		this.profile.setRuleset(ruleset);
+		rerender();
 	}
 
 	public void updateVisual() {

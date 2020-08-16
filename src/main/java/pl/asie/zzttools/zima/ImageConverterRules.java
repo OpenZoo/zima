@@ -20,8 +20,7 @@ package pl.asie.zzttools.zima;
 
 import pl.asie.zzttools.zzt.Element;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class ImageConverterRules {
 	public static final ImageConverterRuleset RULES_BLOCKS;
@@ -29,17 +28,31 @@ public class ImageConverterRules {
 	public static final ImageConverterRuleset RULES_SAFE;
 	public static final ImageConverterRuleset RULES_SAFE_STATLESS;
 	public static final ImageConverterRuleset RULES_UNSAFE_STATLESS;
+	public static final ImageConverterRuleset ALL_RULES;
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	private static ImageConverterRuleset ruleset(List... lists) {
-		List<ElementRule> combinedList = new ArrayList<>();
+		Set<ElementRule> combinedList = new LinkedHashSet<>();
 		for (List list : lists) {
 			combinedList.addAll(list);
 		}
-		return new ImageConverterRuleset(combinedList);
+		return new ImageConverterRuleset(List.copyOf(combinedList));
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private static ImageConverterRuleset rulesetSorted(List... lists) {
+		Set<ElementRule> combinedList = new LinkedHashSet<>();
+		for (List list : lists) {
+			combinedList.addAll(list);
+		}
+		List<ElementRule> outputList = new ArrayList<>(combinedList);
+		outputList.sort(Comparator.comparing(e -> e.getElement().ordinal()));
+		return new ImageConverterRuleset(outputList);
 	}
 
 	static {
+		List<ElementRule> unusedRules = new ArrayList<>();
+
 		List<ElementRule> alwaysRules = new ArrayList<>();
 		alwaysRules.add(ElementRule.element(Element.EMPTY, ' '));
 
@@ -48,8 +61,8 @@ public class ImageConverterRules {
 		blockyRules.add(ElementRule.element(Element.NORMAL, 178));
 		blockyRules.add(ElementRule.element(Element.BREAKABLE, 177));
 		blockyRules.add(ElementRule.element(Element.WATER, 176));
-		// blockyRules.add(ElementRule.element(Element.FOREST, 176)); (water)
-		// blockyRules.add(ElementRule.element(Element.FAKE, 178)); (normal)
+		unusedRules.add(ElementRule.element(Element.FOREST, 176)); // (water)
+		unusedRules.add(ElementRule.element(Element.FAKE, 178)); // (normal)
 
 		// DrawProc-safe
 		List<ElementRule> rules = new ArrayList<>();
@@ -69,7 +82,7 @@ public class ImageConverterRules {
 		rules.add(ElementRule.element(Element.TORCH, 157));
 		statlessRules.add(ElementRule.element(Element.RUFFIAN, 5));
 		statlessRules.add(ElementRule.element(Element.BEAR, 153));
-		// statlessRules.add(ElementRule.element(Element.SLIME, '*')); (ricochet)
+		unusedRules.add(ElementRule.element(Element.SLIME, '*')); // ricochet
 		statlessRules.add(ElementRule.element(Element.SHARK, '^'));
 		rules.add(ElementRule.element(Element.BLINK_RAY_NS, 186));
 		rules.add(ElementRule.element(Element.BLINK_RAY_EW, 205));
@@ -95,6 +108,9 @@ public class ImageConverterRules {
 		unsafeStatlessRules.add(ElementRule.element(Element.DUPLICATOR, 250));
 		unsafeStatlessRules.add(ElementRule.element(Element.BOMB, 11));
 		unsafeStatlessRules.add(ElementRule.element(Element.PUSHER, 31));
+
+		// for custom rulesets
+		ALL_RULES = rulesetSorted(alwaysRules, blockyRules, rules, statlessRules, unsafeStatlessRules, unusedRules);
 
 		RULES_BLOCKS = ruleset(alwaysRules, blockyRules);
 		RULES_SAFE = ruleset(alwaysRules, blockyRules, rules);

@@ -18,17 +18,11 @@
  */
 package pl.asie.zzttools.zima;
 
-import lombok.AccessLevel;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import pl.asie.zzttools.zzt.Element;
 
-@Getter
-@EqualsAndHashCode
-@ToString
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@Data
 public class ElementRule {
 	public enum Strategy {
 		EMPTY(false),

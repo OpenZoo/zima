@@ -1,0 +1,3 @@
+Improvements:
+
+* Saved boards now have a board name matching their filename.

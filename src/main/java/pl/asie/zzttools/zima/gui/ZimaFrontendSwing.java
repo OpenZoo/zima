@@ -676,7 +676,15 @@ public class ZimaFrontendSwing {
 				if (png) {
 					ImageIO.write(this.asyncRenderer.getOutputImage(), "png", file);
 				} else {
+					Board board = this.asyncRenderer.getOutputBoard();
+
 					try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos, false)) {
+						String basename = file.getName();
+						int extIndex = basename.lastIndexOf('.');
+						if (extIndex > 0) {
+							basename = basename.substring(0, extIndex);
+						}
+						board.setName(basename.replaceAll("[^\\x20-\\x7E]", "?"));
 						this.asyncRenderer.getOutputBoard().writeZ(zos);
 					}
 				}

@@ -65,8 +65,10 @@ public class Board {
 			setElement(OUTER_WIDTH - 1, i, Element.BOARD_EDGE);
 		}
 
-		setElement(playerX, playerY, Element.PLAYER);
-		setColor(playerX, playerY, 0x1F);
+		if (playerX >= 1 && playerX <= WIDTH && playerY >= 1 && playerY <= HEIGHT) {
+			setElement(playerX, playerY, Element.PLAYER);
+			setColor(playerX, playerY, 0x1F);
+		}
 
 		Stat playerStat = new Stat();
 		playerStat.setX(playerX);

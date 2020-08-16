@@ -18,7 +18,10 @@
  */
 package pl.asie.zzttools.zima.gui;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import lombok.Getter;
+import lombok.Setter;
 import pl.asie.zzttools.util.FileUtils;
 import pl.asie.zzttools.util.Pair;
 import pl.asie.zzttools.zima.*;
@@ -36,22 +39,23 @@ import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.*;
 import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
+import java.util.stream.IntStream;
 
 public class ZimaFrontendSwing {
+	private final Gson gson = new GsonBuilder().create();
 	private final JFrame window;
 	private final JPanel mainPanel;
 	private final JMenuBar menuBar;
-	private final JMenu fileMenu, editMenu, helpMenu;
+	private final JMenu fileMenu, editMenu, profileMenu, helpMenu;
 	private final JMenuItem openItem, saveBrdItem, savePngItem;
 	private final JMenuItem copyItem ,pasteItem;
+	private final JMenuItem profileLoadItem, profileSaveItem;
 	private final JMenuItem aboutItem;
 	private final JTabbedPane optionsPane;
 	private final JPanel optionsBoardPanel;
@@ -173,6 +177,10 @@ public class ZimaFrontendSwing {
 		this.menuBar.add(this.editMenu = new JMenu("Edit"));
 		this.editMenu.add(this.copyItem = new JMenuItem("Copy preview"));
 		this.editMenu.add(this.pasteItem = new JMenuItem("Paste"));
+
+		this.menuBar.add(this.profileMenu = new JMenu("Profile"));
+		this.profileMenu.add(this.profileLoadItem = new JMenuItem("Load"));
+		this.profileMenu.add(this.profileSaveItem = new JMenuItem("Save"));
 
 		this.menuBar.add(this.helpMenu = new JMenu("Help"));
 		this.helpMenu.add(this.aboutItem = new JMenuItem("About"));
@@ -375,6 +383,8 @@ public class ZimaFrontendSwing {
 		this.savePngItem.addActionListener((e) -> this.onSave(e, true));
 		this.copyItem.addActionListener(this::onCopy);
 		this.pasteItem.addActionListener(this::onPaste);
+		this.profileLoadItem.addActionListener(this::onLoadSettings);
+		this.profileSaveItem.addActionListener(this::onSaveSettings);
 		this.aboutItem.addActionListener(this::onAbout);
 
 		this.openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK));
@@ -485,6 +495,44 @@ public class ZimaFrontendSwing {
 	}
 
 	// Menu options
+
+	public void onLoadSettings(ActionEvent event) {
+		JFileChooser fc = new JFileChooser();
+		fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
+		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		fc.setFileFilter(new FileNameExtensionFilter("JSON settings file", "json"));
+		int returnVal = fc.showOpenDialog(this.window);
+
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			try (FileReader reader = new FileReader(fc.getSelectedFile())) {
+				setSettings(gson.fromJson(reader, ZimaProfileSettings.class));
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			}
+		}
+	}
+
+	public void onSaveSettings(ActionEvent event) {
+		JFileChooser fc = new JFileChooser();
+		fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
+		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		fc.setFileFilter(new FileNameExtensionFilter("JSON settings file", "json"));
+		int returnVal = fc.showSaveDialog(this.window);
+
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			String extension = ".json";
+			File file = fc.getSelectedFile();
+			if (!file.getName().toLowerCase(Locale.ROOT).endsWith(extension)) {
+				file = new File(file.toString() + extension);
+			}
+
+			try (FileWriter writer = new FileWriter(file)) {
+				writer.write(gson.toJson(getSettings()));
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(this.window, "Error saving file: " + e.getMessage());
+			}
+		}
+	}
 
 	public void onLoadDefaultCharset(ActionEvent event) {
 		this.charset = null;
@@ -619,6 +667,98 @@ public class ZimaFrontendSwing {
 				JOptionPane.showMessageDialog(this.window, "Error saving file: " + e.getMessage());
 			}
 		}
+	}
+
+	// Profile serialization
+
+	public ZimaProfileSettings getSettings() {
+		ZimaProfileSettings settings = new ZimaProfileSettings();
+
+		settings.setAllowedCharacters(IntStream.range(0, 256).filter(this.characterSelector::isCharAllowed).toArray());
+		settings.setAllowedColors(IntStream.range(0, 16).filter(this.paletteSelector::isColorAllowed).toArray());
+		settings.setAllowedElements(this.profile.getRuleset().getRules());
+
+		if (!Arrays.equals(this.defaultCharset, this.charset)) {
+			settings.setCustomCharset(this.charset);
+		}
+		if (!Arrays.equals(this.defaultPalette, this.palette)) {
+			settings.setCustomPalette(this.palette);
+		}
+
+		settings.setMaxStatCount(this.profile.getMaxStatCount());
+		settings.setColorsBlink(this.profile.isColorsBlink());
+		settings.setContrastReduction(this.profile.getContrastReduction());
+		settings.setAccurateApproximate(this.profile.getAccurateApproximate());
+
+		return settings;
+	}
+
+	private Set<Integer> toIntSet(int[] array) {
+		Set<Integer> set = new HashSet<>();
+		for (int i = 0; i < array.length; i++) {
+			set.add(array[i]);
+		}
+		return set;
+	}
+
+	public void setSettings(ZimaProfileSettings settings) {
+		if (settings.getAllowedCharacters() != null) {
+			Set<Integer> allowedCharactersSet = toIntSet(settings.getAllowedCharacters());
+			IntStream.range(0, 256).forEach(i -> this.characterSelector.setCharAllowed(i, allowedCharactersSet.contains(i)));
+		}
+
+		if (settings.getAllowedColors() != null) {
+			Set<Integer> allowedColorsSet = toIntSet(settings.getAllowedColors());
+			IntStream.range(0, 16).forEach(i -> this.paletteSelector.setColorAllowed(i, allowedColorsSet.contains(i)));
+		}
+
+		if (settings.getAllowedElements() != null) {
+			boolean found = false;
+			int emptyIndex = -1;
+			for (int i = 0; i < rulesetOptions.size(); i++) {
+				ImageConverterRuleset ruleset = rulesetOptions.get(i).getSecond();
+				if (ruleset != null && ruleset.getRules().equals(settings.getAllowedElements())) {
+					setRuleset(i);
+					found = true;
+					break;
+				} else if (ruleset == null) {
+					emptyIndex = i;
+				}
+			}
+
+			if (!found && emptyIndex >= 0) {
+				for (Map.Entry<ElementRule, JCheckBox> box : rulesetBoxEdit.entrySet()) {
+					box.getValue().setSelected(settings.getAllowedElements().contains(box.getKey()));
+				}
+				setRuleset(emptyIndex);
+			}
+		}
+
+		this.charset = settings.getCustomCharset();
+		this.palette = settings.getCustomPalette();
+		updateVisual();
+
+		if (settings.getMaxStatCount() != null) {
+			this.profile.setMaxStatCount(settings.getMaxStatCount());
+			this.maxStatCountEdit.setValue(settings.getMaxStatCount());
+		}
+
+		if (settings.getColorsBlink() != null) {
+			this.profile.setColorsBlink(settings.getColorsBlink());
+			this.blinkCharsEdit.setSelected(settings.getColorsBlink());
+		}
+
+		if (settings.getContrastReduction() != null) {
+			this.profile.setContrastReduction(settings.getContrastReduction());
+			this.contrastReductionEdit.setValue((int) Math.sqrt(settings.getContrastReduction() * 10000000.0f));
+		}
+
+		if (settings.getAccurateApproximate() != null) {
+			this.profile.setAccurateApproximate(settings.getAccurateApproximate());
+			this.accurateApproximateEdit.setValue((int) (settings.getAccurateApproximate() * 1000.0f));
+		}
+
+		rerender();
 	}
 
 	// Re-render call listeners

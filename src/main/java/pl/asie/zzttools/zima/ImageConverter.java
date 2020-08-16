@@ -88,13 +88,25 @@ public class ImageConverter {
 					if (charCheck != null && !charCheck.test(rule.getChr())) {
 						continue;
 					}
-					proposals = IntStream.range(0, noBlinking ? 128 : 256).mapToObj(i -> new ElementResult(rule.getElement(), false, false, rule.getChr(), i));
+					proposals = IntStream.range(0, noBlinking ? 128 : 256).filter(i -> {
+						if (colorCheck != null && !colorCheck.test(i)) {
+							return false;
+						}
+
+						return true;
+					}).mapToObj(i -> new ElementResult(rule.getElement(), false, false, rule.getChr(), i));
 					break;
 				case TEXT:
 					if (colorCheck != null && !colorCheck.test(rule.getColor())) {
 						continue;
 					}
-					proposals = IntStream.of(ruleset.getAllowedTextCharIndices()).mapToObj(i -> new ElementResult(rule.getElement(), false, true, i, rule.getColor()));
+					proposals = IntStream.of(ruleset.getAllowedTextCharIndices()).filter(i -> {
+						if (charCheck != null && !charCheck.test(i)) {
+							return false;
+						}
+
+						return true;
+					}).mapToObj(i -> new ElementResult(rule.getElement(), false, true, i, rule.getColor()));
 					break;
 				case USE_STAT_P1:
 					proposals = IntStream.of(ruleset.getAllowedObjectIndices(noBlinking)).filter(i -> {

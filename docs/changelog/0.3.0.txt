@@ -1,6 +1,8 @@
 Improvements:
 
 * Added a new slider bar - "Board -> Accurate/Approximate".
+* Added a new menu tab, "Profile", allowing loading (-> "Load") and saving (-> "Save") certain image conversion
+  parameters.
 * Added a new tab, "Elements", allowing selecting which elements are taken into account for processing.
 * Added a status bar, showing the board size in bytes and the amount of stats used.
 * Algorithm improvements.

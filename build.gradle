@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id "io.freefair.lombok" version "5.1.1"
+    id 'com.github.johnrengelman.shadow' version '6.0.0'
     id "com.github.hierynomus.license" version "0.15.0"
 }
 
@@ -12,6 +13,7 @@ repositories {
 }
 
 dependencies {
+    shadow 'com.google.code.gson:gson:2.8.6'
 }
 
 license {
@@ -37,3 +39,9 @@ jar {
         attributes 'Main-Class': 'pl.asie.zzttools.zima.ImageConverterMain'
     }
 }
+
+artifacts {
+    shadowJar
+}
+
+build.dependsOn(shadowJar)

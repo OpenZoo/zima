@@ -46,8 +46,12 @@ public class ElementRule {
 	private final int chr;
 	private final int color;
 
+	public static ElementRule element(Element element) {
+		return element(element, element.getCharacter());
+	}
+
 	public static ElementRule element(Element element, int chr) {
-		return new ElementRule(element, element == Element.EMPTY ? Strategy.EMPTY : Strategy.ELEMENT, chr, -1);
+		return new ElementRule(element, element.getId() == 0 ? Strategy.EMPTY : Strategy.ELEMENT, chr, -1);
 	}
 
 	public static ElementRule text(Element element, int color) {

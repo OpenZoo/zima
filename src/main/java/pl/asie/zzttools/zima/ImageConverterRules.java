@@ -19,6 +19,7 @@
 package pl.asie.zzttools.zima;
 
 import pl.asie.zzttools.zzt.Element;
+import pl.asie.zzttools.zzt.ElementsZZT;
 
 import java.util.*;
 
@@ -46,7 +47,7 @@ public class ImageConverterRules {
 			combinedList.addAll(list);
 		}
 		List<ElementRule> outputList = new ArrayList<>(combinedList);
-		outputList.sort(Comparator.comparing(e -> e.getElement().ordinal()));
+		outputList.sort(Comparator.comparing(e -> e.getElement().getId()));
 		return new ImageConverterRuleset(outputList);
 	}
 
@@ -54,60 +55,60 @@ public class ImageConverterRules {
 		List<ElementRule> unusedRules = new ArrayList<>();
 
 		List<ElementRule> alwaysRules = new ArrayList<>();
-		alwaysRules.add(ElementRule.element(Element.EMPTY, ' '));
+		alwaysRules.add(ElementRule.element(ElementsZZT.EMPTY));
 
 		List<ElementRule> blockyRules = new ArrayList<>();
-		blockyRules.add(ElementRule.element(Element.SOLID, 219));
-		blockyRules.add(ElementRule.element(Element.NORMAL, 178));
-		blockyRules.add(ElementRule.element(Element.BREAKABLE, 177));
-		blockyRules.add(ElementRule.element(Element.WATER, 176));
-		unusedRules.add(ElementRule.element(Element.FOREST, 176)); // (water)
-		unusedRules.add(ElementRule.element(Element.FAKE, 178)); // (normal)
+		blockyRules.add(ElementRule.element(ElementsZZT.SOLID));
+		blockyRules.add(ElementRule.element(ElementsZZT.NORMAL));
+		blockyRules.add(ElementRule.element(ElementsZZT.BREAKABLE));
+		blockyRules.add(ElementRule.element(ElementsZZT.WATER));
+		unusedRules.add(ElementRule.element(ElementsZZT.FOREST)); // (water)
+		unusedRules.add(ElementRule.element(ElementsZZT.FAKE)); // (normal)
 
 		// DrawProc-safe
 		List<ElementRule> rules = new ArrayList<>();
 		List<ElementRule> statlessRules = new ArrayList<>();
 
-		statlessRules.add(ElementRule.element(Element.LION, 234));
-		statlessRules.add(ElementRule.element(Element.TIGER, 227));
-		statlessRules.add(ElementRule.element(Element.CENTIPEDE_HEAD, 233));
-		statlessRules.add(ElementRule.element(Element.CENTIPEDE_SEGMENT, 'O'));
-		rules.add(ElementRule.element(Element.BULLET, 248));
-		rules.add(ElementRule.element(Element.KEY, 12));
-		rules.add(ElementRule.element(Element.AMMO, 132));
-		rules.add(ElementRule.element(Element.GEM, 4));
-		statlessRules.add(ElementRule.element(Element.PASSAGE, 240));
-		rules.add(ElementRule.element(Element.DOOR, 10));
-		statlessRules.add(ElementRule.element(Element.SCROLL, 232));
-		rules.add(ElementRule.element(Element.TORCH, 157));
-		statlessRules.add(ElementRule.element(Element.RUFFIAN, 5));
-		statlessRules.add(ElementRule.element(Element.BEAR, 153));
-		unusedRules.add(ElementRule.element(Element.SLIME, '*')); // ricochet
-		statlessRules.add(ElementRule.element(Element.SHARK, '^'));
-		rules.add(ElementRule.element(Element.BLINK_RAY_NS, 186));
-		rules.add(ElementRule.element(Element.BLINK_RAY_EW, 205));
-		rules.add(ElementRule.element(Element.RICOCHET, '*'));
-		rules.add(ElementRule.element(Element.BOULDER, 254));
-		rules.add(ElementRule.element(Element.SLIDER_NS, 18));
-		rules.add(ElementRule.element(Element.SLIDER_EW, 29));
-		rules.add(ElementRule.element(Element.ENERGIZER, 127));
-		rules.add(ElementRule.text(Element.TEXT_BLUE, 0x1F));
-		rules.add(ElementRule.text(Element.TEXT_GREEN, 0x2F));
-		rules.add(ElementRule.text(Element.TEXT_CYAN, 0x3F));
-		rules.add(ElementRule.text(Element.TEXT_RED, 0x4F));
-		rules.add(ElementRule.text(Element.TEXT_PURPLE, 0x5F));
-		rules.add(ElementRule.text(Element.TEXT_YELLOW, 0x6F));
-		rules.add(ElementRule.text(Element.TEXT_WHITE, 0x0F));
-		statlessRules.add(ElementRule.statP1(Element.OBJECT));
+		statlessRules.add(ElementRule.element(ElementsZZT.LION));
+		statlessRules.add(ElementRule.element(ElementsZZT.TIGER));
+		statlessRules.add(ElementRule.element(ElementsZZT.CENTIPEDE_HEAD));
+		statlessRules.add(ElementRule.element(ElementsZZT.CENTIPEDE_SEGMENT));
+		rules.add(ElementRule.element(ElementsZZT.BULLET));
+		rules.add(ElementRule.element(ElementsZZT.KEY));
+		rules.add(ElementRule.element(ElementsZZT.AMMO));
+		rules.add(ElementRule.element(ElementsZZT.GEM));
+		statlessRules.add(ElementRule.element(ElementsZZT.PASSAGE));
+		rules.add(ElementRule.element(ElementsZZT.DOOR));
+		statlessRules.add(ElementRule.element(ElementsZZT.SCROLL));
+		rules.add(ElementRule.element(ElementsZZT.TORCH));
+		statlessRules.add(ElementRule.element(ElementsZZT.RUFFIAN));
+		statlessRules.add(ElementRule.element(ElementsZZT.BEAR));
+		unusedRules.add(ElementRule.element(ElementsZZT.SLIME)); // ricochet
+		statlessRules.add(ElementRule.element(ElementsZZT.SHARK));
+		rules.add(ElementRule.element(ElementsZZT.BLINK_RAY_NS));
+		rules.add(ElementRule.element(ElementsZZT.BLINK_RAY_EW));
+		rules.add(ElementRule.element(ElementsZZT.RICOCHET));
+		rules.add(ElementRule.element(ElementsZZT.BOULDER));
+		rules.add(ElementRule.element(ElementsZZT.SLIDER_NS));
+		rules.add(ElementRule.element(ElementsZZT.SLIDER_EW));
+		rules.add(ElementRule.element(ElementsZZT.ENERGIZER));
+		rules.add(ElementRule.text(ElementsZZT.TEXT_BLUE, 0x1F));
+		rules.add(ElementRule.text(ElementsZZT.TEXT_GREEN, 0x2F));
+		rules.add(ElementRule.text(ElementsZZT.TEXT_CYAN, 0x3F));
+		rules.add(ElementRule.text(ElementsZZT.TEXT_RED, 0x4F));
+		rules.add(ElementRule.text(ElementsZZT.TEXT_PURPLE, 0x5F));
+		rules.add(ElementRule.text(ElementsZZT.TEXT_YELLOW, 0x6F));
+		rules.add(ElementRule.text(ElementsZZT.TEXT_WHITE, 0x0F));
+		statlessRules.add(ElementRule.statP1(ElementsZZT.OBJECT));
 		// uses DrawProc, but with a constant variable
-		statlessRules.add(ElementRule.element(Element.BLINK_WALL, 206));
+		statlessRules.add(ElementRule.element(ElementsZZT.BLINK_WALL));
 
 		// statless; rely on how ZZT does things very specifically
 		List<ElementRule> unsafeStatlessRules = new ArrayList<>();
-		unsafeStatlessRules.add(ElementRule.element(Element.OBJECT, 2));
-		unsafeStatlessRules.add(ElementRule.element(Element.DUPLICATOR, 250));
-		unsafeStatlessRules.add(ElementRule.element(Element.BOMB, 11));
-		unsafeStatlessRules.add(ElementRule.element(Element.PUSHER, 31));
+		unsafeStatlessRules.add(ElementRule.element(ElementsZZT.OBJECT, 2));
+		unsafeStatlessRules.add(ElementRule.element(ElementsZZT.DUPLICATOR, 250));
+		unsafeStatlessRules.add(ElementRule.element(ElementsZZT.BOMB, 11));
+		unsafeStatlessRules.add(ElementRule.element(ElementsZZT.PUSHER, 31));
 
 		// for custom rulesets
 		ALL_RULES = rulesetSorted(alwaysRules, blockyRules, rules, statlessRules, unsafeStatlessRules, unusedRules);
@@ -119,8 +120,8 @@ public class ImageConverterRules {
 
 		// extra rulesets
 		RULES_WALKABLE = ruleset(alwaysRules, List.of(
-				ElementRule.element(Element.FAKE, 178),
-				ElementRule.element(Element.FOREST, 176)
+				ElementRule.element(ElementsZZT.FAKE),
+				ElementRule.element(ElementsZZT.FOREST)
 		));
 	}
 }

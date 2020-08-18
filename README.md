@@ -16,6 +16,8 @@ configuration flexibility to allow artists and creators to fine-tune the end res
 
 ## License
 
+For the editor itself, the following license applies:
+
 ```
 zima is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,3 +29,6 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ```
+
+Please note that some files are additionally covered under the Reconstruction of ZZT/Super ZZT's 
+MIT license terms.

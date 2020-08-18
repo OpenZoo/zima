@@ -274,7 +274,7 @@ public class ZimaFrontendSwing {
 
 			int i = 0;
 			for (ElementRule rule : ImageConverterRules.ALL_RULES.getRules()) {
-				StringBuilder labelStr = new StringBuilder(rule.getElement().name());
+				StringBuilder labelStr = new StringBuilder(ElementsZZT.internalName(rule.getElement()));
 				if (rule.getStrategy().isRequiresStat()) {
 					labelStr.append(" (Stat)");
 				}
@@ -426,7 +426,7 @@ public class ZimaFrontendSwing {
 		// if custom ruleset, enable checkboxes + copy from boxes
 		for (ElementRule rule : ImageConverterRules.ALL_RULES.getRules()) {
 			JCheckBox box = rulesetBoxEdit.get(rule);
-			box.setEnabled(rule.getElement() != Element.EMPTY && ruleset == null);
+			box.setEnabled(rule.getElement().getId() != 0 && ruleset == null);
 			if (ruleset != null) {
 				box.setSelected(ruleset.getRules().contains(rule));
 			} else {

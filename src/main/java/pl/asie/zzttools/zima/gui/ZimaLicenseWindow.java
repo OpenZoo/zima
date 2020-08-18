@@ -31,7 +31,8 @@ import java.util.List;
 public class ZimaLicenseWindow {
     private static final List<Triplet<String, String, String>> LICENSE_TEXTS = List.of(
             new Triplet<>("zima", "licenses/COPYING", "licenses/COPYING.GPL"),
-            new Triplet<>("gson", "licenses/3rdparty/LICENSE-GSON", "licenses/3rdparty/LICENSE-GSON.long")
+            new Triplet<>("gson", "licenses/3rdparty/LICENSE-GSON", "licenses/3rdparty/LICENSE-GSON.long"),
+            new Triplet<>("Reconstruction of ZZT", "licenses/3rdparty/LICENSE-ROZ", "licenses/3rdparty/LICENSE-ROZ")
     );
 
     // TODO: move elsewhere

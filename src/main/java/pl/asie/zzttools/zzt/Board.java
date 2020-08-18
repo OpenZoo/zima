@@ -53,20 +53,20 @@ public class Board {
 	}
 
 	public Board(int playerX, int playerY) {
-		Arrays.fill(elements, Element.EMPTY);
+		Arrays.fill(elements, ElementsZZT.EMPTY);
 
 		// set board edges
 		for (int i = 0; i < OUTER_WIDTH; i++) {
-			setElement(i, 0, Element.BOARD_EDGE);
-			setElement(i, OUTER_HEIGHT - 1, Element.BOARD_EDGE);
+			setElement(i, 0, ElementsZZT.BOARD_EDGE);
+			setElement(i, OUTER_HEIGHT - 1, ElementsZZT.BOARD_EDGE);
 		}
 		for (int i = 0; i < OUTER_HEIGHT; i++) {
-			setElement(0, i, Element.BOARD_EDGE);
-			setElement(OUTER_WIDTH - 1, i, Element.BOARD_EDGE);
+			setElement(0, i, ElementsZZT.BOARD_EDGE);
+			setElement(OUTER_WIDTH - 1, i, ElementsZZT.BOARD_EDGE);
 		}
 
 		if (playerX >= 1 && playerX <= WIDTH && playerY >= 1 && playerY <= HEIGHT) {
-			setElement(playerX, playerY, Element.PLAYER);
+			setElement(playerX, playerY, ElementsZZT.PLAYER);
 			setColor(playerX, playerY, 0x1F);
 		}
 
@@ -128,13 +128,13 @@ public class Board {
 		int ix = 1;
 		int iy = 1;
 		int rleCount = 0;
-		Element rleElement = Element.EMPTY;
+		Element rleElement = ElementsZZT.EMPTY;
 		int rleColor = 0;
 		do {
 			if (rleCount <= 0) {
 				rleCount = stream.readPByte();
 				if (rleCount == 0) rleCount = 256;
-				rleElement = Element.fromOrdinal(stream.readPByte());
+				rleElement = ElementsZZT.byId(stream.readPByte());
 				rleColor = stream.readPByte();
 			}
 			setElement(ix, iy, rleElement);
@@ -190,7 +190,7 @@ public class Board {
 					rleCount++;
 				} else {
 					stream.writePByte(rleCount);
-					stream.writePByte(rleElement.ordinal());
+					stream.writePByte(rleElement.getId());
 					stream.writePByte(rleColor);
 					rleElement = getElement(ix, iy);
 					rleColor = getColor(ix, iy);

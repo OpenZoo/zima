@@ -82,9 +82,14 @@ public class ElementsZZT {
 
     private static final Map<Integer, Element> elementsById;
     private static final Map<Element, String> elementInternalNames;
+    private static final Map<String, Element> elementsByInternalNames;
 
     public static Element byId(int id) {
         return elementsById.getOrDefault(id, ElementsZZT.EMPTY);
+    }
+
+    public static Element byInternalName(String name) {
+        return elementsByInternalNames.getOrDefault(name, ElementsZZT.EMPTY);
     }
 
     public static String internalName(Element element) {
@@ -107,5 +112,6 @@ public class ElementsZZT {
                 throw new RuntimeException(e);
             }
         }, Field::getName));
+        elementsByInternalNames = elementInternalNames.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 }

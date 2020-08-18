@@ -47,7 +47,7 @@ import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 
 public class ZimaFrontendSwing {
-	private final Gson gson = new GsonBuilder().create();
+	private final Gson gson = new GsonBuilder().registerTypeAdapter(Element.class, ElementJsonSerdes.INSTANCE).create();
 	private final JFrame window;
 	private final JPanel mainPanel;
 	private final JMenuBar menuBar;
@@ -740,13 +740,18 @@ public class ZimaFrontendSwing {
 		if (settings.getAllowedElements() != null) {
 			boolean found = false;
 			int emptyIndex = -1;
+			Set<ElementRule> settingsElementSet = new HashSet<>(settings.getAllowedElements());
 			for (int i = 0; i < rulesetOptions.size(); i++) {
 				ImageConverterRuleset ruleset = rulesetOptions.get(i).getSecond();
-				if (ruleset != null && ruleset.getRules().equals(settings.getAllowedElements())) {
-					setRuleset(i);
-					found = true;
-					break;
-				} else if (ruleset == null) {
+				if (ruleset != null) {
+					Set<ElementRule> rulesElementSet = new HashSet<>(ruleset.getRules());
+					if (rulesElementSet.equals(settingsElementSet)) {
+						rulesetEdit.setSelectedIndex(i);
+						setRuleset(i);
+						found = true;
+						break;
+					}
+				} else {
 					emptyIndex = i;
 				}
 			}

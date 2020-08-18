@@ -1,3 +1,7 @@
 Improvements:
 
 * Saved boards now have a board name matching their filename.
+
+Bugs fixed:
+
+* Restoring a profile in some cases would fail to match an existing definition of allowed elements.

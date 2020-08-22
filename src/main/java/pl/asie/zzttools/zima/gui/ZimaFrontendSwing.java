@@ -23,12 +23,13 @@ import com.google.gson.GsonBuilder;
 import lombok.Getter;
 import pl.asie.zzttools.util.FileUtils;
 import pl.asie.zzttools.util.Pair;
+import pl.asie.zzttools.util.Property;
+import pl.asie.zzttools.util.PropertyHolder;
 import pl.asie.zzttools.zima.*;
 import pl.asie.zzttools.zzt.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
@@ -43,7 +44,6 @@ import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 
 public class ZimaFrontendSwing {
@@ -81,15 +81,30 @@ public class ZimaFrontendSwing {
 	private JSpinner charWidthEdit;
 	private JSpinner charHeightEdit;
 	private JSpinner maxStatCountEdit;
-	private JCheckBox blinkCharsEdit;
+	private JCheckBox blinkingDisabledEdit;
+	private JComboBox<String> platformEdit;
+	private final List<Pair<String, Platform>> platforms = List.of(
+			new Pair<>("ZZT", Platform.ZZT),
+			new Pair<>("Super ZZT", Platform.SUPER_ZZT)
+	);
 	private JComboBox<String> rulesetEdit;
-	private final List<Pair<String, ImageConverterRuleset>> rulesetOptions = List.of(
-			new Pair<>("Default", ImageConverterRules.RULES_UNSAFE_STATLESS),
-			new Pair<>("Default (Clone-safe)", ImageConverterRules.RULES_SAFE_STATLESS),
-			new Pair<>("Default (Elements only)", ImageConverterRules.RULES_SAFE),
-			new Pair<>("Blocks", ImageConverterRules.RULES_BLOCKS),
-			new Pair<>("Walkable", ImageConverterRules.RULES_WALKABLE),
-			new Pair<>("Custom", null)
+	private final Map<Platform, List<Pair<String, ImageConverterRuleset>>> rulesetOptions = Map.of(
+			Platform.ZZT, List.of(
+					new Pair<>("Default", ImageConverterRulesZZT.RULES_UNSAFE_STATLESS),
+					new Pair<>("Default (Clone-safe)", ImageConverterRulesZZT.RULES_SAFE_STATLESS),
+					new Pair<>("Default (Elements only)", ImageConverterRulesZZT.RULES_SAFE),
+					new Pair<>("Blocks", ImageConverterRulesZZT.RULES_BLOCKS),
+					new Pair<>("Walkable", ImageConverterRulesZZT.RULES_WALKABLE),
+					new Pair<>("Custom", null)
+			),
+			Platform.SUPER_ZZT, List.of(
+					new Pair<>("Default", ImageConverterRulesSuperZZT.RULES_UNSAFE_STATLESS),
+					new Pair<>("Default (Clone-safe)", ImageConverterRulesSuperZZT.RULES_SAFE_STATLESS),
+					new Pair<>("Default (Elements only)", ImageConverterRulesSuperZZT.RULES_SAFE),
+					new Pair<>("Blocks", ImageConverterRulesSuperZZT.RULES_BLOCKS),
+					new Pair<>("Walkable", ImageConverterRulesSuperZZT.RULES_WALKABLE),
+					new Pair<>("Custom", null)
+			)
 	);
 	private Map<ElementRule, JCheckBox> rulesetBoxEdit = new HashMap<>();
 	private ImageConverterRuleset customRuleset;
@@ -114,10 +129,6 @@ public class ZimaFrontendSwing {
 	// "Advanced" tab
 	private JCheckBox fastPreviewEdit;
 	private JCheckBox allowFacesEdit;
-	private JComboBox<String> mseConverterEdit;
-	private final List<Pair<String, Function<ZimaConversionProfile, ImageMseCalculator>>> mseConverterOptions = List.of(
-			new Pair<>("Trix", p -> new TrixImageMseCalculator(p.getVisual(), p.getContrastReduction(), p.getAccurateApproximate()))
-	);
 
 	private final byte[] defaultCharset;
 	private final int[] defaultPalette;
@@ -133,13 +144,20 @@ public class ZimaFrontendSwing {
 	private final ZimaConversionProfile profile;
 	private final ZimaAsynchronousRenderer asyncRenderer;
 
+	private boolean uiReady;
+
 	public ZimaFrontendSwing(byte[] defaultCharset, int[] defaultPalette, String zimaVersion) {
 		this.zimaVersion = zimaVersion;
 		this.defaultCharset = defaultCharset;
 		this.defaultPalette = defaultPalette;
 
-		this.profile = new ZimaConversionProfile();
 		this.asyncRenderer = new ZimaAsynchronousRenderer(this);
+
+		this.profile = new ZimaConversionProfile();
+		this.profile.getProperties().addGlobalChangeListener((k, v) -> rerender());
+		// TODO: move both
+		this.profile.getProperties().set(ZimaConversionProfile.PLATFORM, Platform.ZZT);
+		this.profile.getProperties().set(ZimaConversionProfile.FAST_RULESET, ImageConverterRulesZZT.RULES_BLOCKS);
 
 		this.window = new JFrame("zima");
 		this.window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -191,37 +209,44 @@ public class ZimaFrontendSwing {
 			gbc.gridx = 0;
 			gbc.gridy = 0;
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Board X", this.boardXEdit = new JSpinner(boardCoordsModel(this.profile.getBoardX(), false)));
-			rerenderAndSet(this.boardXEdit, this.profile::setBoardX);
+			appendTabRow(this.optionsBoardPanel, gbc, "Platform",
+					this.platformEdit = new JComboBox<>(this.platforms.stream().map(Pair::getFirst).toArray(String[]::new)));
+			this.platformEdit.addActionListener((e) -> {
+				Platform newPlatform = this.platforms.get(this.platformEdit.getSelectedIndex()).getSecond();
+				this.profile.getProperties().set(ZimaConversionProfile.PLATFORM, newPlatform);
+				this.profile.getProperties().set(ZimaConversionProfile.CHARS_WIDTH, newPlatform.getBoardWidth());
+				this.profile.getProperties().set(ZimaConversionProfile.CHARS_HEIGHT, newPlatform.getBoardHeight());
+				if (this.profile.getProperties().get(ZimaConversionProfile.MAX_STAT_COUNT) > newPlatform.getMaxStatCount()) {
+					this.profile.getProperties().set(ZimaConversionProfile.MAX_STAT_COUNT, newPlatform.getMaxStatCount());
+				}
+			});
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Board Y", this.boardYEdit = new JSpinner(boardCoordsModel(this.profile.getBoardY(), true)));
-			rerenderAndSet(this.boardYEdit, this.profile::setBoardY);
+			appendTabRow(this.optionsBoardPanel, gbc, "Board X", this.boardXEdit = new JSpinner(boardCoordsModel(false)));
+			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.BOARD_X, this.boardXEdit);
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Width (chars)", this.charWidthEdit = new JSpinner(boardCoordsModel(this.profile.getCharsWidth(), false)));
-			rerenderAndSet(this.charWidthEdit, this.profile::setCharsWidth);
+			appendTabRow(this.optionsBoardPanel, gbc, "Board Y", this.boardYEdit = new JSpinner(boardCoordsModel(true)));
+			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.BOARD_Y, this.boardYEdit);
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Height (chars)", this.charHeightEdit = new JSpinner(boardCoordsModel(this.profile.getCharsHeight(), true)));
-			rerenderAndSet(this.charHeightEdit, this.profile::setCharsHeight);
+			appendTabRow(this.optionsBoardPanel, gbc, "Width (chars)", this.charWidthEdit = new JSpinner(boardCoordsModel(false)));
+			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.CHARS_WIDTH, this.charWidthEdit);
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Player X", this.playerXEdit = new JSpinner(boardCoordsModel(this.profile.getPlayerX(), false)));
-			rerenderAndSet(this.playerXEdit, this.profile::setPlayerX);
+			appendTabRow(this.optionsBoardPanel, gbc, "Height (chars)", this.charHeightEdit = new JSpinner(boardCoordsModel(true)));
+			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.CHARS_HEIGHT, this.charHeightEdit);
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Player Y", this.playerYEdit = new JSpinner(boardCoordsModel(this.profile.getPlayerY(), true)));
-			rerenderAndSet(this.playerYEdit, this.profile::setPlayerY);
+			appendTabRow(this.optionsBoardPanel, gbc, "Player X", this.playerXEdit = new JSpinner(boardCoordsModel(false)));
+			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.PLAYER_X, this.playerXEdit);
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Max. stats", this.maxStatCountEdit = new JSpinner(new SpinnerNumberModel(this.profile.getMaxStatCount(), 0, 150, 1)));
-			rerenderAndSet(this.maxStatCountEdit, this.profile::setMaxStatCount);
+			appendTabRow(this.optionsBoardPanel, gbc, "Player Y", this.playerYEdit = new JSpinner(boardCoordsModel(true)));
+			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.PLAYER_Y, this.playerYEdit);
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Skip blinkable", this.blinkCharsEdit = new JCheckBox());
-			this.blinkCharsEdit.setSelected(this.profile.isColorsBlink());
-			rerenderAndSet(this.blinkCharsEdit, this.profile::setColorsBlink);
+			appendTabRow(this.optionsBoardPanel, gbc, "Max. stats", this.maxStatCountEdit = new JSpinner(new SpinnerNumberModel(0, 0, 150, 1)));
+			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.MAX_STAT_COUNT, this.maxStatCountEdit);
 
-			float defAccurateApproximateValue = this.profile.getAccurateApproximate();
 			appendTabRow(this.optionsBoardPanel, gbc, "Accurate/Approximate",
-					this.accurateApproximateEdit = new JSlider(JSlider.HORIZONTAL, 0, 1000, (int) (defAccurateApproximateValue * 1000.0f)),
+					this.accurateApproximateEdit = new JSlider(JSlider.HORIZONTAL, 0, 1000, 0),
 					this.accurateApproximateReset = new JButton("Reset"));
-			this.accurateApproximateEdit.addChangeListener(rerenderAndCall(() -> this.profile.setAccurateApproximate(this.accurateApproximateEdit.getValue() / 1000.0f)));
-			this.accurateApproximateReset.addActionListener((e) -> { this.profile.setAccurateApproximate(defAccurateApproximateValue); this.accurateApproximateEdit.setValue((int) (defAccurateApproximateValue * 1000.0f)); rerender(); });
+			bindPropertyFloatScaled(this.profile.getProperties(), ZimaConversionProfile.TRIX_ACCURATE_APPROXIMATE, this.accurateApproximateEdit, 1000.0f);
+			this.accurateApproximateReset.addActionListener((e) -> { this.profile.getProperties().reset(ZimaConversionProfile.TRIX_ACCURATE_APPROXIMATE); });
 		}
 
 		{
@@ -231,71 +256,42 @@ public class ZimaFrontendSwing {
 
 			appendTabRow(this.optionsImagePanel, gbc, "Show input image", this.showInputImageEdit = new JCheckBox());
 			this.showInputImageEdit.setSelected(true);
-			rerenderAndSet(this.showInputImageEdit, (a) -> {});
+			this.showInputImageEdit.addItemListener((e) -> rerender());
 
 			appendTabRow(this.optionsImagePanel, gbc, "Brightness",
 					this.brightnessEdit = new JSlider(JSlider.HORIZONTAL, -160, 160, 0),
 					this.brightnessReset = new JButton("Reset"));
-			this.brightnessEdit.addChangeListener(rerenderAndCall(() -> this.profile.setBrightness(this.brightnessEdit.getValue() / 255.0f)));
-			this.brightnessReset.addActionListener((e) -> { this.profile.setBrightness(0.0f); this.brightnessEdit.setValue(0); rerender(); });
+			bindPropertyFloatScaled(this.profile.getProperties(), ZimaConversionProfile.BRIGHTNESS, this.brightnessEdit, 255.0f);
+			this.brightnessReset.addActionListener((e) -> { this.profile.getProperties().reset(ZimaConversionProfile.BRIGHTNESS); });
 
 			appendTabRow(this.optionsImagePanel, gbc, "Contrast",
 					this.contrastEdit = new JSlider(JSlider.HORIZONTAL, -240, 240, 0),
 					this.contrastReset = new JButton("Reset"));
-			this.contrastEdit.addChangeListener(rerenderAndCall(() -> this.profile.setContrast(this.contrastEdit.getValue() / 255.0f)));
-			this.contrastReset.addActionListener((e) -> { this.profile.setContrast(0.0f); this.contrastEdit.setValue(0); rerender(); });
+			bindPropertyFloatScaled(this.profile.getProperties(), ZimaConversionProfile.CONTRAST, this.contrastEdit, 255.0f);
+			this.contrastReset.addActionListener((e) -> { this.profile.getProperties().reset(ZimaConversionProfile.CONTRAST); });
 
 			appendTabRow(this.optionsImagePanel, gbc, "Saturation",
 					this.saturationEdit = new JSlider(JSlider.HORIZONTAL, -240, 240, 0),
 					this.saturationReset = new JButton("Reset"));
-			this.saturationEdit.addChangeListener(rerenderAndCall(() -> this.profile.setSaturation(this.saturationEdit.getValue() / 240.0f)));
-			this.saturationReset.addActionListener((e) -> { this.profile.setSaturation(0.0f); this.saturationEdit.setValue(0); rerender(); });
+			bindPropertyFloatScaled(this.profile.getProperties(), ZimaConversionProfile.SATURATION, this.saturationEdit, 240.0f);
+			this.saturationReset.addActionListener((e) -> { this.profile.getProperties().reset(ZimaConversionProfile.SATURATION); });
 
 			appendTabRow(this.optionsImagePanel, gbc, "Crop left", this.cropLeftEdit = new JSpinner(new SpinnerNumberModel(0, 0, null, 1)));
-			rerenderAndSet(this.cropLeftEdit, this.profile::setCropLeft);
+			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.CROP_LEFT, this.cropLeftEdit);
 
 			appendTabRow(this.optionsImagePanel, gbc, "Crop right", this.cropRightEdit = new JSpinner(new SpinnerNumberModel(0, 0, null, 1)));
-			rerenderAndSet(this.cropRightEdit, this.profile::setCropRight);
+			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.CROP_RIGHT, this.cropRightEdit);
 
 			appendTabRow(this.optionsImagePanel, gbc, "Crop top", this.cropTopEdit = new JSpinner(new SpinnerNumberModel(0, 0, null, 1)));
-			rerenderAndSet(this.cropTopEdit, this.profile::setCropTop);
+			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.CROP_TOP, this.cropTopEdit);
 
 			appendTabRow(this.optionsImagePanel, gbc, "Crop bottom", this.cropBottomEdit = new JSpinner(new SpinnerNumberModel(0, 0, null, 1)));
-			rerenderAndSet(this.cropBottomEdit, this.profile::setCropBottom);
+			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.CROP_BOTTOM, this.cropBottomEdit);
 		}
 
 		{
-			GridBagConstraints gbc = new GridBagConstraints();
-			gbc.gridx = GridBagConstraints.RELATIVE;
-			gbc.gridy = 0;
-			gbc.gridwidth = 1;
-			gbc.insets = new Insets(0, 1, 1, 1);
-			gbc.anchor = GridBagConstraints.WEST;
-
-			int i = 0;
-			for (ElementRule rule : ImageConverterRules.ALL_RULES.getRules()) {
-				StringBuilder labelStr = new StringBuilder(ElementsZZT.internalName(rule.getElement()));
-				if (rule.getStrategy().isRequiresStat()) {
-					labelStr.append(" (Stat)");
-				}
-				JCheckBox box = new JCheckBox();
-				JLabel label = new JLabel(labelStr.toString());
-				box.addActionListener((e) -> onChangeRulesetCheckbox());
-
-				optionsElementsPanel.add(box, gbc);
-				optionsElementsPanel.add(label, gbc);
-				rulesetBoxEdit.put(rule, box);
-
-				i++;
-				if ((i % 3) == 0) gbc.gridy++;
-			}
-
-			gbc.gridwidth = GridBagConstraints.REMAINDER;
-			gbc.fill = GridBagConstraints.HORIZONTAL;
-			this.rulesetEdit = new JComboBox<>(this.rulesetOptions.stream().map(Pair::getFirst).toArray(String[]::new));
-			this.rulesetEdit.addActionListener((e) -> setRuleset(this.rulesetEdit.getSelectedIndex()));
-			optionsElementsPanel.add(this.rulesetEdit, gbc);
-			setRuleset(0); // default
+			rebuildElementsPanel();
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> rebuildElementsPanel());
 		}
 
 		{
@@ -303,7 +299,8 @@ public class ZimaFrontendSwing {
 			gbc.gridx = 0;
 			gbc.gridy = 0;
 
-			characterSelector = new CharacterSelector(this::rerender);
+			characterSelector = new CharacterSelector(() -> this.profile.getProperties().set(ZimaConversionProfile.ALLOWED_CHARACTERS, characterSelector.toSet()));
+			characterSelector.change();
 
 			// block faces by default
 			characterSelector.setCharAllowed(1, false);
@@ -336,7 +333,8 @@ public class ZimaFrontendSwing {
 			gbc.gridx = 0;
 			gbc.gridy = 0;
 
-			paletteSelector = new PaletteSelector(this::rerender);
+			paletteSelector = new PaletteSelector(() -> this.profile.getProperties().set(ZimaConversionProfile.ALLOWED_COLORS, paletteSelector.toSet()));
+			paletteSelector.change();
 
 			gbc.insets = new Insets(2, 4, 2, 4);
 			gbc.gridwidth = GridBagConstraints.REMAINDER;
@@ -345,11 +343,25 @@ public class ZimaFrontendSwing {
 
 			// create toggle buttons
 			gbc.gridy = 1;
-			gbc.gridwidth = 1;
+			gbc.gridwidth = 2;
 			gbc.gridx = GridBagConstraints.RELATIVE;
+			gbc.anchor = GridBagConstraints.CENTER;
 
-			appendPalSelToggle(optionsPalettePanel, "All", gbc, 0, 15);
+			appendPalSelToggle(optionsPalettePanel, "All", gbc, 0, 255);
+
+			gbc.gridwidth = 1;
+			gbc.anchor = GridBagConstraints.WEST;
+
+			optionsPalettePanel.add(this.blinkingDisabledEdit = new JCheckBox(), gbc);
+			bindPropertyBoolean(this.profile.getProperties(), ZimaConversionProfile.BLINKING_DISABLED, this.blinkingDisabledEdit);
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.BLINKING_DISABLED, (k, v) -> {
+				this.paletteSelector.setBlinkingDisabled(Objects.equals(v, Boolean.TRUE));
+			});
+			optionsPalettePanel.add(new JLabel("High colors"), gbc);
+
 			gbc.gridy = 2;
+			gbc.gridwidth = 2;
+			gbc.anchor = GridBagConstraints.CENTER;
 			appendCharSelButton(optionsPalettePanel, "Load default", gbc, this::onLoadDefaultPalette);
 			appendCharSelButton(optionsPalettePanel, "Load custom", gbc, this::onLoadCustomPalette);
 		}
@@ -362,19 +374,18 @@ public class ZimaFrontendSwing {
 			appendTabRow(this.optionsAdvancedPanel, gbc, "Fast preview", this.fastPreviewEdit = new JCheckBox());
 			this.fastPreviewEdit.setSelected(true);
 			this.asyncRenderer.setUseFastPreview(this.fastPreviewEdit.isSelected());
-			rerenderAndSet(this.fastPreviewEdit, this.asyncRenderer::setUseFastPreview);
+			this.fastPreviewEdit.addChangeListener((e) -> { this.asyncRenderer.setUseFastPreview(this.fastPreviewEdit.isSelected()); rerender(); });
 
-			this.profile.setMseCalculatorFunction(this.mseConverterOptions.get(0).getSecond());
-/*			appendTabRow(this.optionsAdvancedPanel, gbc, "Error calculator", this.mseConverterEdit = new JComboBox<>(this.mseConverterOptions.stream().map(Pair::getFirst).toArray(String[]::new)));
+/*			this.profile.setMseCalculatorFunction(this.mseConverterOptions.get(0).getSecond());
+			appendTabRow(this.optionsAdvancedPanel, gbc, "Error calculator", this.mseConverterEdit = new JComboBox<>(this.mseConverterOptions.stream().map(Pair::getFirst).toArray(String[]::new)));
 			this.mseConverterEdit.setSelectedIndex(0);
 			this.mseConverterEdit.addActionListener(rerenderAndCallA(() -> this.profile.setMseCalculatorFunction(this.mseConverterOptions.get(this.mseConverterEdit.getSelectedIndex()).getSecond()))); */
 
-			float defContrastReductionValue = this.profile.getContrastReduction();
 			appendTabRow(this.optionsAdvancedPanel, gbc, "Tile contrast reduce",
-					this.contrastReductionEdit = new JSlider(JSlider.HORIZONTAL, 0, 1000, (int) Math.sqrt(defContrastReductionValue * 10000000.0f)),
+					this.contrastReductionEdit = new JSlider(JSlider.HORIZONTAL, 0, 1000, 0),
 					this.contrastReductionReset = new JButton("Reset"));
-			this.contrastReductionEdit.addChangeListener(rerenderAndCall(() -> this.profile.setContrastReduction((this.contrastReductionEdit.getValue() * this.contrastReductionEdit.getValue()) / 10000000.0f)));
-			this.contrastReductionReset.addActionListener((e) -> { this.profile.setContrastReduction(defContrastReductionValue); this.contrastReductionEdit.setValue((int) Math.sqrt(defContrastReductionValue * 10000000.0f)); rerender(); });
+			bindPropertyFloat(this.profile.getProperties(), ZimaConversionProfile.TRIX_CONTRAST_REDUCTION, this.contrastReductionEdit, (f) -> (int) Math.sqrt(f * 10000000.0f), (i) -> (i * i) / 10000000.0f);
+			this.contrastReductionReset.addActionListener((e) -> { this.profile.getProperties().reset(ZimaConversionProfile.TRIX_CONTRAST_REDUCTION); });
 		}
 
 		updateVisual();
@@ -403,6 +414,9 @@ public class ZimaFrontendSwing {
 		this.optionsPane.setPreferredSize(new Dimension(470, 378));
 		this.optionsPane.setMinimumSize(this.optionsPane.getPreferredSize());
 
+		uiReady = true;
+		rerender();
+
 		this.window.add(this.mainPanel);
 		this.window.pack();
 		this.window.setMinimumSize(this.window.getSize());
@@ -411,20 +425,61 @@ public class ZimaFrontendSwing {
 		this.window.setVisible(true);
 	}
 
+	public void rebuildElementsPanel() {
+		optionsElementsPanel.removeAll();
+		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.gridx = GridBagConstraints.RELATIVE;
+		gbc.gridy = 0;
+		gbc.gridwidth = 1;
+		gbc.insets = new Insets(0, 1, 1, 1);
+		gbc.anchor = GridBagConstraints.WEST;
+
+		int i = 0;
+		for (ElementRule rule : ImageConverterRulesZZT.ALL_RULES.getRules()) {
+			StringBuilder labelStr = new StringBuilder(platform.getLibrary().getInternalName(rule.getElement()));
+			if (rule.getStrategy().isRequiresStat()) {
+				labelStr.append(" (Stat)");
+			}
+			JCheckBox box = new JCheckBox();
+			JLabel label = new JLabel(labelStr.toString());
+			box.addActionListener((e) -> onChangeRulesetCheckbox());
+
+			optionsElementsPanel.add(box, gbc);
+			optionsElementsPanel.add(label, gbc);
+			rulesetBoxEdit.put(rule, box);
+
+			i++;
+			if ((i % 3) == 0) gbc.gridy++;
+		}
+
+		gbc.gridwidth = GridBagConstraints.REMAINDER;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		this.rulesetEdit = new JComboBox<>(this.rulesetOptions.get(platform).stream().map(Pair::getFirst).toArray(String[]::new));
+		this.rulesetEdit.addActionListener((e) -> setRuleset(this.rulesetEdit.getSelectedIndex()));
+		optionsElementsPanel.add(this.rulesetEdit, gbc);
+		setRuleset(0); // default
+	}
+
 	public void onChangeRulesetCheckbox() {
+		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+
 		int index = this.rulesetEdit.getSelectedIndex();
-		ImageConverterRuleset ruleset = this.rulesetOptions.get(index).getSecond();
+		ImageConverterRuleset ruleset = this.rulesetOptions.get(platform).get(index).getSecond();
 		if (ruleset == null) {
 			setRuleset(index);
 		}
 	}
 
 	public void setRuleset(int index) {
-		ImageConverterRuleset ruleset = this.rulesetOptions.get(index).getSecond();
+		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+
+		ImageConverterRuleset ruleset = this.rulesetOptions.get(platform).get(index).getSecond();
 		List<ElementRule> customRules = new ArrayList<>();
 		// if default ruleset, disable checkboxes + copy to boxes
 		// if custom ruleset, enable checkboxes + copy from boxes
-		for (ElementRule rule : ImageConverterRules.ALL_RULES.getRules()) {
+		for (ElementRule rule : ImageConverterRulesZZT.ALL_RULES.getRules()) {
 			JCheckBox box = rulesetBoxEdit.get(rule);
 			box.setEnabled(rule.getElement().getId() != 0 && ruleset == null);
 			if (ruleset != null) {
@@ -439,7 +494,7 @@ public class ZimaFrontendSwing {
 			customRuleset = new ImageConverterRuleset(customRules);
 			ruleset = customRuleset;
 		}
-		this.profile.setRuleset(ruleset);
+		this.profile.getProperties().set(ZimaConversionProfile.RULESET, ruleset);
 		rerender();
 	}
 
@@ -450,11 +505,10 @@ public class ZimaFrontendSwing {
 		if (this.palette == null) {
 			this.palette = this.defaultPalette;
 		}
-		this.visual = new TextVisualData(8, charset.length / 256, charset, palette);
-		this.profile.setVisual(this.visual);
+		this.visual = new TextVisualData(8, charset.length >> 8, charset, palette);
 		this.characterSelector.setVisual(this.visual);
 		this.paletteSelector.setVisual(this.visual);
-		rerender();
+		this.profile.getProperties().set(ZimaConversionProfile.VISUAL_DATA, this.visual);
 	}
 
 	public boolean isShowInputImage() {
@@ -462,11 +516,13 @@ public class ZimaFrontendSwing {
 	}
 
 	public void rerender() {
-		this.asyncRenderer.rerender();
-		if (!isShowInputImage()) {
-			this.asyncRenderer.popQueue();
-		} else {
-			updateCanvas();
+		if (uiReady) {
+			this.asyncRenderer.rerender();
+			if (!isShowInputImage()) {
+				this.asyncRenderer.popQueue();
+			} else {
+				updateCanvas();
+			}
 		}
 	}
 
@@ -677,8 +733,9 @@ public class ZimaFrontendSwing {
 					ImageIO.write(this.asyncRenderer.getOutputImage(), "png", file);
 				} else {
 					Board board = this.asyncRenderer.getOutputBoard();
+					Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 
-					try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos, false)) {
+					try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos, platform)) {
 						String basename = file.getName();
 						int extIndex = basename.lastIndexOf('.');
 						if (extIndex > 0) {
@@ -700,8 +757,8 @@ public class ZimaFrontendSwing {
 		ZimaProfileSettings settings = new ZimaProfileSettings();
 
 		settings.setAllowedCharacters(IntStream.range(0, 256).filter(this.characterSelector::isCharAllowed).toArray());
-		settings.setAllowedColors(IntStream.range(0, 16).filter(this.paletteSelector::isColorAllowed).toArray());
-		settings.setAllowedElements(this.profile.getRuleset().getRules());
+		settings.setAllowedColorPairs(IntStream.range(0, 256).filter(this.paletteSelector::isTwoColorAllowed).toArray());
+		settings.setAllowedElements(this.profile.getProperties().get(ZimaConversionProfile.RULESET).getRules());
 
 		if (!Arrays.equals(this.defaultCharset, this.charset)) {
 			settings.setCustomCharset(this.charset);
@@ -710,10 +767,10 @@ public class ZimaFrontendSwing {
 			settings.setCustomPalette(this.palette);
 		}
 
-		settings.setMaxStatCount(this.profile.getMaxStatCount());
-		settings.setColorsBlink(this.profile.isColorsBlink());
-		settings.setContrastReduction(this.profile.getContrastReduction());
-		settings.setAccurateApproximate(this.profile.getAccurateApproximate());
+		settings.setMaxStatCount(this.profile.getProperties().get(ZimaConversionProfile.MAX_STAT_COUNT));
+		settings.setColorsBlink(!this.profile.getProperties().get(ZimaConversionProfile.BLINKING_DISABLED));
+		settings.setContrastReduction(this.profile.getProperties().get(ZimaConversionProfile.TRIX_CONTRAST_REDUCTION));
+		settings.setAccurateApproximate(this.profile.getProperties().get(ZimaConversionProfile.TRIX_ACCURATE_APPROXIMATE));
 
 		return settings;
 	}
@@ -734,15 +791,22 @@ public class ZimaFrontendSwing {
 
 		if (settings.getAllowedColors() != null) {
 			Set<Integer> allowedColorsSet = toIntSet(settings.getAllowedColors());
-			IntStream.range(0, 16).forEach(i -> this.paletteSelector.setColorAllowed(i, allowedColorsSet.contains(i)));
+			IntStream.range(0, 256).forEach(i -> this.paletteSelector.setColorAllowed(i, true));
+			IntStream.range(0, 16).forEach(i -> { if (!allowedColorsSet.contains(i)) this.paletteSelector.setColorContainingAllowed(i, false); });
+		}
+
+		if (settings.getAllowedColorPairs() != null) {
+			Set<Integer> allowedColorsSet = toIntSet(settings.getAllowedColorPairs());
+			IntStream.range(0, 256).forEach(i -> this.paletteSelector.setColorAllowed(i, allowedColorsSet.contains(i)));
 		}
 
 		if (settings.getAllowedElements() != null) {
+			Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 			boolean found = false;
 			int emptyIndex = -1;
 			Set<ElementRule> settingsElementSet = new HashSet<>(settings.getAllowedElements());
 			for (int i = 0; i < rulesetOptions.size(); i++) {
-				ImageConverterRuleset ruleset = rulesetOptions.get(i).getSecond();
+				ImageConverterRuleset ruleset = rulesetOptions.get(platform).get(i).getSecond();
 				if (ruleset != null) {
 					Set<ElementRule> rulesElementSet = new HashSet<>(ruleset.getRules());
 					if (rulesElementSet.equals(settingsElementSet)) {
@@ -769,23 +833,19 @@ public class ZimaFrontendSwing {
 		updateVisual();
 
 		if (settings.getMaxStatCount() != null) {
-			this.profile.setMaxStatCount(settings.getMaxStatCount());
-			this.maxStatCountEdit.setValue(settings.getMaxStatCount());
+			this.profile.getProperties().set(ZimaConversionProfile.MAX_STAT_COUNT, settings.getMaxStatCount());
 		}
 
 		if (settings.getColorsBlink() != null) {
-			this.profile.setColorsBlink(settings.getColorsBlink());
-			this.blinkCharsEdit.setSelected(settings.getColorsBlink());
+			this.profile.getProperties().set(ZimaConversionProfile.BLINKING_DISABLED, !settings.getColorsBlink());
 		}
 
 		if (settings.getContrastReduction() != null) {
-			this.profile.setContrastReduction(settings.getContrastReduction());
-			this.contrastReductionEdit.setValue((int) Math.sqrt(settings.getContrastReduction() * 10000000.0f));
+			this.profile.getProperties().set(ZimaConversionProfile.TRIX_CONTRAST_REDUCTION, settings.getContrastReduction());
 		}
 
 		if (settings.getAccurateApproximate() != null) {
-			this.profile.setAccurateApproximate(settings.getAccurateApproximate());
-			this.accurateApproximateEdit.setValue((int) (settings.getAccurateApproximate() * 1000.0f));
+			this.profile.getProperties().set(ZimaConversionProfile.TRIX_ACCURATE_APPROXIMATE, settings.getAccurateApproximate());
 		}
 
 		rerender();
@@ -793,26 +853,27 @@ public class ZimaFrontendSwing {
 
 	// Re-render call listeners
 
-	public ActionListener rerenderAndCallA(Runnable callFunc) {
-		return (e) -> {
-			callFunc.run();
-			rerender();
-		};
+	public void bindPropertyBoolean(PropertyHolder holder, Property<Boolean> property, JCheckBox checkBox) {
+		Boolean defValue = property.getDefaultValue();
+		checkBox.setSelected(Objects.equals(defValue, Boolean.TRUE));
+		checkBox.addItemListener((e) -> holder.set(property, checkBox.isSelected()));
+		holder.addChangeListener(property, (k, v) -> checkBox.setSelected(Objects.equals(v, Boolean.TRUE)));
 	}
 
-	public ChangeListener rerenderAndCall(Runnable callFunc) {
-		return (e) -> {
-			callFunc.run();
-			rerender();
-		};
+	public void bindPropertyInt(PropertyHolder holder, Property<Integer> property, JSpinner spinner) {
+		spinner.setValue(this.profile.getProperties().get(property));
+		spinner.addChangeListener((e) -> holder.set(property, ((Number) spinner.getValue()).intValue()));
+		holder.addChangeListener(property, (k, v) -> spinner.setValue(holder.get(k)));
 	}
 
-	public void rerenderAndSet(JSpinner spinner, IntConsumer valueConsumer) {
-		spinner.addChangeListener(rerenderAndCall(() -> valueConsumer.accept(((Number) spinner.getValue()).intValue())));
+	public void bindPropertyFloatScaled(PropertyHolder holder, Property<Float> property, JSlider slider, float scale) {
+		bindPropertyFloat(holder, property, slider, (f) -> (int) (f * scale), (i) -> (float) i / scale);
 	}
 
-	public void rerenderAndSet(JCheckBox box, Consumer<Boolean> valueConsumer) {
-		box.addActionListener(rerenderAndCallA(() -> valueConsumer.accept(box.isSelected())));
+	public void bindPropertyFloat(PropertyHolder holder, Property<Float> property, JSlider slider, Function<Float, Integer> toSpinner, Function<Integer, Float> fromSpinner) {
+		slider.setValue(toSpinner.apply(this.profile.getProperties().get(property)));
+		slider.addChangeListener((e) -> holder.set(property, fromSpinner.apply(((Number) slider.getValue()).intValue())));
+		holder.addChangeListener(property, (k, v) -> slider.setValue(toSpinner.apply(holder.get(k))));
 	}
 
 	// Swing layout utils
@@ -858,7 +919,8 @@ public class ZimaFrontendSwing {
 		panel.add(c, gbc);
 	}
 
-	private static SpinnerNumberModel boardCoordsModel(int value, boolean height) {
-		return new SpinnerNumberModel(value, 1, height ? Board.HEIGHT : Board.WIDTH, 1);
+	private SpinnerNumberModel boardCoordsModel(boolean height) {
+		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+		return new SpinnerNumberModel(1, 1, height ? platform.getBoardHeight() : platform.getBoardWidth(), 1);
 	}
 }

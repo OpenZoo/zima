@@ -35,7 +35,7 @@ public class Stat {
 	private int p3;
 	private int follower = -1;
 	private int leader = -1;
-	private Element underElement = ElementsZZT.EMPTY;
+	private Element underElement = null;
 	private int underColor = 0;
 	private String data;
 	private int dataPos;
@@ -52,14 +52,14 @@ public class Stat {
 		this.p3 = stream.readPByte();
 		this.follower = stream.readPShort();
 		this.leader = stream.readPShort();
-		this.underElement = ElementsZZT.byId(stream.readPByte());
+		this.underElement = stream.getPlatform().getLibrary().byId(stream.readPByte());
 		this.underColor = stream.readPByte();
 		if (stream.skip(4) != 4) {
 			throw new IOException("Could not skip data^!");
 		}
 		this.dataPos = stream.readPShort();
 		int dataLen = stream.readPShort();
-		if (!stream.isSuperZzt()) {
+		if (stream.getPlatform() == Platform.ZZT) {
 			if (stream.skip(8) != 8) {
 				throw new IOException("Could not skip unk!");
 			}
@@ -86,12 +86,12 @@ public class Stat {
 		stream.writePByte(this.p3);
 		stream.writePShort(this.follower);
 		stream.writePShort(this.leader);
-		stream.writePByte(this.underElement.getId());
+		stream.writePByte(this.underElement != null ? this.underElement.getId() : 0);
 		stream.writePByte(this.underColor);
 		stream.pad(4); // data^
 		stream.writePShort(this.dataPos);
 		stream.writePShort(boundStatId > 0 ? (-boundStatId) : ((dataBytes != null) ? dataBytes.length : 0));
-		if (!stream.isSuperZzt()) {
+		if (stream.getPlatform() == Platform.ZZT) {
 			stream.pad(8); // unk
 		}
 		if (boundStatId == 0 && dataBytes != null) {

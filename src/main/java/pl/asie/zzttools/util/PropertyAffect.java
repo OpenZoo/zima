@@ -16,25 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.zzttools.zima.gui;
+package pl.asie.zzttools.util;
 
-import lombok.Data;
-import pl.asie.zzttools.zima.ElementRule;
-
-import java.util.List;
-
-@Data
-public class ZimaProfileSettings {
-    private int[] allowedCharacters;
-    private int[] allowedColors;
-    private int[] allowedColorPairs;
-    private List<ElementRule> allowedElements;
-
-    private byte[] customCharset;
-    private int[] customPalette;
-
-    private Integer maxStatCount;
-    private Boolean colorsBlink;
-    private Float contrastReduction;
-    private Float accurateApproximate;
+public final class PropertyAffect {
 }

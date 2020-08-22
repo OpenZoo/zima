@@ -27,11 +27,11 @@ import java.nio.charset.StandardCharsets;
 
 public class ZOutputStream extends FilterOutputStream {
 	@Getter
-	private final boolean superZzt;
+	private final Platform platform;
 
-	public ZOutputStream(OutputStream out, boolean superZzt) {
+	public ZOutputStream(OutputStream out, Platform platform) {
 		super(out);
-		this.superZzt = superZzt;
+		this.platform = platform;
 	}
 
 	public void pad(int amount) throws IOException {

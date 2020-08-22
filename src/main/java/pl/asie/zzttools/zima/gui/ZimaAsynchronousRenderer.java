@@ -62,7 +62,7 @@ public class ZimaAsynchronousRenderer {
 			Pair<Board, BufferedImage> output = this.parent.getProfile().convert(this.parent.getInputImage(), !fast ? ((max) -> {
 				this.parent.getRenderProgress().setMaximum(max);
 				this.parent.getRenderProgress().setValue(this.parent.getRenderProgress().getValue() + 1);
-			}) : ((max) -> {}), fast, this.parent.getCharacterSelector()::isCharAllowed, this.parent.getPaletteSelector()::isTwoColorAllowed);
+			}) : ((max) -> {}), fast);
 
 			synchronized (outputWriteLock) {
 				if (fast) {
@@ -81,7 +81,7 @@ public class ZimaAsynchronousRenderer {
 				int statCount = output.getFirst().getStats().size() - 1;
 				int boardSize = -1;
 
-				try (CountOutputStream cos = new CountOutputStream(); ZOutputStream stream = new ZOutputStream(cos, false)) {
+				try (CountOutputStream cos = new CountOutputStream(); ZOutputStream stream = new ZOutputStream(cos, output.getFirst().getPlatform())) {
 					output.getFirst().writeZ(stream);
 					boardSize = cos.getCount();
 				} catch (IOException e) {

@@ -28,11 +28,11 @@ import java.nio.charset.StandardCharsets;
 
 public class ZInputStream extends FilterInputStream {
 	@Getter
-	private final boolean superZzt;
+	private final Platform platform;
 
-	public ZInputStream(InputStream in, boolean superZzt) {
+	public ZInputStream(InputStream in, Platform platform) {
 		super(in);
-		this.superZzt = superZzt;
+		this.platform = platform;
 	}
 
 	public int readPByte() throws IOException {

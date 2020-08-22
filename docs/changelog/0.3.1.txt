@@ -1,5 +1,10 @@
 Improvements:
 
+* Added Super ZZT support.
+* Added a new, more powerful palette selector UI.
+    * Allows configuring individual BG/FG pairs.
+    * Allows using blinkable colors in place of non-blinkable ones.
+* Moved the blinking format configuration to "Palette -> Blinking disabled".
 * Saved boards now have a board name matching their filename.
 
 Bugs fixed:

@@ -20,12 +20,10 @@ package pl.asie.zzttools.zima;
 
 import lombok.Data;
 import pl.asie.zzttools.zzt.Element;
-import pl.asie.zzttools.zzt.ElementsZZT;
+import pl.asie.zzttools.zzt.ElementLibraryZZT;
 
 @Data
 public class ElementResult {
-	public static final ElementResult EMPTY = new ElementResult(ElementsZZT.EMPTY, false, false, 32, 0);
-
 	private final Element element;
 	private final boolean hasStat;
 	private final boolean text;

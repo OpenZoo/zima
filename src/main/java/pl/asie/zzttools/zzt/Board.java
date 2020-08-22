@@ -28,11 +28,6 @@ import java.util.List;
 
 @Data
 public class Board {
-	public static final int WIDTH = 60;
-	public static final int HEIGHT = 25;
-	public static final int OUTER_WIDTH = WIDTH + 2;
-	public static final int OUTER_HEIGHT = HEIGHT + 2;
-
 	private String name = "";
 	private int maxShots = 255;
 	private boolean dark;
@@ -43,30 +38,42 @@ public class Board {
 	private int startPlayerY;
 	private int timeLimitSec;
 
-	private Element[] elements = new Element[OUTER_WIDTH * OUTER_HEIGHT];
-	private byte[] colors = new byte[OUTER_WIDTH * OUTER_HEIGHT];
+	private final Platform platform;
+	private final int width, height, outerWidth, outerHeight;
+	private final Element[] elements;
+	private final byte[] colors;
 
 	private List<Stat> stats = new ArrayList<>();
 
-	public Board() {
-		this(WIDTH >> 1, HEIGHT >> 1);
+	public Board(Platform platform) {
+		this(platform, platform.getBoardWidth() >> 1, platform.getBoardHeight() >> 1);
 	}
 
-	public Board(int playerX, int playerY) {
-		Arrays.fill(elements, ElementsZZT.EMPTY);
+	public Board(Platform platform, int playerX, int playerY) {
+		this.platform = platform;
+		this.width = platform.getBoardWidth();
+		this.height = platform.getBoardHeight();
+		this.outerWidth = this.width + 2;
+		this.outerHeight = this.height + 2;
+		this.elements = new Element[this.outerWidth * this.outerHeight];
+		this.colors = new byte[this.outerWidth * this.outerHeight];
+
+		Arrays.fill(elements, platform.getLibrary().getEmpty());
+		Element boardEdge = platform.getLibrary().byInternalName("BOARD_EDGE");
+		Element player = platform.getLibrary().byInternalName("PLAYER");
 
 		// set board edges
-		for (int i = 0; i < OUTER_WIDTH; i++) {
-			setElement(i, 0, ElementsZZT.BOARD_EDGE);
-			setElement(i, OUTER_HEIGHT - 1, ElementsZZT.BOARD_EDGE);
+		for (int i = 0; i < this.outerWidth; i++) {
+			setElement(i, 0, boardEdge);
+			setElement(i, this.outerHeight - 1, boardEdge);
 		}
-		for (int i = 0; i < OUTER_HEIGHT; i++) {
-			setElement(0, i, ElementsZZT.BOARD_EDGE);
-			setElement(OUTER_WIDTH - 1, i, ElementsZZT.BOARD_EDGE);
+		for (int i = 0; i < this.outerHeight; i++) {
+			setElement(0, i, boardEdge);
+			setElement(this.outerWidth - 1, i, boardEdge);
 		}
 
-		if (playerX >= 1 && playerX <= WIDTH && playerY >= 1 && playerY <= HEIGHT) {
-			setElement(playerX, playerY, ElementsZZT.PLAYER);
+		if (playerX >= 1 && playerX <= this.width && playerY >= 1 && playerY <= this.height) {
+			setElement(playerX, playerY, player);
 			setColor(playerX, playerY, 0x1F);
 		}
 
@@ -78,19 +85,19 @@ public class Board {
 	}
 
 	public Element getElement(int x, int y) {
-		return elements[y * OUTER_WIDTH + x];
+		return elements[y * this.outerWidth + x];
 	}
 
 	public int getColor(int x, int y) {
-		return (int) colors[y * OUTER_WIDTH + x] & 0xFF;
+		return (int) colors[y * this.outerWidth + x] & 0xFF;
 	}
 
 	public void setElement(int x, int y, Element element) {
-		elements[y * OUTER_WIDTH + x] = element;
+		elements[y * this.outerWidth + x] = element;
 	}
 
 	public void setColor(int x, int y, int color) {
-		colors[y * OUTER_WIDTH + x] = (byte) color;
+		colors[y * this.outerWidth + x] = (byte) color;
 	}
 
 	public int addStat(Stat stat) {
@@ -128,24 +135,24 @@ public class Board {
 		int ix = 1;
 		int iy = 1;
 		int rleCount = 0;
-		Element rleElement = ElementsZZT.EMPTY;
+		Element rleElement = platform.getLibrary().getEmpty();
 		int rleColor = 0;
 		do {
 			if (rleCount <= 0) {
 				rleCount = stream.readPByte();
 				if (rleCount == 0) rleCount = 256;
-				rleElement = ElementsZZT.byId(stream.readPByte());
+				rleElement = platform.getLibrary().byId(stream.readPByte());
 				rleColor = stream.readPByte();
 			}
 			setElement(ix, iy, rleElement);
 			setColor(ix, iy, rleColor);
 			ix++;
-			if (ix > WIDTH) {
+			if (ix > this.width) {
 				ix = 1;
 				iy++;
 			}
 			rleCount--;
-		} while (iy <= HEIGHT);
+		} while (iy <= this.height);
 
 		this.maxShots = stream.readPByte();
 		this.dark = stream.readPBoolean();
@@ -170,7 +177,7 @@ public class Board {
 	}
 
 	public void writeZ(ZOutputStream outStream) throws IOException {
-		try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream(); ZOutputStream stream = new ZOutputStream(byteStream, outStream.isSuperZzt())) {
+		try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream(); ZOutputStream stream = new ZOutputStream(byteStream, outStream.getPlatform())) {
 			stream.writePString(this.name, 50);
 
 			// fancy RLE logic
@@ -181,12 +188,12 @@ public class Board {
 			int rleColor = getColor(ix, iy);
 			do {
 				ix++;
-				if (ix > WIDTH) {
+				if (ix > this.width) {
 					ix = 1;
 					iy++;
 				}
 
-				if (getColor(ix, iy) == rleColor && getElement(ix, iy) == rleElement && rleCount < 255 && iy <= HEIGHT) {
+				if (getColor(ix, iy) == rleColor && getElement(ix, iy) == rleElement && rleCount < 255 && iy <= this.height) {
 					rleCount++;
 				} else {
 					stream.writePByte(rleCount);
@@ -196,7 +203,7 @@ public class Board {
 					rleColor = getColor(ix, iy);
 					rleCount = 1;
 				}
-			} while (iy <= HEIGHT);
+			} while (iy <= this.height);
 
 			stream.writePByte(this.maxShots);
 			stream.writePBoolean(this.dark);

@@ -22,10 +22,7 @@ import pl.asie.zzttools.util.Coord2D;
 import pl.asie.zzttools.util.ImageUtils;
 import pl.asie.zzttools.util.Pair;
 import pl.asie.zzttools.util.Triplet;
-import pl.asie.zzttools.zzt.Board;
-import pl.asie.zzttools.zzt.Stat;
-import pl.asie.zzttools.zzt.TextVisualData;
-import pl.asie.zzttools.zzt.TextVisualRenderer;
+import pl.asie.zzttools.zzt.*;
 
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
@@ -41,19 +38,23 @@ import java.util.stream.Stream;
 
 public class ImageConverter {
 	private final TextVisualData visual;
+	private final Platform platform;
+	private final ElementResult emptyResult;
 	private final ImageMseCalculator mseCalculator;
 
-	public ImageConverter(TextVisualData visual, ImageMseCalculator mseCalculator) {
+	public ImageConverter(TextVisualData visual, Platform platform, ImageMseCalculator mseCalculator) {
 		this.visual = visual;
+		this.platform = platform;
+		this.emptyResult = new ElementResult(platform.getLibrary().getEmpty(), false, false, 0, 0);
 		this.mseCalculator = mseCalculator;
 	}
 
 	public Pair<Board, BufferedImage> convert(BufferedImage inputImage, ImageConverterRuleset ruleset,
-	                                          int x, int y, int width, int height, int playerX, int playerY, int maxStatCount, boolean noBlinking,
+	                                          int x, int y, int width, int height, int playerX, int playerY, int maxStatCount, boolean blinkingDisabled,
 	                                          IntPredicate charCheck, IntPredicate colorCheck,
 	                                          TextVisualRenderer previewRenderer,
 	                                          ProgressCallback progressCallback) {
-		Board board = new Board(playerX, playerY);
+		Board board = new Board(platform, playerX, playerY);
 		BufferedImage preview = null;
 
 		int pixelWidth = width * visual.getCharWidth();
@@ -80,13 +81,13 @@ public class ImageConverter {
 			Stream<ElementResult> proposals = null;
 			switch (rule.getStrategy()) {
 				case EMPTY:
-					proposals = Stream.of(ElementResult.EMPTY);
+					proposals = Stream.of(emptyResult);
 					break;
 				case ELEMENT:
 					if (charCheck != null && !charCheck.test(rule.getChr())) {
 						continue;
 					}
-					proposals = IntStream.range(0, noBlinking ? 128 : 256).filter(i -> {
+					proposals = IntStream.range(0, 256).filter(i -> {
 						if (colorCheck != null && !colorCheck.test(i)) {
 							return false;
 						}
@@ -107,7 +108,7 @@ public class ImageConverter {
 					}).mapToObj(i -> new ElementResult(rule.getElement(), false, true, i, rule.getColor()));
 					break;
 				case USE_STAT_P1:
-					proposals = IntStream.of(ruleset.getAllowedObjectIndices(noBlinking)).filter(i -> {
+					proposals = IntStream.of(ruleset.getAllowedObjectIndices()).filter(i -> {
 						if (charCheck != null && !charCheck.test(i & 0xFF)) {
 							return false;
 						}
@@ -131,14 +132,14 @@ public class ImageConverter {
 
 			int ix = pos % width;
 			int iy = pos / width;
-			boolean spaceForbidden = ((x + ix) < 1 || (y + iy) < 1 || (x + ix) > Board.WIDTH || (y + iy) > Board.HEIGHT);
+			boolean spaceForbidden = ((x + ix) < 1 || (y + iy) < 1 || (x + ix) > platform.getBoardWidth() || (y + iy) > platform.getBoardHeight());
 
 			if ((x + ix) == playerX && (y + iy) == playerY) {
 				spaceForbidden = true;
 			}
 
 			if (spaceForbidden) {
-				previewResults[iy * width + ix] = ElementResult.EMPTY;
+				previewResults[iy * width + ix] = emptyResult;
 				return;
 			}
 
@@ -203,7 +204,8 @@ public class ImageConverter {
 			return proposedMse - pastMse;
 		}));
 
-		for (int i = 0; i < maxStatCount; i++) {
+		int realMaxStatCount = Math.min(maxStatCount, platform.getMaxStatCount());
+		for (int i = 0; i < realMaxStatCount; i++) {
 			if (i >= statfulStrategies.size()) {
 				break;
 			}
@@ -224,7 +226,7 @@ public class ImageConverter {
 		}
 
 		if (previewRenderer != null) {
-			preview = previewRenderer.render(60, 25, (px, py) -> {
+			preview = previewRenderer.render(platform.getBoardWidth(), platform.getBoardHeight(), (px, py) -> {
 				if ((px + 1) == playerX && (py + 1) == playerY) {
 					return 2;
 				}
@@ -242,7 +244,8 @@ public class ImageConverter {
 				int ix = (px + 1) - x;
 				int iy = (py + 1) - y;
 				if (ix >= 0 && iy >= 0 && ix < width && iy < height) {
-					return previewResults[iy * width + ix].getColor();
+					int color = previewResults[iy * width + ix].getColor();
+					return blinkingDisabled ? color : (color & 0x7F);
 				} else {
 					return 0;
 				}

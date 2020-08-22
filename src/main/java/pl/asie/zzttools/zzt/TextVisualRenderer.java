@@ -27,9 +27,11 @@ public class TextVisualRenderer {
 	}
 
 	private final TextVisualData visual;
+	private final Platform platform;
 
-	public TextVisualRenderer(TextVisualData visual) {
+	public TextVisualRenderer(TextVisualData visual, Platform platform) {
 		this.visual = visual;
+		this.platform = platform;
 	}
 
 	/* public BufferedImage render(BoardAnimation animation, int frame) {
@@ -41,7 +43,10 @@ public class TextVisualRenderer {
 	} */
 
 	public BufferedImage render(int width, int height, ByteGetter charGetter, ByteGetter colorGetter) {
-		BufferedImage image = new BufferedImage(width * visual.getCharWidth(), height * visual.getCharHeight(), BufferedImage.TYPE_INT_RGB);
+		int charXInc = (platform.isDoubleWide() ? 2 : 1);
+		int charWidth = visual.getCharWidth() * charXInc;
+		int charHeight = visual.getCharHeight();
+		BufferedImage image = new BufferedImage(width * charWidth, height * charHeight, BufferedImage.TYPE_INT_RGB);
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
 				int chr = charGetter.get(x, y);
@@ -53,8 +58,13 @@ public class TextVisualRenderer {
 
 				for (int cy = 0; cy < visual.getCharHeight(); cy++) {
 					int charData = (int) charDataArray[charDataOffset + cy] & 0xFF;
-					for (int cx = 0; cx < visual.getCharWidth(); cx++) {
-						image.setRGB(x * visual.getCharWidth() + cx, y * visual.getCharHeight() + cy, ((charData & (1 << (7 - cx))) != 0) ? fgCol : bgCol);
+					int i = 7;
+					for (int cx = 0; cx < charWidth; cx += charXInc, i--) {
+						int ccol = ((charData & (1 << i)) != 0) ? fgCol : bgCol;
+						image.setRGB(x * charWidth + cx, y * charHeight + cy, ccol);
+						if (charXInc > 1) {
+							image.setRGB(x * charWidth + cx + 1, y * charHeight + cy, ccol);
+						}
 					}
 				}
 			}

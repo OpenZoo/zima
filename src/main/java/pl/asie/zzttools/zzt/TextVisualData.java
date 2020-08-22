@@ -18,9 +18,11 @@
  */
 package pl.asie.zzttools.zzt;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-@Data
+@Getter
+@RequiredArgsConstructor
 public final class TextVisualData {
 	private final int charWidth;
 	private final int charHeight;

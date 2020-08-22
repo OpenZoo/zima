@@ -44,10 +44,11 @@ public class SimpleCanvas extends JComponent {
 			} else {
 				Graphics2D g2d = (Graphics2D) graphics.create();
 				g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-				if (centered) {
+				if (centered && image.getWidth() <= size.width && image.getHeight() <= size.height) {
 					g2d.drawImage(image, (size.width - image.getWidth()) / 2, (size.height - image.getHeight()) / 2,null);
 				} else {
 					// scaled
+					// TODO: preserve aspect ratio
 					g2d.drawImage(image, 0, 0, size.width, size.height, 0, 0, image.getWidth(), image.getHeight(), null);
 				}
 				g2d.dispose();

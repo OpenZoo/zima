@@ -19,48 +19,108 @@
 package pl.asie.zzttools.zima.gui;
 
 import pl.asie.zzttools.zzt.TextVisualData;
-import pl.asie.zzttools.zzt.TextVisualRenderer;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class PaletteSelector extends JComponent implements MouseListener {
-    private static final int PALETTE_WIDTH = 16;
-    private static final int PALETTE_HEIGHT = 64;
-
+    private static final int BOX_SIZE = 14;
     private TextVisualData visual;
-    private final boolean[] allowedColors = new boolean[16];
+    private boolean blinkingDisabled;
+    private boolean selectBlinking;
+    private final boolean[] allowedColors = new boolean[256];
     private final Runnable changeListener;
 
     public PaletteSelector(Runnable changeListener) {
-        Arrays.fill(allowedColors, true);
         addMouseListener(this);
         this.changeListener = changeListener;
+        this.blinkingDisabled = false;
+        this.selectBlinking = false;
+        for (int i = 0; i < 256; i++) {
+            allowedColors[i] = i < 128;
+        }
+    }
+
+    private Color toAwt(int rgb) {
+        return new Color((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
+    }
+
+    private void drawB(Graphics graphics, int xPos, int yPos) {
+        graphics.fillRect(xPos, yPos, 2, 5);
+        graphics.fillRect(xPos, yPos, 5, 1);
+        graphics.fillRect(xPos, yPos + 2, 5, 1);
+        graphics.fillRect(xPos, yPos + 5, 5, 1);
+        graphics.fillRect(xPos + 5, yPos + 1, 1, 1);
+        graphics.fillRect(xPos + 5, yPos + 3, 1, 2);
     }
 
     @Override
     public void paintComponent(Graphics graphics) {
-        graphics.setColor(Color.BLACK);
-        graphics.fillRect(0, 0, PALETTE_WIDTH * 16, PALETTE_HEIGHT);
+        Color[] awtPalette = new Color[16];
         for (int i = 0; i < 16; i++) {
-            int rgb = visual.getPalette()[i];
-            graphics.setColor(new Color((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF));
-            graphics.fillRect(i * PALETTE_WIDTH, 0, PALETTE_WIDTH, PALETTE_HEIGHT - 16);
+            awtPalette[i] = toAwt(visual.getPalette()[i]);
+        }
+        graphics.setColor(Color.BLACK);
+        graphics.fillRect(0, 0, 17 * BOX_SIZE, 18 * BOX_SIZE);
+        // draw palette
+        for (int iy = 0; iy < 16; iy++) {
+            Color bgColor = awtPalette[!blinkingDisabled ? (iy & 7) : iy];
+            for (int ix = 0; ix < 16; ix++) {
+                boolean enabled = allowedColors[(iy * 16) + ix];
+                Color fgColor = awtPalette[ix];
+                int xPos = (ix + 1) * BOX_SIZE;
+                int yPos = (iy + 1) * BOX_SIZE;
+
+                if (enabled) {
+                    graphics.setColor(Color.GREEN);
+                    graphics.fillRect(xPos + 1, yPos + 1, 12, 12);
+                }
+                graphics.setColor(bgColor);
+                graphics.fillRect(xPos + 2, yPos + 2, 10, 10);
+                graphics.setColor(fgColor);
+                if (!blinkingDisabled && iy >= 8) {
+                    drawB(graphics, xPos + 4, yPos + 4);
+                } else {
+                    graphics.fillRect(xPos + 4, yPos + 4, 6, 6);
+                }
+            }
+        }
+        // draw toggle buttons
+        for (int i = 0; i < 32; i++) {
+            int xPos = (i >= 16) ? (BOX_SIZE * (i - 15)) : 0;
+            int yPos = (i >= 16) ? 0 : (BOX_SIZE * (i + 1));
+
             graphics.setColor(Color.GRAY);
-            graphics.fillRect(i * PALETTE_WIDTH, PALETTE_HEIGHT - 2, PALETTE_WIDTH, 2);
-            graphics.fillRect(i * PALETTE_WIDTH + (PALETTE_WIDTH - 2), PALETTE_HEIGHT - 16, 2, 16);
+            graphics.fillRect(xPos + 2, yPos + 2, BOX_SIZE - 4, BOX_SIZE - 4);
             graphics.setColor(Color.LIGHT_GRAY);
-            graphics.fillRect(i * PALETTE_WIDTH, PALETTE_HEIGHT - 16, PALETTE_WIDTH, 2);
-            graphics.fillRect(i * PALETTE_WIDTH, PALETTE_HEIGHT - 16, 2, 16);
-            graphics.setColor(allowedColors[i] ? Color.GREEN : Color.BLACK);
-            graphics.fillRect(i * PALETTE_WIDTH + 2, PALETTE_HEIGHT - 16 + 2, PALETTE_WIDTH - 4, 16 - 4);
+            graphics.fillRect(xPos + 1, yPos + 1, 1, BOX_SIZE - 2);
+            graphics.fillRect(xPos + 1, yPos + 1, BOX_SIZE - 2, 1);
+        }
+        // draw global buttons
+        for (int i = 0; i < 17; i++) {
+            int xPos = BOX_SIZE * i;
+            int yPos = BOX_SIZE * 17;
+
+            graphics.setColor((i == 0 && selectBlinking) ? Color.WHITE : Color.GRAY);
+            graphics.fillRect(xPos + 2, yPos + 2, BOX_SIZE - 4, BOX_SIZE - 4);
+            graphics.setColor(Color.LIGHT_GRAY);
+            graphics.fillRect(xPos + 1, yPos + 1, 1, BOX_SIZE - 2);
+            graphics.fillRect(xPos + 1, yPos + 1, BOX_SIZE - 2, 1);
+            if (i > 0) {
+                graphics.setColor(awtPalette[i - 1]);
+                graphics.fillRect(xPos + 4, yPos + 4, BOX_SIZE - 8, BOX_SIZE - 8);
+            } else {
+                // draw [B]
+                graphics.setColor(Color.BLACK);
+                drawB(graphics, xPos + 4, yPos + 4);
+            }
         }
     }
 
@@ -70,7 +130,7 @@ public class PaletteSelector extends JComponent implements MouseListener {
 
     public void setVisual(TextVisualData visual) {
         this.visual = visual;
-        Dimension dims = new Dimension(16 * PALETTE_WIDTH, PALETTE_HEIGHT);
+        Dimension dims = new Dimension(17 * BOX_SIZE, 18 * BOX_SIZE);
         setMinimumSize(dims);
         setMaximumSize(dims);
         setPreferredSize(dims);
@@ -78,15 +138,40 @@ public class PaletteSelector extends JComponent implements MouseListener {
     }
 
     public boolean isTwoColorAllowed(int c) {
-        return allowedColors[c >> 4] && allowedColors[c & 0xF];
-    }
-
-    public boolean isColorAllowed(int c) {
         return allowedColors[c];
     }
 
+    @Deprecated
+    public boolean isColorAllowed(int c) {
+        for (int i = 0; i < 16; i++) {
+            if (allowedColors[(c << 4) | i] || allowedColors[c | (i << 4)]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public Set<Integer> toSet() {
+        return IntStream.range(0, 256).filter(this::isTwoColorAllowed).boxed().collect(Collectors.toSet());
+    }
+
+    public void change() {
+        changeListener.run();
+    }
+
+    public void setBlinkingDisabled(boolean blinkingDisabled) {
+        this.blinkingDisabled = blinkingDisabled;
+        IntStream.range(0, 256).forEach(i -> setColorAllowed(i, allowedColors[i]));
+        repaint();
+        changeListener.run();
+    }
+
     public void setColorAllowed(int c, boolean v) {
-        allowedColors[c] = v;
+        if (blinkingDisabled || (selectBlinking != (c < 128))) {
+            allowedColors[c] = v;
+        } else {
+            allowedColors[c] = false;
+        }
         repaint();
         changeListener.run();
     }
@@ -98,20 +183,44 @@ public class PaletteSelector extends JComponent implements MouseListener {
                 valuesInRanges.add(j);
             }
         }
+        toggleColorAllowed(valuesInRanges);
+    }
 
-        boolean isAllSet = valuesInRanges.stream().allMatch(i -> allowedColors[i]);
-        boolean settingMode = !isAllSet;
+    public void toggleColorAllowed(IntStream ranges) {
+        toggleColorAllowed(ranges.boxed().collect(Collectors.toList()));
+    }
+
+    private void toggleColorAllowed(List<Integer> valuesInRanges) {
+        boolean isAnySet = valuesInRanges.stream().anyMatch(i -> allowedColors[i]);
+        boolean settingMode = !isAnySet;
         valuesInRanges.forEach(i -> setColorAllowed(i, settingMode));
     }
 
+    private IntStream streamColorBg(int color, boolean accountForBlinking) {
+        if (accountForBlinking && !blinkingDisabled) {
+            if (color >= 8) {
+                return IntStream.empty();
+            } else {
+                return IntStream.concat(IntStream.range((color) << 4, (color + 1) << 4), IntStream.range((color + 8) << 4, (color + 9) << 4));
+            }
+        } else {
+            return IntStream.range((color) << 4, (color + 1) << 4);
+        }
+    }
+
+    private IntStream streamColorFg(int color) {
+        return IntStream.range(0, 16).map(i -> (i << 4) | color);
+    }
+
+    private IntStream streamColorContained(int color) {
+        return IntStream.concat(streamColorBg(color, true), streamColorFg(color));
+    }
+
+    public void setColorContainingAllowed(int color, boolean v) {
+        streamColorContained(color).forEach(i -> setColorAllowed(i, v));
+    }
 
     // input
-
-    private int mcToColor(int x, int y) {
-        int p = x / PALETTE_WIDTH;
-        if (p < 0 || p >= 16) return -1;
-        else return p;
-    }
 
     @Override
     public void mouseClicked(MouseEvent mouseEvent) {
@@ -121,9 +230,33 @@ public class PaletteSelector extends JComponent implements MouseListener {
     @Override
     public void mousePressed(MouseEvent mouseEvent) {
         if (mouseEvent.getButton() == MouseEvent.BUTTON1) {
-            int c = mcToColor(mouseEvent.getX(), mouseEvent.getY());
-            if (c >= 0) {
+            final int my = mouseEvent.getY() / BOX_SIZE;
+            final int mx = mouseEvent.getX() / BOX_SIZE;
+            if (my == 0 && mx >= 1 && mx <= 16) {
+                // toggle all FOREGROUND colors
+                toggleColorAllowed(streamColorFg(mx - 1));
+            } else if (mx == 0 && my >= 1 && my <= 16) {
+                // toggle all BACKGROUND colors
+                toggleColorAllowed(streamColorBg(my - 1, false));
+            } else if (my == 17 && mx >= 1 && mx <= 16) {
+                // toggle all colors containing color
+                toggleColorAllowed(streamColorContained(mx - 1));
+            } else if (mx >= 1 && mx <= 16 && my >= 1 && my <= 16) {
+                // toggle specific color
+                int c = (mx - 1) | ((my - 1) << 4);
                 setColorAllowed(c, !allowedColors[c]);
+            } else if (mx == 0 && my == 17) {
+                // toggle [B] selection allowed
+                if (selectBlinking) {
+                    selectBlinking = false;
+                    IntStream.range(0, 128).forEach(c -> setColorAllowed(c, allowedColors[c + 128]));
+                    IntStream.range(128, 256).forEach(c -> setColorAllowed(c, false));
+                } else {
+                    selectBlinking = true;
+                    IntStream.range(128, 256).forEach(c -> setColorAllowed(c, allowedColors[c - 128]));
+                    IntStream.range(0, 128).forEach(c -> setColorAllowed(c, false));
+                }
+                repaint();
             }
         }
     }

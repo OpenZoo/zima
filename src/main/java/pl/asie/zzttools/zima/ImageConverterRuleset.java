@@ -31,7 +31,7 @@ import java.util.stream.IntStream;
 public class ImageConverterRuleset {
 	@Getter
 	private final List<ElementRule> rules;
-	private final transient int[][] allowedObjectIndices = new int[2][];
+	private transient int[] allowedObjectIndices;
 	private transient int[] allowedTextCharIndices;
 	private transient Set<Integer> globallyCoveredChars;
 	private transient Set<Integer> globallyCoveredColors;
@@ -47,10 +47,9 @@ public class ImageConverterRuleset {
 	}
 
 	@SuppressWarnings("RedundantIfStatement")
-	public int[] getAllowedObjectIndices(boolean noBlinking) {
-		int offset = noBlinking ? 0 : 1;
-		if (allowedObjectIndices[offset] == null) {
-			allowedObjectIndices[offset] = IntStream.range(0, (noBlinking ? 128 : 256) * 256)
+	public int[] getAllowedObjectIndices() {
+		if (allowedObjectIndices == null) {
+			allowedObjectIndices = IntStream.range(0, 256 * 256)
 					.filter(i -> {
 						// reduce the number of cases
 						int chr = (i & 0xFF);
@@ -64,7 +63,7 @@ public class ImageConverterRuleset {
 						return true;
 					}).toArray();
 		}
-		return allowedObjectIndices[offset];
+		return allowedObjectIndices;
 	}
 
 	public Set<Integer> getGloballyCoveredChars() {

@@ -22,8 +22,10 @@ import pl.asie.zzttools.util.ColorUtils;
 import pl.asie.zzttools.zzt.TextVisualData;
 
 import java.awt.image.BufferedImage;
+import java.util.Set;
 
 public class TrixImageMseCalculator implements ImageMseCalculator {
+	private static final Set<Integer> blendingChars = Set.of(0, 32, 176, 177, 178, 219);
 	private final TextVisualData visual;
 	private final float contrastReduction;
 	private final float accurateApproximate;
@@ -31,6 +33,7 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 	private final int[][] charLut2x2Precalc;
 	private final boolean[][] charLut1x1Precalc;
 	private final float[] colDistPrecalc;
+	private final boolean blinkingDisabled;
 
 	private static class ImageLutHolder {
 		private final float[][] dataMacro1x1;
@@ -73,10 +76,11 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 		}
 	}
 
-	public TrixImageMseCalculator(TextVisualData visual, float contrastReduction, float accurateApproximate) {
+	public TrixImageMseCalculator(TextVisualData visual, boolean blinkingDisabled, float contrastReduction, float accurateApproximate) {
 		this.visual = visual;
 		this.contrastReduction = contrastReduction;
 		this.accurateApproximate = accurateApproximate;
+		this.blinkingDisabled = blinkingDisabled;
 
 		charLutPrecalc = new int[256 * 16];
 		for (int i = 0; i < 256 * 16; i++) {
@@ -124,7 +128,7 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 		final ImageLutHolder holder = new ImageLutHolder(visual, image, px, py, visual.getCharWidth(), visual.getCharHeight());
 		return (proposed, maxMse) -> {
 			int chr = proposed.getCharacter();
-			int col = proposed.getColor();
+			int col = blinkingDisabled ? proposed.getColor() : (proposed.getColor() & 0x7F);
 
 			float mse = 0.0f;
 			int[] dataMacro2x2 = holder.dataMacro2x2;
@@ -134,7 +138,7 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 			float mseContrastReduction = contrastReduction * Math.abs(imgContrast - chrContrast);
 
 			float macroRatio = accurateApproximate;
-			if (chr >= 176 && chr <= 178) {
+			if (blendingChars.contains(chr)) {
 				macroRatio = 1.0f; // use only macro when blending
 			}
 

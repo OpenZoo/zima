@@ -20,6 +20,7 @@ package pl.asie.zzttools.zima;
 
 import lombok.*;
 import pl.asie.zzttools.zzt.Element;
+import pl.asie.zzttools.zzt.Platform;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Data
@@ -46,19 +47,35 @@ public class ElementRule {
 	private final int chr;
 	private final int color;
 
-	public static ElementRule element(Element element) {
-		return element(element, element.getCharacter());
+	public static ElementRule element(Platform platform, String name) {
+		Element element = platform.getLibrary().byInternalName(name);
+		if (element == null) {
+			throw new RuntimeException();
+		}
+		return element(platform, name, element.getCharacter());
 	}
 
-	public static ElementRule element(Element element, int chr) {
+	public static ElementRule element(Platform platform, String name, int chr) {
+		Element element = platform.getLibrary().byInternalName(name);
+		if (element == null) {
+			throw new RuntimeException();
+		}
 		return new ElementRule(element, element.getId() == 0 ? Strategy.EMPTY : Strategy.ELEMENT, chr, -1);
 	}
 
-	public static ElementRule text(Element element, int color) {
+	public static ElementRule text(Platform platform, String name, int color) {
+		Element element = platform.getLibrary().byInternalName(name);
+		if (element == null) {
+			throw new RuntimeException();
+		}
 		return new ElementRule(element, Strategy.TEXT, -1, color);
 	}
 
-	public static ElementRule statP1(Element element) {
+	public static ElementRule statP1(Platform platform, String name) {
+		Element element = platform.getLibrary().byInternalName(name);
+		if (element == null) {
+			throw new RuntimeException();
+		}
 		return new ElementRule(element, Strategy.USE_STAT_P1, -1, -1);
 	}
 }

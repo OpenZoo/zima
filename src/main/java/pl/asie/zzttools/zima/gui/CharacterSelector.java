@@ -18,6 +18,7 @@
  */
 package pl.asie.zzttools.zima.gui;
 
+import pl.asie.zzttools.zzt.Platform;
 import pl.asie.zzttools.zzt.TextVisualData;
 import pl.asie.zzttools.zzt.TextVisualRenderer;
 
@@ -30,9 +31,13 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class CharacterSelector extends JComponent implements MouseListener, MouseMotionListener {
     private TextVisualData visual;
+    private TextVisualRenderer renderer;
     private final boolean[] allowedChars = new boolean[256];
     private Boolean settingMode = null;
     private final Runnable changeListener;
@@ -46,7 +51,6 @@ public class CharacterSelector extends JComponent implements MouseListener, Mous
 
     @Override
     public void paintComponent(Graphics graphics) {
-        TextVisualRenderer renderer = new TextVisualRenderer(visual);
         BufferedImage image = renderer.render(32, 8,
                 (x, y) -> (y << 5) | x,
                 (x, y) -> allowedChars[(y << 5) | x] ? 0x2F : 0x04
@@ -60,6 +64,7 @@ public class CharacterSelector extends JComponent implements MouseListener, Mous
 
     public void setVisual(TextVisualData visual) {
         this.visual = visual;
+        this.renderer = new TextVisualRenderer(visual, Platform.ZZT);
         Dimension dims = new Dimension(32 * visual.getCharWidth(), 8 * visual.getCharHeight());
         setMinimumSize(dims);
         setMaximumSize(dims);
@@ -71,10 +76,20 @@ public class CharacterSelector extends JComponent implements MouseListener, Mous
         return allowedChars[c];
     }
 
-    public void setCharAllowed(int c, boolean v) {
-        allowedChars[c] = v;
-        repaint();
+    public Set<Integer> toSet() {
+        return IntStream.range(0, 256).filter(this::isCharAllowed).boxed().collect(Collectors.toSet());
+    }
+
+    public void change() {
         changeListener.run();
+    }
+
+    public void setCharAllowed(int c, boolean v) {
+        if (allowedChars[c] != v) {
+            allowedChars[c] = v;
+            repaint();
+            changeListener.run();
+        }
     }
 
     public void toggleCharAllowed(int... ranges) {

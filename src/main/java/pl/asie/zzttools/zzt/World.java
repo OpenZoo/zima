@@ -44,8 +44,11 @@ public class World {
 	private boolean isSave;
 	private List<Board> boards = new ArrayList<>();
 
-	public World() {
-		Board titleBoard = new Board();
+	private final Platform platform;
+
+	public World(Platform platform) {
+		this.platform = platform;
+		Board titleBoard = new Board(platform);
 		titleBoard.setName("Title screen");
 		boards.add(titleBoard);
 	}
@@ -87,7 +90,7 @@ public class World {
 		// boards
 		boards.clear();
 		for (int i = 0; i <= boardCount; i++) {
-			Board board = new Board();
+			Board board = new Board(platform);
 			board.readZ(stream);
 			boards.add(board);
 		}

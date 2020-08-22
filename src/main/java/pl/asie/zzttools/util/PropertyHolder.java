@@ -96,6 +96,23 @@ public class PropertyHolder {
         }
     }
 
+    public void copyTo(PropertyHolder other) {
+        Map<Property<?>, Object> propertyValueMapCopied = new HashMap<>();
+
+        synchronized (this.lock) {
+            this.propertyValueMap.forEach(propertyValueMapCopied::put);
+        }
+
+        synchronized (other.lock) {
+            propertyValueMapCopied.forEach((k, v) -> {
+                if (!Objects.equals(other.get(k), v)) {
+                    other.propertyValueMap.put(k, v);
+                    other.affects.addAll(k.getAffects());
+                }
+            });
+        }
+    }
+
     public PropertyHolder clone(PropertyAffect... affectsPop) {
         synchronized (this.lock) {
             PropertyHolder cloned = new PropertyHolder();

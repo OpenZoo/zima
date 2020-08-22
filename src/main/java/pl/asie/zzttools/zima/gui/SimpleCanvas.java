@@ -20,6 +20,7 @@ package pl.asie.zzttools.zima.gui;
 
 import lombok.Getter;
 import lombok.Setter;
+import pl.asie.zzttools.zzt.Platform;
 
 import javax.swing.*;
 import java.awt.*;
@@ -27,28 +28,42 @@ import java.awt.image.BufferedImage;
 
 public class SimpleCanvas extends JComponent {
 	@Getter
-	@Setter
-	private boolean centered;
 	private BufferedImage image;
+	@Getter
+	private boolean allowScaling;
+	@Getter
+	private boolean doubleWide;
 
-	public SimpleCanvas(boolean centered) {
-		this.centered = centered;
+	public SimpleCanvas() {
+		this.allowScaling = false;
+	}
+
+	private int imageWidth() {
+		return this.image == null ? 0 : (this.image.getWidth() * (doubleWide ? 2 : 1));
+	}
+
+	private int imageHeight() {
+		return this.image == null ? 0 : this.image.getHeight();
 	}
 
 	@Override
 	public void paintComponent(Graphics graphics) {
 		if (image != null) {
-			Dimension size = getSize();
+			Dimension size = this.getParent().getSize();
 			if (image.getWidth() == size.width && image.getHeight() == size.height) {
 				graphics.drawImage(image, 0, 0, null);
 			} else {
 				Graphics2D g2d = (Graphics2D) graphics.create();
-				g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-				if (centered && image.getWidth() <= size.width && image.getHeight() <= size.height) {
-					g2d.drawImage(image, (size.width - image.getWidth()) / 2, (size.height - image.getHeight()) / 2,null);
+				int xPos = (size.width - imageWidth()) / 2;
+				int yPos = (size.height - imageHeight()) / 2;
+				if (!allowScaling || ((xPos >= 0) && (yPos >= 0))) {
+					// scrollable
+					g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+					g2d.drawImage(image, xPos, yPos, xPos + imageWidth(), yPos + imageHeight(), 0, 0, image.getWidth(), image.getHeight(), null);
 				} else {
 					// scaled
 					// TODO: preserve aspect ratio
+					g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 					g2d.drawImage(image, 0, 0, size.width, size.height, 0, 0, image.getWidth(), image.getHeight(), null);
 				}
 				g2d.dispose();
@@ -56,12 +71,31 @@ public class SimpleCanvas extends JComponent {
 		}
 	}
 
-	public void setImage(BufferedImage image) {
-		this.image = image;
-		repaint();
+	public void updateDimensions() {
+		Dimension parentDim = this.getParent().getSize();
+		Dimension dimension = (this.image == null || allowScaling) ? parentDim : new Dimension(imageWidth(), imageHeight());
+		if (dimension.width < parentDim.width && dimension.height < parentDim.height) {
+			dimension = parentDim;
+		}
+		this.setMinimumSize(dimension);
+		this.setMaximumSize(dimension);
+		this.setPreferredSize(dimension);
+		this.getParent().revalidate();
+		this.getParent().repaint();
 	}
 
-	public BufferedImage getImage() {
-		return this.image;
+	public void setDoubleWide(boolean doubleWide) {
+		this.doubleWide = doubleWide;
+		updateDimensions();
+	}
+
+	public void setAllowScaling(boolean allowScaling) {
+		this.allowScaling = allowScaling;
+		updateDimensions();
+	}
+
+	public void setImage(BufferedImage image) {
+		this.image = image;
+		updateDimensions();
 	}
 }

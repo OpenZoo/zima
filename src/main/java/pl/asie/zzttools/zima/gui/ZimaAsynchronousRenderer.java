@@ -53,13 +53,14 @@ public class ZimaAsynchronousRenderer {
 		this.workThreadFast.start();
 	}
 
-	private void rerenderOnce(boolean fast) {
-		if (this.parent.getInputImage() != null) {
+	private void rerenderOnce(ZimaConversionProfile profile, boolean fast) {
+		BufferedImage image = this.parent.getInputImage();
+		if (image != null) {
 			if (!fast) {
 				this.parent.getRenderProgress().setValue(0);
 			}
 
-			Pair<Board, BufferedImage> output = this.parent.getProfile().convert(this.parent.getInputImage(), !fast ? ((max) -> {
+			Pair<Board, BufferedImage> output = profile.convert(image, !fast ? ((max) -> {
 				this.parent.getRenderProgress().setMaximum(max);
 				this.parent.getRenderProgress().setValue(this.parent.getRenderProgress().getValue() + 1);
 			}) : ((max) -> {}), fast);
@@ -131,7 +132,7 @@ public class ZimaAsynchronousRenderer {
 			}
 
 			try {
-				rerenderOnce(false);
+				rerenderOnce(parent.getProfile(), false);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -159,7 +160,8 @@ public class ZimaAsynchronousRenderer {
 
 			if (queued) {
 				try {
-					rerenderOnce(true);
+					parent.getProfile().getProperties().copyTo(parent.getProfileFast().getProperties());
+					rerenderOnce(parent.getProfileFast(), true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}

@@ -85,7 +85,7 @@ public class ElementLibraryZZT {
     public static final ElementLibrary INSTANCE;
 
     static {
-        List<Field> fields = Stream.of(ElementLibrarySuperZZT.class.getDeclaredFields())
+        List<Field> fields = Stream.of(ElementLibraryZZT.class.getDeclaredFields())
                 .filter(f -> f.getType() == Element.class).collect(Collectors.toList());
         List<String> names = fields.stream().map(Field::getName).collect(Collectors.toList());
         List<Element> elements = fields.stream().map(f -> {

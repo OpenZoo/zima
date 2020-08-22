@@ -36,6 +36,8 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
@@ -64,6 +66,7 @@ public class ZimaFrontendSwing {
 	private final JPanel optionsPalettePanel;
 	private final JPanel optionsAdvancedPanel;
 	private final SimpleCanvas previewCanvas;
+	private final JScrollPane previewCanvasPane;
 	@Getter
 	private final JLabel statusLabel;
 	@Getter
@@ -80,6 +83,7 @@ public class ZimaFrontendSwing {
 	private JSpinner playerYEdit;
 	private JSpinner charWidthEdit;
 	private JSpinner charHeightEdit;
+	private JLabel charRatioLabel;
 	private JSpinner maxStatCountEdit;
 	private JCheckBox blinkingDisabledEdit;
 	private JComboBox<String> platformEdit;
@@ -88,6 +92,10 @@ public class ZimaFrontendSwing {
 			new Pair<>("Super ZZT", Platform.SUPER_ZZT)
 	);
 	private JComboBox<String> rulesetEdit;
+	private final Map<Platform, ImageConverterRuleset> allRulesRuleset = Map.of(
+			Platform.ZZT, ImageConverterRulesZZT.ALL_RULES,
+			Platform.SUPER_ZZT, ImageConverterRulesSuperZZT.ALL_RULES
+	);
 	private final Map<Platform, List<Pair<String, ImageConverterRuleset>>> rulesetOptions = Map.of(
 			Platform.ZZT, List.of(
 					new Pair<>("Default", ImageConverterRulesZZT.RULES_UNSAFE_STATLESS),
@@ -114,6 +122,7 @@ public class ZimaFrontendSwing {
 	private JButton accurateApproximateReset;
 
 	// "Image" tab
+	private JLabel imageDataLabel;
 	private JCheckBox showInputImageEdit;
 	private JSlider brightnessEdit;
 	private JButton brightnessReset;
@@ -142,6 +151,8 @@ public class ZimaFrontendSwing {
 	private BufferedImage inputImage;
 	@Getter
 	private final ZimaConversionProfile profile;
+	@Getter
+	private final ZimaConversionProfile profileFast;
 	private final ZimaAsynchronousRenderer asyncRenderer;
 
 	private boolean uiReady;
@@ -154,6 +165,7 @@ public class ZimaFrontendSwing {
 		this.asyncRenderer = new ZimaAsynchronousRenderer(this);
 
 		this.profile = new ZimaConversionProfile();
+		this.profileFast = new ZimaConversionProfile();
 		this.profile.getProperties().addGlobalChangeListener((k, v) -> rerender());
 		// TODO: move both
 		this.profile.getProperties().set(ZimaConversionProfile.PLATFORM, Platform.ZZT);
@@ -162,13 +174,13 @@ public class ZimaFrontendSwing {
 		this.window = new JFrame("zima");
 		this.window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		this.previewCanvas = new SimpleCanvas(true);
+		this.previewCanvas = new SimpleCanvas();
 		this.mainPanel = new JPanel(new GridBagLayout());
 		this.statusLabel = new JLabel("Ready.");
-		addGridBag(this.mainPanel, this.previewCanvas, (c) -> { c.gridx = 0; c.gridy = 0; });
-		addGridBag(this.mainPanel, this.optionsPane = new JTabbedPane(), (c) -> { c.gridx = 1; c.gridy = 0; c.gridheight = 2; });
-		addGridBag(this.mainPanel, this.renderProgress = new JProgressBar(), (c) -> { c.gridx = 0; c.gridy = 1; });
-		addGridBag(this.mainPanel, this.statusLabel, (c) -> { c.gridx = 0; c.gridy = 2; c.gridwidth = GridBagConstraints.REMAINDER; c.fill = GridBagConstraints.BOTH; c.anchor = GridBagConstraints.WEST; });
+		addGridBag(this.mainPanel, this.previewCanvasPane = new JScrollPane(this.previewCanvas), (c) -> { c.gridx = 0; c.gridy = 0; c.fill = GridBagConstraints.BOTH; c.weightx = 0.8; c.weighty = 1.0; });
+		addGridBag(this.mainPanel, this.optionsPane = new JTabbedPane(), (c) -> { c.gridx = 1; c.gridy = 0; c.gridheight = 2; c.fill = GridBagConstraints.VERTICAL; });
+		addGridBag(this.mainPanel, this.renderProgress = new JProgressBar(), (c) -> { c.gridx = 0; c.gridy = 1; c.fill = GridBagConstraints.HORIZONTAL; });
+		addGridBag(this.mainPanel, this.statusLabel, (c) -> { c.gridx = 0; c.gridy = 2; c.gridwidth = GridBagConstraints.REMAINDER; c.fill = GridBagConstraints.HORIZONTAL; c.anchor = GridBagConstraints.WEST; });
 
 		this.optionsBoardPanel = new JPanel(new GridBagLayout());
 		this.optionsPane.addTab("Board", new JScrollPane(this.optionsBoardPanel));
@@ -216,31 +228,41 @@ public class ZimaFrontendSwing {
 				this.profile.getProperties().set(ZimaConversionProfile.PLATFORM, newPlatform);
 				this.profile.getProperties().set(ZimaConversionProfile.CHARS_WIDTH, newPlatform.getBoardWidth());
 				this.profile.getProperties().set(ZimaConversionProfile.CHARS_HEIGHT, newPlatform.getBoardHeight());
-				if (this.profile.getProperties().get(ZimaConversionProfile.MAX_STAT_COUNT) > newPlatform.getMaxStatCount()) {
-					this.profile.getProperties().set(ZimaConversionProfile.MAX_STAT_COUNT, newPlatform.getMaxStatCount());
-				}
 			});
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Board X", this.boardXEdit = new JSpinner(boardCoordsModel(false)));
+			appendTabRow(this.optionsBoardPanel, gbc, "Board X", this.boardXEdit = new JSpinner(boardCoordsModel(1, false)));
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.BOARD_X, this.boardXEdit);
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.boardXEdit.setModel(boardCoordsModel(((Number) this.boardXEdit.getValue()).intValue(), false)));
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Board Y", this.boardYEdit = new JSpinner(boardCoordsModel(true)));
+			appendTabRow(this.optionsBoardPanel, gbc, "Board Y", this.boardYEdit = new JSpinner(boardCoordsModel(1, true)));
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.BOARD_Y, this.boardYEdit);
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.boardYEdit.setModel(boardCoordsModel(((Number) this.boardYEdit.getValue()).intValue(), true)));
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Width (chars)", this.charWidthEdit = new JSpinner(boardCoordsModel(false)));
+			appendTabRow(this.optionsBoardPanel, gbc, "Width (chars)", this.charWidthEdit = new JSpinner(boardCoordsModel(60, false)));
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.CHARS_WIDTH, this.charWidthEdit);
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.charWidthEdit.setModel(boardCoordsModel(((Number) this.charWidthEdit.getValue()).intValue(), false)));
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Height (chars)", this.charHeightEdit = new JSpinner(boardCoordsModel(true)));
+			appendTabRow(this.optionsBoardPanel, gbc, "Height (chars)", this.charHeightEdit = new JSpinner(boardCoordsModel(25, true)));
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.CHARS_HEIGHT, this.charHeightEdit);
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.charHeightEdit.setModel(boardCoordsModel(((Number) this.charHeightEdit.getValue()).intValue(), true)));
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Player X", this.playerXEdit = new JSpinner(boardCoordsModel(false)));
+			appendTabRow(this.optionsBoardPanel, gbc, "Aspect ratio", this.charRatioLabel = new JLabel(""));
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.CHARS_WIDTH, (k, v) -> updateCharRatioLabel());
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.CHARS_HEIGHT, (k, v) -> updateCharRatioLabel());
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> updateCharRatioLabel());
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.VISUAL_DATA, (k, v) -> updateCharRatioLabel());
+
+			appendTabRow(this.optionsBoardPanel, gbc, "Player X", this.playerXEdit = new JSpinner(boardCoordsModel(1, false)));
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.PLAYER_X, this.playerXEdit);
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.playerXEdit.setModel(boardCoordsModel(((Number) this.playerXEdit.getValue()).intValue(), false)));
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Player Y", this.playerYEdit = new JSpinner(boardCoordsModel(true)));
+			appendTabRow(this.optionsBoardPanel, gbc, "Player Y", this.playerYEdit = new JSpinner(boardCoordsModel(1, true)));
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.PLAYER_Y, this.playerYEdit);
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.playerYEdit.setModel(boardCoordsModel(((Number) this.playerYEdit.getValue()).intValue(), true)));
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Max. stats", this.maxStatCountEdit = new JSpinner(new SpinnerNumberModel(0, 0, 150, 1)));
+			appendTabRow(this.optionsBoardPanel, gbc, "Max. stats", this.maxStatCountEdit = new JSpinner(statCountModel(150)));
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.MAX_STAT_COUNT, this.maxStatCountEdit);
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.maxStatCountEdit.setModel(statCountModel(((Number) this.maxStatCountEdit.getValue()).intValue())));
 
 			appendTabRow(this.optionsBoardPanel, gbc, "Accurate/Approximate",
 					this.accurateApproximateEdit = new JSlider(JSlider.HORIZONTAL, 0, 1000, 0),
@@ -257,6 +279,8 @@ public class ZimaFrontendSwing {
 			appendTabRow(this.optionsImagePanel, gbc, "Show input image", this.showInputImageEdit = new JCheckBox());
 			this.showInputImageEdit.setSelected(true);
 			this.showInputImageEdit.addItemListener((e) -> rerender());
+
+			appendTabRow(this.optionsImagePanel, gbc, "Image info", this.imageDataLabel = new JLabel(""));
 
 			appendTabRow(this.optionsImagePanel, gbc, "Brightness",
 					this.brightnessEdit = new JSlider(JSlider.HORIZONTAL, -160, 160, 0),
@@ -388,6 +412,17 @@ public class ZimaFrontendSwing {
 			this.contrastReductionReset.addActionListener((e) -> { this.profile.getProperties().reset(ZimaConversionProfile.TRIX_CONTRAST_REDUCTION); });
 		}
 
+		for (JPanel panel : List.of(this.optionsBoardPanel, this.optionsImagePanel, this.optionsCharsetPanel, this.optionsPalettePanel, this.optionsElementsPanel, this.optionsAdvancedPanel)) {
+			GridBagConstraints gbc = new GridBagConstraints();
+			gbc.gridx = 0;
+			gbc.gridy = GridBagConstraints.RELATIVE;
+			gbc.gridwidth = GridBagConstraints.REMAINDER;
+			gbc.weighty = 1.0;
+			gbc.weightx = 1.0;
+			gbc.fill = GridBagConstraints.VERTICAL;
+			panel.add(new JLabel(), gbc);
+		}
+
 		updateVisual();
 
 		this.openItem.addActionListener(this::onOpen);
@@ -407,12 +442,20 @@ public class ZimaFrontendSwing {
 		this.copyItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK));
 		this.pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK));
 
-		this.previewCanvas.setPreferredSize(new Dimension(480, 350));
-		this.previewCanvas.setMinimumSize(this.previewCanvas.getPreferredSize());
-		this.renderProgress.setPreferredSize(new Dimension(480, 20));
-		this.renderProgress.setMinimumSize(this.renderProgress.getPreferredSize());
-		this.optionsPane.setPreferredSize(new Dimension(470, 378));
-		this.optionsPane.setMinimumSize(this.optionsPane.getPreferredSize());
+		this.previewCanvas.setMinimumSize(new Dimension(480, 350));
+		this.previewCanvasPane.setMinimumSize(this.previewCanvas.getMinimumSize());
+		this.previewCanvas.setPreferredSize(this.previewCanvas.getMinimumSize());
+		this.previewCanvasPane.setPreferredSize(this.previewCanvas.getMinimumSize());
+		this.renderProgress.setMinimumSize(new Dimension(480, 20));
+		this.optionsPane.setMinimumSize(new Dimension(470, 378));
+
+		this.previewCanvasPane.addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentResized(ComponentEvent e) {
+				super.componentResized(e);
+				previewCanvas.updateDimensions();
+			}
+		});
 
 		uiReady = true;
 		rerender();
@@ -420,8 +463,6 @@ public class ZimaFrontendSwing {
 		this.window.add(this.mainPanel);
 		this.window.pack();
 		this.window.setMinimumSize(this.window.getSize());
-		this.window.setMaximumSize(this.window.getSize());
-		this.window.setResizable(false);
 		this.window.setVisible(true);
 	}
 
@@ -437,7 +478,7 @@ public class ZimaFrontendSwing {
 		gbc.anchor = GridBagConstraints.WEST;
 
 		int i = 0;
-		for (ElementRule rule : ImageConverterRulesZZT.ALL_RULES.getRules()) {
+		for (ElementRule rule : allRulesRuleset.get(platform).getRules()) {
 			StringBuilder labelStr = new StringBuilder(platform.getLibrary().getInternalName(rule.getElement()));
 			if (rule.getStrategy().isRequiresStat()) {
 				labelStr.append(" (Stat)");
@@ -479,7 +520,7 @@ public class ZimaFrontendSwing {
 		List<ElementRule> customRules = new ArrayList<>();
 		// if default ruleset, disable checkboxes + copy to boxes
 		// if custom ruleset, enable checkboxes + copy from boxes
-		for (ElementRule rule : ImageConverterRulesZZT.ALL_RULES.getRules()) {
+		for (ElementRule rule : allRulesRuleset.get(platform).getRules()) {
 			JCheckBox box = rulesetBoxEdit.get(rule);
 			box.setEnabled(rule.getElement().getId() != 0 && ruleset == null);
 			if (ruleset != null) {
@@ -496,6 +537,17 @@ public class ZimaFrontendSwing {
 		}
 		this.profile.getProperties().set(ZimaConversionProfile.RULESET, ruleset);
 		rerender();
+	}
+
+	private void updateCharRatioLabel() {
+		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+		int width = this.profile.getProperties().get(ZimaConversionProfile.CHARS_WIDTH) * this.visual.getCharWidth() * (platform.isDoubleWide() ? 2 : 1);
+		int height = this.profile.getProperties().get(ZimaConversionProfile.CHARS_HEIGHT) * this.visual.getCharHeight();
+		if (width > 0 && height > 0) {
+			this.charRatioLabel.setText(String.format("%.2f (%dx%d pixels)", (float) width / height, width, height));
+		} else {
+			this.charRatioLabel.setText("");
+		}
 	}
 
 	public void updateVisual() {
@@ -528,11 +580,14 @@ public class ZimaFrontendSwing {
 
 	public void updateCanvas() {
 		if (isShowInputImage()) {
+			Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 			this.profile.updateImage(inputImage);
-			this.previewCanvas.setCentered(false);
+			this.previewCanvas.setAllowScaling(true);
+			this.previewCanvas.setDoubleWide(platform.isDoubleWide());
 			this.previewCanvas.setImage(this.profile.getFilteredImage());
 		} else {
-			this.previewCanvas.setCentered(true);
+			this.previewCanvas.setAllowScaling(false);
+			this.previewCanvas.setDoubleWide(false);
 			this.previewCanvas.setImage(this.asyncRenderer.getOutputImage());
 			this.asyncRenderer.popQueue();
 		}
@@ -551,6 +606,11 @@ public class ZimaFrontendSwing {
 			inputImage = inputImageFixed;
 		} else {
 			inputImage = (BufferedImage) image;
+		}
+		if (inputImage != null) {
+			this.imageDataLabel.setText(String.format("%dx%d pixels, aspect = %.2f", inputImage.getWidth(), inputImage.getHeight(), (float) inputImage.getWidth() / inputImage.getHeight()));
+		} else {
+			this.imageDataLabel.setText("");
 		}
 		rerender();
 	}
@@ -919,8 +979,16 @@ public class ZimaFrontendSwing {
 		panel.add(c, gbc);
 	}
 
-	private SpinnerNumberModel boardCoordsModel(boolean height) {
+	private SpinnerNumberModel boardCoordsModel(int cval, boolean height) {
 		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
-		return new SpinnerNumberModel(1, 1, height ? platform.getBoardHeight() : platform.getBoardWidth(), 1);
+		int cmax = height ? platform.getBoardHeight() : platform.getBoardWidth();
+		if (cval > cmax) cval = cmax;
+		return new SpinnerNumberModel(cval, 1, cmax, 1);
+	}
+
+	private SpinnerNumberModel statCountModel(int cval) {
+		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+		if (cval > platform.getMaxStatCount()) cval = platform.getMaxStatCount();
+		return new SpinnerNumberModel(cval, 0, platform.getMaxStatCount(), 1);
 	}
 }

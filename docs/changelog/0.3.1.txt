@@ -1,6 +1,7 @@
 Improvements:
 
 * Added Super ZZT support.
+* Added an option "Board -> Max board size" to limit board size. (Useful for Super ZZT!)
 * Added a new, more powerful palette selector UI.
     * Allows configuring individual BG/FG pairs.
     * Allows using blinkable colors in place of non-blinkable ones.

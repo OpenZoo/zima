@@ -85,6 +85,7 @@ public class ZimaFrontendSwing {
 	private JSpinner charHeightEdit;
 	private JLabel charRatioLabel;
 	private JSpinner maxStatCountEdit;
+	private JSpinner maxBoardSizeEdit;
 	private JCheckBox blinkingDisabledEdit;
 	private JComboBox<String> platformEdit;
 	private final List<Pair<String, Platform>> platforms = List.of(
@@ -260,9 +261,13 @@ public class ZimaFrontendSwing {
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.PLAYER_Y, this.playerYEdit);
 			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.playerYEdit.setModel(boardCoordsModel(((Number) this.playerYEdit.getValue()).intValue(), true)));
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Max. stats", this.maxStatCountEdit = new JSpinner(statCountModel(150)));
+			appendTabRow(this.optionsBoardPanel, gbc, "Max. stats", this.maxStatCountEdit = new JSpinner(statCountModel(Platform.ZZT.getMaxStatCount())));
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.MAX_STAT_COUNT, this.maxStatCountEdit);
 			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.maxStatCountEdit.setModel(statCountModel(((Number) this.maxStatCountEdit.getValue()).intValue())));
+
+			appendTabRow(this.optionsBoardPanel, gbc, "Max. board size", this.maxBoardSizeEdit = new JSpinner(boardSizeModel(Platform.ZZT.getMaxBoardSize())));
+			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.MAX_BOARD_SIZE, this.maxBoardSizeEdit);
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.maxBoardSizeEdit.setModel(boardSizeModel(((Number) this.maxBoardSizeEdit.getValue()).intValue())));
 
 			appendTabRow(this.optionsBoardPanel, gbc, "Accurate/Approximate",
 					this.accurateApproximateEdit = new JSlider(JSlider.HORIZONTAL, 0, 1000, 0),
@@ -990,5 +995,11 @@ public class ZimaFrontendSwing {
 		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 		if (cval > platform.getMaxStatCount()) cval = platform.getMaxStatCount();
 		return new SpinnerNumberModel(cval, 0, platform.getMaxStatCount(), 1);
+	}
+
+	private SpinnerNumberModel boardSizeModel(int cval) {
+		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+		if (cval > platform.getMaxBoardSize()) cval = platform.getMaxBoardSize();
+		return new SpinnerNumberModel(cval, 0, platform.getMaxBoardSize(), 1);
 	}
 }

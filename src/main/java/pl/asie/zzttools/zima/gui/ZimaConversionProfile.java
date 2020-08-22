@@ -46,6 +46,7 @@ public class ZimaConversionProfile {
     public static final Property<Integer> PLAYER_X = Property.create("output.playerX", 60);
     public static final Property<Integer> PLAYER_Y = Property.create("output.playerY", 25);
     public static final Property<Integer> MAX_STAT_COUNT = Property.create("converter.maxStatCount", 150);
+    public static final Property<Integer> MAX_BOARD_SIZE = Property.create("converter.maxBoardSize", 20002);
     public static final Property<Float> TRIX_CONTRAST_REDUCTION = Property.create("converter.trix.contrastReduction", 0.0035f, MSE_CALCULATOR);
     public static final Property<Float> TRIX_ACCURATE_APPROXIMATE = Property.create("converter.trix.accurateApproximate", 0.45f, MSE_CALCULATOR);
 
@@ -195,6 +196,7 @@ public class ZimaConversionProfile {
                 properties.get(PLAYER_X), properties.get(PLAYER_Y),
                 properties.get(MAX_STAT_COUNT),
                 properties.get(BLINKING_DISABLED),
+                properties.get(MAX_BOARD_SIZE),
                 properties.has(ALLOWED_CHARACTERS) ? properties.get(ALLOWED_CHARACTERS)::contains : null,
                 properties.has(ALLOWED_COLORS) ? properties.get(ALLOWED_COLORS)::contains : null,
                 this.renderer, progressCallback);

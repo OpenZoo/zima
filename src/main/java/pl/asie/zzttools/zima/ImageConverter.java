@@ -19,6 +19,7 @@
 package pl.asie.zzttools.zima;
 
 import pl.asie.zzttools.util.Coord2D;
+import pl.asie.zzttools.util.CountOutputStream;
 import pl.asie.zzttools.util.ImageUtils;
 import pl.asie.zzttools.util.Pair;
 import pl.asie.zzttools.util.Triplet;
@@ -26,11 +27,13 @@ import pl.asie.zzttools.zzt.*;
 
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -49,8 +52,23 @@ public class ImageConverter {
 		this.mseCalculator = mseCalculator;
 	}
 
+	@FunctionalInterface
+	private interface ZOutputStreamConsumer {
+		void accept(ZOutputStream stream) throws IOException;
+	}
+
+	private int count(ZOutputStreamConsumer streamConsumer) {
+		try (CountOutputStream stream = new CountOutputStream(); ZOutputStream zStream = new ZOutputStream(stream, platform)) {
+			streamConsumer.accept(zStream);
+			return stream.getCount();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public Pair<Board, BufferedImage> convert(BufferedImage inputImage, ImageConverterRuleset ruleset,
 	                                          int x, int y, int width, int height, int playerX, int playerY, int maxStatCount, boolean blinkingDisabled,
+	                                          int maxBoardSize,
 	                                          IntPredicate charCheck, IntPredicate colorCheck,
 	                                          TextVisualRenderer previewRenderer,
 	                                          ProgressCallback progressCallback) {
@@ -205,13 +223,21 @@ public class ImageConverter {
 		}));
 
 		int realMaxStatCount = Math.min(maxStatCount, platform.getMaxStatCount());
-		for (int i = 0; i < realMaxStatCount; i++) {
-			if (i >= statfulStrategies.size()) {
+		int realMaxBoardSize = Math.min(maxBoardSize, platform.getMaxBoardSize());
+		int boardSerializationSize = count(board::writeZ);
+		int addedStats = 0;
+
+		for (int i = 0; i < statfulStrategies.size(); i++) {
+			if (addedStats >= realMaxStatCount) {
 				break;
 			}
 			Triplet<Coord2D, ElementResult, Float> strategyData = statfulStrategies.get(i);
 			Coord2D coords = strategyData.getFirst();
 			ElementResult result = strategyData.getSecond();
+
+			ElementResult prevResult = previewResults[coords.getY() * width + coords.getX()];
+			Element prevElement = board.getElement(x + coords.getX(), y + coords.getY());
+			int prevColor = board.getColor(x + coords.getX(), y + coords.getY());
 
 			// only one mode - set stat P1
 			previewResults[coords.getY() * width + coords.getX()] = result;
@@ -222,7 +248,21 @@ public class ImageConverter {
 			stat.setY(y + coords.getY());
 			stat.setCycle(1); // maybe we can reduce this to save CPU cycles?
 			stat.setP1(result.getCharacter());
-			board.addStat(stat);
+
+			if (boardSerializationSize < (realMaxBoardSize - 128)) {
+				// optimization: don't recalc full board size if only RLE could be impacted
+				boardSerializationSize += count(stat::writeZ);
+			} else {
+				boardSerializationSize = count(board::writeZ) + count(stat::writeZ);
+			}
+			if (boardSerializationSize > realMaxBoardSize) {
+				previewResults[coords.getY() * width + coords.getX()] = prevResult;
+				board.setElement(x + coords.getX(), y + coords.getY(), prevElement);
+				board.setColor(x + coords.getX(), y + coords.getY(), prevColor);
+			} else {
+				board.addStat(stat);
+				addedStats++;
+			}
 		}
 
 		if (previewRenderer != null) {

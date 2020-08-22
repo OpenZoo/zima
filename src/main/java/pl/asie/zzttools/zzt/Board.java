@@ -130,7 +130,7 @@ public class Board {
 		// TODO: take board size into account
 		stream.readPShort();
 
-		this.name = stream.readPString(50);
+		this.name = stream.readPString(platform == Platform.SUPER_ZZT ? 60 : 50);
 
 		int ix = 1;
 		int iy = 1;
@@ -155,15 +155,24 @@ public class Board {
 		} while (iy <= this.height);
 
 		this.maxShots = stream.readPByte();
-		this.dark = stream.readPBoolean();
+		if (platform == Platform.ZZT) {
+			this.dark = stream.readPBoolean();
+		}
 		for (int i = 0; i < 4; i++)
 			this.neighborBoards[i] = stream.readPByte();
 		this.reenterWhenZapped = stream.readPBoolean();
-		this.message = stream.readPString(58);
+		if (platform == Platform.ZZT) {
+			this.message = stream.readPString(58);
+		}
 		this.startPlayerX = stream.readPByte();
 		this.startPlayerY = stream.readPByte();
+		if (platform == Platform.SUPER_ZZT) {
+			stream.readPShort(); // DrawXOffset - TOOD
+			stream.readPShort(); // DrawYOffset - TOOD
+		}
 		this.timeLimitSec = stream.readPShort();
-		if (stream.skip(16) != 16) {
+		int skipCount = platform == Platform.SUPER_ZZT ? 14 : 16;
+		if (stream.skip(skipCount) != skipCount) {
 			throw new IOException();
 		}
 
@@ -178,7 +187,8 @@ public class Board {
 
 	public void writeZ(ZOutputStream outStream) throws IOException {
 		try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream(); ZOutputStream stream = new ZOutputStream(byteStream, outStream.getPlatform())) {
-			stream.writePString(this.name, 50);
+			Platform platform = stream.getPlatform();
+			stream.writePString(this.name, platform == Platform.SUPER_ZZT ? 60 : 50);
 
 			// fancy RLE logic
 			int ix = 1;
@@ -206,15 +216,23 @@ public class Board {
 			} while (iy <= this.height);
 
 			stream.writePByte(this.maxShots);
-			stream.writePBoolean(this.dark);
+			if (platform == Platform.ZZT) {
+				stream.writePBoolean(this.dark);
+			}
 			for (int i = 0; i < 4; i++)
 				stream.writePByte(this.neighborBoards[i]);
 			stream.writePBoolean(this.reenterWhenZapped);
-			stream.writePString(this.message, 58);
+			if (platform == Platform.ZZT) {
+				stream.writePString(this.message, 58);
+			}
 			stream.writePByte(this.startPlayerX);
 			stream.writePByte(this.startPlayerY);
+			if (platform == Platform.SUPER_ZZT) {
+				stream.writePShort(0); // DrawXOffset - TODO
+				stream.writePShort(0); // DrawYOffset - TODO
+			}
 			stream.writePShort(this.timeLimitSec);
-			stream.pad(16);
+			stream.pad(platform == Platform.SUPER_ZZT ? 14 : 16);
 
 			stream.writePShort(stats.size() - 1);
 			for (Stat stat : stats) {

@@ -19,9 +19,11 @@
 package pl.asie.zzttools.util;
 
 import lombok.Getter;
+import pl.asie.zzttools.zzt.ZOutputStream;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.function.Consumer;
 
 public class CountOutputStream extends OutputStream {
     @Getter

@@ -26,7 +26,7 @@ import lombok.Data;
 public class Platform {
     private final int boardWidth;
     private final int boardHeight;
-    private final int maxBoardSize; // excl. size byte
+    private final int maxBoardSize; // incl. size byte
     private final int maxStatCount;
     @Builder.Default
     private final boolean doubleWide = false;
@@ -36,7 +36,7 @@ public class Platform {
     public static final Platform SUPER_ZZT;
 
     static {
-        ZZT = Platform.builder().boardWidth(60).boardHeight(25).maxBoardSize(20000).maxStatCount(150).library(ElementLibraryZZT.INSTANCE).build();
-        SUPER_ZZT = Platform.builder().boardWidth(96).boardHeight(80).maxBoardSize(20000).maxStatCount(128).library(ElementLibrarySuperZZT.INSTANCE).doubleWide(true).build();
+        ZZT = Platform.builder().boardWidth(60).boardHeight(25).maxBoardSize(20000 + 2).maxStatCount(150).library(ElementLibraryZZT.INSTANCE).build();
+        SUPER_ZZT = Platform.builder().boardWidth(96).boardHeight(80).maxBoardSize(20000 + 2).maxStatCount(128).library(ElementLibrarySuperZZT.INSTANCE).doubleWide(true).build();
     }
 }

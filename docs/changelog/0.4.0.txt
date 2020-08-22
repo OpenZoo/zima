@@ -3,6 +3,8 @@ Improvements:
 * Added Super ZZT support.
 * Added a thumbnail view for opening image files.
 * Added an option "Board -> Max board size" to limit board size. (Useful for Super ZZT!)
+* Added pixel size and aspect ratio information to "Board" and "Image".
+* Added an option "Image -> Preserve aspect ratio" to prevent image stretching.
 * Added a new, more powerful palette selector UI.
     * Allows configuring individual BG/FG pairs.
     * Allows using blinkable colors in place of non-blinkable ones.

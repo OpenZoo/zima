@@ -35,19 +35,27 @@ public final class ImageUtils {
     }
 
     public static void drawScaled(BufferedImage inputImage, int width, int height, Graphics2D scaledGraphics, boolean preserveAspectRatio) {
+        drawScaled(inputImage, width, height, scaledGraphics, preserveAspectRatio, false);
+    }
+
+    public static void drawScaled(BufferedImage inputImage, int width, int height, Graphics2D scaledGraphics, boolean preserveAspectRatio, boolean doubleWide) {
         if (preserveAspectRatio) {
-            float factor = calculateScaleFactor(inputImage, width, height);
+            float factor = calculateScaleFactor(inputImage, width * (doubleWide ? 2 : 1), height);
             int drawWidth = Math.round(inputImage.getWidth() * factor);
             int drawHeight = Math.round(inputImage.getHeight() * factor);
-            int xOffset = (width - drawWidth) / 2;
+            int xOffset = (width - (drawWidth / (doubleWide ? 2 : 1))) / 2;
             int yOffset = (height - drawHeight) / 2;
-            scaledGraphics.drawImage(inputImage, xOffset, yOffset, drawWidth + xOffset, drawHeight + yOffset, 0, 0, inputImage.getWidth(), inputImage.getHeight(), null);
+            scaledGraphics.drawImage(inputImage, xOffset, yOffset, (drawWidth / (doubleWide ? 2 : 1)) + xOffset, drawHeight + yOffset, 0, 0, inputImage.getWidth(), inputImage.getHeight(), null);
         } else {
             scaledGraphics.drawImage(inputImage, 0, 0, width, height, 0, 0, inputImage.getWidth(), inputImage.getHeight(), null);
         }
     }
 
     public static BufferedImage scale(BufferedImage inputImage, int width, int height, boolean preserveAspectRatio, Color fillColor) {
+        return scale(inputImage, width, height, preserveAspectRatio, false, fillColor);
+    }
+
+    public static BufferedImage scale(BufferedImage inputImage, int width, int height, boolean preserveAspectRatio, boolean doubleWide, Color fillColor) {
         if (inputImage.getWidth() == width && inputImage.getHeight() == height) {
             return inputImage;
         }
@@ -58,7 +66,7 @@ public final class ImageUtils {
             graphics.fillRect(0, 0, width, height);
         }
         graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-        drawScaled(inputImage, width, height, graphics, preserveAspectRatio);
+        drawScaled(inputImage, width, height, graphics, preserveAspectRatio, doubleWide);
         graphics.dispose();
         return scaledImage;
     }

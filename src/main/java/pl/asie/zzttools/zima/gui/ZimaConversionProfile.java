@@ -37,7 +37,7 @@ public class ZimaConversionProfile {
     private static final PropertyAffect IMAGE_CONVERTER = new PropertyAffect();
 
     public static final Property<TextVisualData> VISUAL_DATA = Property.createTransient(SCALED_IMAGE, MSE_CALCULATOR, TEXT_VISUAL_RENDERER, IMAGE_CONVERTER);
-    public static final Property<Platform> PLATFORM = Property.createTransient(TEXT_VISUAL_RENDERER, IMAGE_CONVERTER);
+    public static final Property<Platform> PLATFORM = Property.createTransient(SCALED_IMAGE, TEXT_VISUAL_RENDERER, IMAGE_CONVERTER);
 
     public static final Property<Integer> CHARS_WIDTH = Property.create("output.widthChars", 60, SCALED_IMAGE);
     public static final Property<Integer> CHARS_HEIGHT = Property.create("output.heightChars", 25, SCALED_IMAGE);
@@ -166,7 +166,7 @@ public class ZimaConversionProfile {
             int width = properties.get(VISUAL_DATA).getCharWidth() * properties.get(CHARS_WIDTH);
             int height = properties.get(VISUAL_DATA).getCharHeight() * properties.get(CHARS_HEIGHT);
 
-            this.scaledImage = ImageUtils.scale(img, width, height, properties.get(PRESERVE_ASPECT_RATIO), Color.BLACK);
+            this.scaledImage = ImageUtils.scale(img, width, height, properties.get(PRESERVE_ASPECT_RATIO), properties.get(PLATFORM).isDoubleWide(), Color.BLACK);
             localHolder.affect(FILTERED_IMAGE);
         }
 

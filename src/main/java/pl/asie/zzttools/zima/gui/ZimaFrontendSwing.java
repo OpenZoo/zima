@@ -407,7 +407,7 @@ public class ZimaFrontendSwing {
 			appendTabRow(this.optionsAdvancedPanel, gbc, "Fast preview", this.fastPreviewEdit = new JCheckBox());
 			this.fastPreviewEdit.setSelected(true);
 			this.asyncRenderer.setUseFastPreview(this.fastPreviewEdit.isSelected());
-			this.fastPreviewEdit.addChangeListener((e) -> { this.asyncRenderer.setUseFastPreview(this.fastPreviewEdit.isSelected()); rerender(); });
+			this.fastPreviewEdit.addItemListener((e) -> { this.asyncRenderer.setUseFastPreview(this.fastPreviewEdit.isSelected()); rerender(); });
 
 /*			this.profile.setMseCalculatorFunction(this.mseConverterOptions.get(0).getSecond());
 			appendTabRow(this.optionsAdvancedPanel, gbc, "Error calculator", this.mseConverterEdit = new JComboBox<>(this.mseConverterOptions.stream().map(Pair::getFirst).toArray(String[]::new)));
@@ -427,7 +427,6 @@ public class ZimaFrontendSwing {
 			gbc.gridy = GridBagConstraints.RELATIVE;
 			gbc.gridwidth = GridBagConstraints.REMAINDER;
 			gbc.weighty = 1.0;
-			gbc.weightx = 1.0;
 			gbc.fill = GridBagConstraints.VERTICAL;
 			panel.add(new JLabel(), gbc);
 		}

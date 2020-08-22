@@ -125,6 +125,7 @@ public class ZimaFrontendSwing {
 	// "Image" tab
 	private JLabel imageDataLabel;
 	private JCheckBox showInputImageEdit;
+	private JCheckBox preserveAspectRatioEdit;
 	private JSlider brightnessEdit;
 	private JButton brightnessReset;
 	private JSlider contrastEdit;
@@ -286,6 +287,9 @@ public class ZimaFrontendSwing {
 			this.showInputImageEdit.addItemListener((e) -> rerender());
 
 			appendTabRow(this.optionsImagePanel, gbc, "Image info", this.imageDataLabel = new JLabel(""));
+
+			appendTabRow(this.optionsImagePanel, gbc, "Preserve aspect ratio", this.preserveAspectRatioEdit = new JCheckBox());
+			bindPropertyBoolean(this.profile.getProperties(), ZimaConversionProfile.PRESERVE_ASPECT_RATIO, this.preserveAspectRatioEdit);
 
 			appendTabRow(this.optionsImagePanel, gbc, "Brightness",
 					this.brightnessEdit = new JSlider(JSlider.HORIZONTAL, -160, 160, 0),
@@ -757,7 +761,7 @@ public class ZimaFrontendSwing {
 	}
 
 	public void onOpen(ActionEvent event) {
-		JFileChooser fc = new JFileChooser();
+		ImageFileChooser fc = new ImageFileChooser();
 		fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
 		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
 		int returnVal = fc.showOpenDialog(this.window);

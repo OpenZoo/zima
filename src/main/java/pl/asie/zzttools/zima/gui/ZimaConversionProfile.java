@@ -53,6 +53,7 @@ public class ZimaConversionProfile {
     public static final Property<Float> BRIGHTNESS = Property.create("image.colorFilter.brightness", 0.0f, FILTERED_IMAGE);
     public static final Property<Float> CONTRAST = Property.create("image.colorFilter.contrast", 0.0f, FILTERED_IMAGE);
     public static final Property<Float> SATURATION = Property.create("image.colorFilter.saturation", 0.0f, FILTERED_IMAGE);
+    public static final Property<Boolean> PRESERVE_ASPECT_RATIO = Property.create("image.preserveAspectRatio", true, SCALED_IMAGE);
 
     public static final Property<Integer> CROP_LEFT = Property.create("image.crop.left", 0, SCALED_IMAGE);
     public static final Property<Integer> CROP_RIGHT = Property.create("image.crop.right", 0, SCALED_IMAGE);
@@ -165,7 +166,7 @@ public class ZimaConversionProfile {
             int width = properties.get(VISUAL_DATA).getCharWidth() * properties.get(CHARS_WIDTH);
             int height = properties.get(VISUAL_DATA).getCharHeight() * properties.get(CHARS_HEIGHT);
 
-            this.scaledImage = ImageUtils.scale(img, width, height, AffineTransformOp.TYPE_BICUBIC);
+            this.scaledImage = ImageUtils.scale(img, width, height, properties.get(PRESERVE_ASPECT_RATIO), Color.BLACK);
             localHolder.affect(FILTERED_IMAGE);
         }
 

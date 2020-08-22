@@ -78,9 +78,6 @@ public class ImageConverter {
 		int pixelWidth = width * visual.getCharWidth();
 		int pixelHeight = height * visual.getCharHeight();
 
-		if (inputImage.getWidth() != pixelWidth || inputImage.getHeight() != pixelHeight) {
-			inputImage = ImageUtils.scale(inputImage, pixelWidth, pixelHeight, AffineTransformOp.TYPE_BICUBIC);
-		}
 		final BufferedImage image = inputImage;
 
 		List<Triplet<Coord2D, ElementResult, Float>> statfulStrategies = new ArrayList<>();

@@ -18,6 +18,7 @@
  */
 package pl.asie.zzttools.util;
 
+import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
@@ -27,14 +28,39 @@ public final class ImageUtils {
 
     }
 
-    public static BufferedImage scale(BufferedImage inputImage, int width, int height, int mode) {
+    public static float calculateScaleFactor(BufferedImage image, int width, int height) {
+        float aspectRatioSrc = (float) image.getWidth() / image.getHeight();
+        float aspectRatioDst = (float) width / height;
+        return aspectRatioSrc > aspectRatioDst ? ((float) width / image.getWidth()) : ((float) height / image.getHeight());
+    }
+
+    public static void drawScaled(BufferedImage inputImage, int width, int height, Graphics2D scaledGraphics, boolean preserveAspectRatio) {
+        if (preserveAspectRatio) {
+            float factor = calculateScaleFactor(inputImage, width, height);
+            int drawWidth = Math.round(inputImage.getWidth() * factor);
+            int drawHeight = Math.round(inputImage.getHeight() * factor);
+            int xOffset = (width - drawWidth) / 2;
+            int yOffset = (height - drawHeight) / 2;
+            scaledGraphics.drawImage(inputImage, xOffset, yOffset, drawWidth + xOffset, drawHeight + yOffset, 0, 0, inputImage.getWidth(), inputImage.getHeight(), null);
+        } else {
+            scaledGraphics.drawImage(inputImage, 0, 0, width, height, 0, 0, inputImage.getWidth(), inputImage.getHeight(), null);
+        }
+    }
+
+    public static BufferedImage scale(BufferedImage inputImage, int width, int height, boolean preserveAspectRatio, Color fillColor) {
         if (inputImage.getWidth() == width && inputImage.getHeight() == height) {
             return inputImage;
         }
-        BufferedImage scaledImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        AffineTransform transform = AffineTransform.getScaleInstance((float) width / inputImage.getWidth(), (float) height / inputImage.getHeight());
-        AffineTransformOp transformOp = new AffineTransformOp(transform, mode);
-        return transformOp.filter(inputImage, scaledImage);
+        BufferedImage scaledImage = new BufferedImage(width, height, fillColor != null ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = (Graphics2D) scaledImage.getGraphics();
+        if (fillColor != null) {
+            graphics.setColor(fillColor);
+            graphics.fillRect(0, 0, width, height);
+        }
+        graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        drawScaled(inputImage, width, height, graphics, preserveAspectRatio);
+        graphics.dispose();
+        return scaledImage;
     }
 
 }

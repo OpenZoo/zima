@@ -20,6 +20,7 @@ package pl.asie.zzttools.zima.gui;
 
 import lombok.Getter;
 import lombok.Setter;
+import pl.asie.zzttools.util.ImageUtils;
 import pl.asie.zzttools.zzt.Platform;
 
 import javax.swing.*;
@@ -54,16 +55,15 @@ public class SimpleCanvas extends JComponent {
 				graphics.drawImage(image, 0, 0, null);
 			} else {
 				Graphics2D g2d = (Graphics2D) graphics.create();
+				g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 				int xPos = (size.width - imageWidth()) / 2;
 				int yPos = (size.height - imageHeight()) / 2;
 				if (!allowScaling || ((xPos >= 0) && (yPos >= 0))) {
 					// scrollable
-					g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 					g2d.drawImage(image, xPos, yPos, xPos + imageWidth(), yPos + imageHeight(), 0, 0, image.getWidth(), image.getHeight(), null);
 				} else {
 					// scaled
 					// TODO: preserve aspect ratio
-					g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 					g2d.drawImage(image, 0, 0, size.width, size.height, 0, 0, image.getWidth(), image.getHeight(), null);
 				}
 				g2d.dispose();

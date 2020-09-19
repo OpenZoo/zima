@@ -1,0 +1,5 @@
+Improvements:
+
+* Slightly reduced the image converter's board output file size.
+    * Empties and solids should now be used more often in place of X-on-X-colored tiles.
+    * Solids are now tweaked to remove redundant background color information.

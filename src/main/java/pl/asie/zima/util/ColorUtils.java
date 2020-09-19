@@ -92,7 +92,7 @@ public final class ColorUtils {
 
 	public static float sRtoR(int v) {
 		float r;
-		if (v < 0.04045f) {
+		if (v <= (255.0f * 0.04045f)) {
 			r = (v / 255.0f) / 12.92f;
 		} else {
 			r = (float) Math.pow(((v / 255.0f) + 0.055f) / 1.055f, 2.4f);

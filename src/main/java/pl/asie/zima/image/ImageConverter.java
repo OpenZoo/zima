@@ -223,7 +223,7 @@ public class ImageConverter {
 			return proposedMse - pastMse;
 		}));
 
-		int realMaxStatCount = Math.min(maxStatCount, platform.getMaxStatCount());
+		int realMaxStatCount = Math.min(maxStatCount, platform.getActualMaxStatCount());
 		int realMaxBoardSize = Math.min(maxBoardSize, platform.getMaxBoardSize());
 		int boardSerializationSize = count(board::writeZ);
 		int addedStats = 0;

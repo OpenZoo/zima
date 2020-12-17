@@ -1004,8 +1004,8 @@ public class ZimaFrontendSwing {
 
 	private SpinnerNumberModel statCountModel(int cval) {
 		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
-		if (cval > platform.getMaxStatCount()) cval = platform.getMaxStatCount();
-		return new SpinnerNumberModel(cval, 0, platform.getMaxStatCount(), 1);
+		if (cval > platform.getActualMaxStatCount()) cval = platform.getActualMaxStatCount();
+		return new SpinnerNumberModel(cval, 0, platform.getActualMaxStatCount(), 1);
 	}
 
 	private SpinnerNumberModel boardSizeModel(int cval) {

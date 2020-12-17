@@ -1,5 +1,6 @@
 Improvements:
 
+* Allowed using the "de facto" maximum ZZT stat limit, if set by hand (151 for ZZT, 129 for Super ZZT).
 * Slightly reduced the image converter's board output file size.
     * Empties and solids should now be used more often in place of X-on-X-colored tiles.
     * Solids are now tweaked to remove redundant background color information.

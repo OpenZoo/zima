@@ -30,10 +30,16 @@ public class Platform {
     private final int maxStatCount;
     @Builder.Default
     private final boolean doubleWide = false;
+    @Builder.Default
+    private final boolean maxStatCountIsActual = false;
     private final ElementLibrary library;
 
     public static final Platform ZZT;
     public static final Platform SUPER_ZZT;
+
+    public int getActualMaxStatCount() {
+        return maxStatCountIsActual ? maxStatCount : maxStatCount + 1;
+    }
 
     static {
         ZZT = Platform.builder().boardWidth(60).boardHeight(25).maxBoardSize(20000 + 2).maxStatCount(150).library(ElementLibraryZZT.INSTANCE).build();

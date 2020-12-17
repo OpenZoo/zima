@@ -1,0 +1,10 @@
+Improvements:
+
+* Slightly reduced the image converter's board output file size.
+    * Empties and solids should now be used more often in place of X-on-X-colored tiles.
+    * Solids are now tweaked to remove redundant background color information.
+
+Bugs fixed:
+
+* Minor bug in conversion handling of very dark colors.
+* When restoring a profile with blinking disabled, the "high colors" would not be set correctly.

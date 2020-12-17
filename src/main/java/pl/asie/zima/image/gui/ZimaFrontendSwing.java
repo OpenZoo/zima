@@ -831,6 +831,9 @@ public class ZimaFrontendSwing {
 	public ZimaProfileSettings getSettings() {
 		ZimaProfileSettings settings = new ZimaProfileSettings();
 
+		settings.setMaxStatCount(this.profile.getProperties().get(ZimaConversionProfile.MAX_STAT_COUNT));
+		settings.setColorsBlink(!this.profile.getProperties().get(ZimaConversionProfile.BLINKING_DISABLED));
+
 		settings.setAllowedCharacters(IntStream.range(0, 256).filter(this.characterSelector::isCharAllowed).toArray());
 		settings.setAllowedColorPairs(IntStream.range(0, 256).filter(this.paletteSelector::isTwoColorAllowed).toArray());
 		settings.setAllowedElements(this.profile.getProperties().get(ZimaConversionProfile.RULESET).getRules());
@@ -842,8 +845,6 @@ public class ZimaFrontendSwing {
 			settings.setCustomPalette(this.palette);
 		}
 
-		settings.setMaxStatCount(this.profile.getProperties().get(ZimaConversionProfile.MAX_STAT_COUNT));
-		settings.setColorsBlink(!this.profile.getProperties().get(ZimaConversionProfile.BLINKING_DISABLED));
 		settings.setContrastReduction(this.profile.getProperties().get(ZimaConversionProfile.TRIX_CONTRAST_REDUCTION));
 		settings.setAccurateApproximate(this.profile.getProperties().get(ZimaConversionProfile.TRIX_ACCURATE_APPROXIMATE));
 
@@ -859,6 +860,14 @@ public class ZimaFrontendSwing {
 	}
 
 	public void setSettings(ZimaProfileSettings settings) {
+		if (settings.getMaxStatCount() != null) {
+			this.profile.getProperties().set(ZimaConversionProfile.MAX_STAT_COUNT, settings.getMaxStatCount());
+		}
+
+		if (settings.getColorsBlink() != null) {
+			this.profile.getProperties().set(ZimaConversionProfile.BLINKING_DISABLED, !settings.getColorsBlink());
+		}
+
 		if (settings.getAllowedCharacters() != null) {
 			Set<Integer> allowedCharactersSet = toIntSet(settings.getAllowedCharacters());
 			IntStream.range(0, 256).forEach(i -> this.characterSelector.setCharAllowed(i, allowedCharactersSet.contains(i)));
@@ -906,14 +915,6 @@ public class ZimaFrontendSwing {
 		this.charset = settings.getCustomCharset();
 		this.palette = settings.getCustomPalette();
 		updateVisual();
-
-		if (settings.getMaxStatCount() != null) {
-			this.profile.getProperties().set(ZimaConversionProfile.MAX_STAT_COUNT, settings.getMaxStatCount());
-		}
-
-		if (settings.getColorsBlink() != null) {
-			this.profile.getProperties().set(ZimaConversionProfile.BLINKING_DISABLED, !settings.getColorsBlink());
-		}
 
 		if (settings.getContrastReduction() != null) {
 			this.profile.getProperties().set(ZimaConversionProfile.TRIX_CONTRAST_REDUCTION, settings.getContrastReduction());

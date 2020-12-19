@@ -1,0 +1,4 @@
+Bugs fixed:
+
+* [#9] Broken optimization code (regression in 0.4.1)
+* [#8] Profiles not loading their custom element selection. (regression in 0.4.0)

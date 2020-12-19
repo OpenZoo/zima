@@ -889,7 +889,7 @@ public class ZimaFrontendSwing {
 			boolean found = false;
 			int emptyIndex = -1;
 			Set<ElementRule> settingsElementSet = new HashSet<>(settings.getAllowedElements());
-			for (int i = 0; i < rulesetOptions.size(); i++) {
+			for (int i = 0; i < rulesetOptions.get(platform).size(); i++) {
 				ImageConverterRuleset ruleset = rulesetOptions.get(platform).get(i).getSecond();
 				if (ruleset != null) {
 					Set<ElementRule> rulesElementSet = new HashSet<>(ruleset.getRules());

@@ -34,9 +34,11 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -85,6 +87,7 @@ public class ImageConverter {
 
 		List<Triplet<Coord2D, ElementResult, Float>> statfulStrategies = new ArrayList<>();
 		Map<ElementRule, List<ElementResult>> ruleResultMap = new LinkedHashMap<>();
+		Set<Element> allowedElements = new HashSet<>();
 		ElementResult[] previewResults = new ElementResult[width * height];
 		float[] previewMse = new float[width * height];
 		final int progressSize = width * height;
@@ -97,6 +100,7 @@ public class ImageConverter {
 			}
 
 			Stream<ElementResult> proposals = null;
+			allowedElements.add(rule.getElement());
 			switch (rule.getStrategy()) {
 				case EMPTY:
 					proposals = Stream.of(emptyResult);
@@ -266,8 +270,10 @@ public class ImageConverter {
 			}
 		}
 
-		// improve compression by pushing some elements to their more optimal forms
+		// compression pass
 		boolean canTrustSolids = visual.isCharFull(219);
+		Element solidElement = platform.getLibrary().byInternalName("SOLID");
+		if (!allowedElements.contains(solidElement)) solidElement = null;
 
 		for (int iy = 0; iy < height; iy++) {
 			for (int ix = 0; ix < width; ix++) {
@@ -282,12 +288,18 @@ public class ImageConverter {
 							continue;
 						}
 
-						if ((element.getCharacter() == 219 || ((color >> 4) == (color & 0x0F))) && canTrustSolids) {
+						if (color == 0x00) {
+							board.setElement(x + ix, y + iy, emptyResult.getElement());
+							board.setColor(x + ix, y + iy, 0x0F);
+						} else if ((element.getCharacter() == 219 || ((color >> 4) == (color & 0x0F))) && canTrustSolids) {
 							if ((color & 0x0F) == 0x00) {
 								board.setElement(x + ix, y + iy, emptyResult.getElement());
 								board.setColor(x + ix, y + iy, 0x0F);
 							} else {
-								board.setColor(x + ix, y + iy, color & 0x0F);
+								if (solidElement != null && (colorCheck == null || colorCheck.test(color & 0x0F))) {
+									board.setElement(x + ix, y + iy, solidElement);
+									board.setColor(x + ix, y + iy, color & 0x0F);
+								}
 							}
 						}
 					}

@@ -18,6 +18,8 @@
  */
 package pl.asie.zima.image;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import pl.asie.libzzt.Board;
 import pl.asie.libzzt.Element;
 import pl.asie.libzzt.Platform;
@@ -71,12 +73,114 @@ public class ImageConverter {
 		}
 	}
 
-	public Pair<Board, BufferedImage> convert(BufferedImage inputImage, ImageConverterRuleset ruleset,
+	@AllArgsConstructor
+	public static class Result {
+		@Getter
+		private final Board board;
+		@Getter
+		private final int width;
+		@Getter
+		private final int height;
+		private final ElementResult[] previewResults;
+
+		public int getCharacter(int ix, int iy) {
+			if (ix >= 0 && iy >= 0 && ix < width && iy < height) {
+				return previewResults[iy * width + ix].getCharacter();
+			} else {
+				return 0;
+			}
+		}
+
+		public int getColor(int ix, int iy) {
+			if (ix >= 0 && iy >= 0 && ix < width && iy < height) {
+				return previewResults[iy * width + ix].getColor();
+			} else {
+				return 0;
+			}
+		}
+	}
+
+	private Pair<Result, BufferedImage> convertBoardless(BufferedImage inputImage, int width, int height, boolean blinkingDisabled,
+	                                                     IntPredicate charCheck, IntPredicate colorCheck,
+	                                                     TextVisualRenderer previewRenderer,
+	                                                     ProgressCallback progressCallback, boolean fast) {
+		List<ElementResult> rules = new ArrayList<>(256 * 256);
+		final int progressSize = width * height;
+		ElementResult[] previewResults = new ElementResult[width * height];
+		BufferedImage preview = null;
+
+		for (int ich = 0; ich < 256; ich++) {
+			if (fast && (ich != 32 && ich != 176 && ich != 177 && ich != 178 && ich != 219)) continue;
+			if (charCheck != null && !charCheck.test(ich)) continue;
+			for (int ico = 0; ico < 256; ico++) {
+				if (colorCheck != null && !colorCheck.test(ico)) continue;
+				rules.add(new ElementResult(null, false, false, ich, ico));
+			}
+		}
+
+		// find lowest-MSE results for each tile, in parallel
+		IntStream.range(0, width * height).parallel().forEach(pos -> {
+			synchronized (progressCallback) {
+				progressCallback.step(progressSize);
+			}
+
+			int ix = pos % width;
+			int iy = pos / width;
+
+			ElementResult minResult = null;
+			float minMse = Float.MAX_VALUE;
+			ImageMseCalculator.Applier applyMseFunc = mseCalculator.applyMse(inputImage, ix * visual.getCharWidth(), iy * visual.getCharHeight());
+
+			for (ElementResult result : rules) {
+				float localMse = applyMseFunc.apply(result, minMse);
+				if (localMse < minMse) {
+					minMse = localMse;
+					minResult = result;
+				}
+			}
+
+			previewResults[pos] = minResult;
+		});
+
+		// result
+		Result result = new Result(null, width, height, previewResults);
+
+		// preview
+		if (previewRenderer != null) {
+			preview = previewRenderer.render(width, height, (ix, iy) -> {
+				if (ix >= 0 && iy >= 0 && ix < width && iy < height) {
+					return result.getCharacter(ix, iy);
+				} else {
+					return 0;
+				}
+			}, (ix, iy) -> {
+				if (ix >= 0 && iy >= 0 && ix < width && iy < height) {
+					int color = result.getColor(ix, iy);
+					return blinkingDisabled ? color : (color & 0x7F);
+				} else {
+					return 0;
+				}
+			});
+		}
+
+		return new Pair<>(result, preview);
+	}
+
+	public Pair<Result, BufferedImage> convert(BufferedImage inputImage, ImageConverterRuleset ruleset,
 											  int x, int y, int width, int height, int playerX, int playerY, int maxStatCount, boolean blinkingDisabled,
 											  int maxBoardSize,
 											  IntPredicate charCheck, IntPredicate colorCheck,
 											  TextVisualRenderer previewRenderer,
-											  ProgressCallback progressCallback) {
+											  ProgressCallback progressCallback, boolean fast) {
+		if (!platform.isSupportsBlinking()) {
+			blinkingDisabled = true;
+		}
+		final boolean blinkingDisabledFinal = blinkingDisabled;
+
+		if (!platform.isUsesBoard()) {
+			return convertBoardless(inputImage, width, height, blinkingDisabled, charCheck, colorCheck, previewRenderer, progressCallback, fast);
+		}
+
 		Board board = new Board(platform, playerX, playerY);
 		BufferedImage preview = null;
 
@@ -270,35 +374,37 @@ public class ImageConverter {
 			}
 		}
 
-		// compression pass
-		boolean canTrustSolids = visual.isCharFull(219);
-		Element solidElement = platform.getLibrary().byInternalName("SOLID");
-		if (!allowedElements.contains(solidElement)) solidElement = null;
+		if (!fast) {
+			// compression pass
+			boolean canTrustSolids = visual.isCharFull(219);
+			Element solidElement = platform.getLibrary().byInternalName("SOLID");
+			if (!allowedElements.contains(solidElement)) solidElement = null;
 
-		for (int iy = 0; iy < height; iy++) {
-			for (int ix = 0; ix < width; ix++) {
-				boolean spaceForbidden = ((x + ix) < 1 || (y + iy) < 1 || (x + ix) > platform.getBoardWidth() || (y + iy) > platform.getBoardHeight());
+			for (int iy = 0; iy < height; iy++) {
+				for (int ix = 0; ix < width; ix++) {
+					boolean spaceForbidden = ((x + ix) < 1 || (y + iy) < 1 || (x + ix) > platform.getBoardWidth() || (y + iy) > platform.getBoardHeight());
 
-				if (!spaceForbidden) {
-					Element element = board.getElement(x + ix, y + iy);
-					int color = board.getColor(x + ix, y + iy);
+					if (!spaceForbidden) {
+						Element element = board.getElement(x + ix, y + iy);
+						int color = board.getColor(x + ix, y + iy);
 
-					if (!element.isText() && !element.isStat()) {
-						if (!blinkingDisabled && color >= 0x80) {
-							continue;
-						}
+						if (!element.isText() && !element.isStat()) {
+							if (!blinkingDisabled && color >= 0x80) {
+								continue;
+							}
 
-						if (color == 0x00) {
-							board.setElement(x + ix, y + iy, emptyResult.getElement());
-							board.setColor(x + ix, y + iy, 0x0F);
-						} else if ((element.getCharacter() == 219 || ((color >> 4) == (color & 0x0F))) && canTrustSolids) {
-							if ((color & 0x0F) == 0x00) {
+							if (color == 0x00) {
 								board.setElement(x + ix, y + iy, emptyResult.getElement());
 								board.setColor(x + ix, y + iy, 0x0F);
-							} else {
-								if (solidElement != null && (colorCheck == null || colorCheck.test(color & 0x0F))) {
-									board.setElement(x + ix, y + iy, solidElement);
-									board.setColor(x + ix, y + iy, color & 0x0F);
+							} else if ((element.getCharacter() == 219 || ((color >> 4) == (color & 0x0F))) && canTrustSolids) {
+								if ((color & 0x0F) == 0x00) {
+									board.setElement(x + ix, y + iy, emptyResult.getElement());
+									board.setColor(x + ix, y + iy, 0x0F);
+								} else {
+									if (solidElement != null && (colorCheck == null || colorCheck.test(color & 0x0F))) {
+										board.setElement(x + ix, y + iy, solidElement);
+										board.setColor(x + ix, y + iy, color & 0x0F);
+									}
 								}
 							}
 						}
@@ -306,6 +412,9 @@ public class ImageConverter {
 				}
 			}
 		}
+
+		// result
+		Result result = new Result(board, width, height, previewResults);
 
 		// preview
 		if (previewRenderer != null) {
@@ -328,13 +437,13 @@ public class ImageConverter {
 				int iy = (py + 1) - y;
 				if (ix >= 0 && iy >= 0 && ix < width && iy < height) {
 					int color = previewResults[iy * width + ix].getColor();
-					return blinkingDisabled ? color : (color & 0x7F);
+					return blinkingDisabledFinal ? color : (color & 0x7F);
 				} else {
 					return 0;
 				}
 			});
 		}
 
-		return new Pair<>(board, preview);
+		return new Pair<>(result, preview);
 	}
 }

@@ -1,0 +1,9 @@
+Improvements:
+
+* Added .MZM export support for interoperability with MegaZeux.
+* Added a "MegaZeux" platform. It behaves a bit differently from previous ones - only the board width and height can be
+  configured, and there are no elements to choose from. Rather, these decisions are performed by the MegaZeux editor.
+
+Bugs fixed:
+
+* Fixed decreased performance of preview generation (regression from 0.4.1).

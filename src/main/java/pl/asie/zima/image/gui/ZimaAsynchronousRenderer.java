@@ -20,6 +20,7 @@ package pl.asie.zima.image.gui;
 
 import lombok.Getter;
 import lombok.Setter;
+import pl.asie.zima.image.ImageConverter;
 import pl.asie.zima.util.CountOutputStream;
 import pl.asie.zima.util.Pair;
 import pl.asie.libzzt.Board;
@@ -30,7 +31,7 @@ import java.io.IOException;
 
 public class ZimaAsynchronousRenderer {
 	private final ZimaFrontendSwing parent;
-	private Board outputBoard;
+	private ImageConverter.Result outputResult;
 	private BufferedImage outputImage;
 	private BufferedImage outputPreviewImage;
 
@@ -60,7 +61,7 @@ public class ZimaAsynchronousRenderer {
 				this.parent.getRenderProgress().setValue(0);
 			}
 
-			Pair<Board, BufferedImage> output = profile.convert(image, !fast ? ((max) -> {
+			Pair<ImageConverter.Result, BufferedImage> output = profile.convert(image, !fast ? ((max) -> {
 				this.parent.getRenderProgress().setMaximum(max);
 				this.parent.getRenderProgress().setValue(this.parent.getRenderProgress().getValue() + 1);
 			}) : ((max) -> {}), fast);
@@ -70,7 +71,7 @@ public class ZimaAsynchronousRenderer {
 					outputPreviewImage = output.getSecond();
 				} else {
 					if (!this.queued || !useFastPreview) {
-						outputBoard = output.getFirst();
+						outputResult = output.getFirst();
 						outputImage = output.getSecond();
 					}
 				}
@@ -78,24 +79,28 @@ public class ZimaAsynchronousRenderer {
 			}
 
 			if (!fast) {
-				// calculate board data
-				int statCount = output.getFirst().getStats().size() - 1;
-				int boardSize = -1;
+				if (output.getFirst().getBoard() != null) {
+					// calculate board data
+					int statCount = output.getFirst().getBoard().getStats().size() - 1;
+					int boardSize = -1;
 
-				try (CountOutputStream cos = new CountOutputStream(); ZOutputStream stream = new ZOutputStream(cos, output.getFirst().getPlatform())) {
-					output.getFirst().writeZ(stream);
-					boardSize = cos.getCount();
-				} catch (IOException e) {
-					// pass
+					try (CountOutputStream cos = new CountOutputStream(); ZOutputStream stream = new ZOutputStream(cos, output.getFirst().getBoard().getPlatform())) {
+						output.getFirst().getBoard().writeZ(stream);
+						boardSize = cos.getCount();
+					} catch (IOException e) {
+						// pass
+					}
+
+					this.parent.getStatusLabel().setText(String.format("%d bytes, %d stats", boardSize, statCount));
+				} else {
+					this.parent.getStatusLabel().setText("Conversion complete.");
 				}
-
-				this.parent.getStatusLabel().setText(String.format("%d bytes, %d stats", boardSize, statCount));
 			}
 		} else {
 			if (fast) {
 				outputPreviewImage = null;
 			} else {
-				outputBoard = null;
+				outputResult = null;
 				outputImage = null;
 			}
 			this.parent.updateCanvas();
@@ -105,7 +110,7 @@ public class ZimaAsynchronousRenderer {
 
 	private void rerenderSync() {
 		synchronized (outputWriteLock) {
-			outputBoard = null;
+			outputResult = null;
 			outputImage = null;
 		}
 
@@ -198,7 +203,13 @@ public class ZimaAsynchronousRenderer {
 
 	public Board getOutputBoard() {
 		synchronized (outputWriteLock) {
-			return outputBoard;
+			return outputResult != null ? outputResult.getBoard() : null;
+		}
+	}
+
+	public ImageConverter.Result getOutputResult() {
+		synchronized (outputWriteLock) {
+			return outputResult;
 		}
 	}
 

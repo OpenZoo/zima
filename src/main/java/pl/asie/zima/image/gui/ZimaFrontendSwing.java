@@ -28,6 +28,7 @@ import pl.asie.libzzt.Platform;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.ZOutputStream;
 import pl.asie.zima.util.FileUtils;
+import pl.asie.zima.util.MZMWriter;
 import pl.asie.zima.util.Pair;
 import pl.asie.zima.util.Property;
 import pl.asie.zima.util.PropertyHolder;
@@ -62,7 +63,7 @@ public class ZimaFrontendSwing {
 	private final JPanel mainPanel;
 	private final JMenuBar menuBar;
 	private final JMenu fileMenu, editMenu, profileMenu, helpMenu;
-	private final JMenuItem openItem, saveBrdItem, savePngItem, closeItem;
+	private final JMenuItem openItem, saveBrdItem, saveMzmItem, savePngItem, closeItem;
 	private final JMenuItem copyItem ,pasteItem;
 	private final JMenuItem profileLoadItem, profileSaveItem;
 	private final JMenuItem changelogItem, aboutItem;
@@ -98,12 +99,14 @@ public class ZimaFrontendSwing {
 	private JComboBox<String> platformEdit;
 	private final List<Pair<String, Platform>> platforms = List.of(
 			new Pair<>("ZZT", Platform.ZZT),
-			new Pair<>("Super ZZT", Platform.SUPER_ZZT)
+			new Pair<>("Super ZZT", Platform.SUPER_ZZT),
+			new Pair<>("MegaZeux", Platform.MEGAZEUX)
 	);
 	private JComboBox<String> rulesetEdit;
 	private final Map<Platform, ImageConverterRuleset> allRulesRuleset = Map.of(
 			Platform.ZZT, ImageConverterRulesZZT.ALL_RULES,
-			Platform.SUPER_ZZT, ImageConverterRulesSuperZZT.ALL_RULES
+			Platform.SUPER_ZZT, ImageConverterRulesSuperZZT.ALL_RULES,
+			Platform.MEGAZEUX, new ImageConverterRuleset(List.of())
 	);
 	private final Map<Platform, List<Pair<String, ImageConverterRuleset>>> rulesetOptions = Map.of(
 			Platform.ZZT, List.of(
@@ -121,6 +124,9 @@ public class ZimaFrontendSwing {
 					new Pair<>("Blocks", ImageConverterRulesSuperZZT.RULES_BLOCKS),
 					new Pair<>("Walkable", ImageConverterRulesSuperZZT.RULES_WALKABLE),
 					new Pair<>("Custom", null)
+			),
+			Platform.MEGAZEUX, List.of(
+					new Pair<>("N/A", null)
 			)
 	);
 	private Map<ElementRule, JCheckBox> rulesetBoxEdit = new HashMap<>();
@@ -212,6 +218,7 @@ public class ZimaFrontendSwing {
 		this.fileMenu.add(this.openItem = new JMenuItem("Open"));
 		this.fileMenu.add(this.saveBrdItem = new JMenuItem("Save (.brd)"));
 		this.fileMenu.add(this.savePngItem = new JMenuItem("Save (.png)"));
+		this.fileMenu.add(this.saveMzmItem = new JMenuItem("Save (.mzm)"));
 		this.fileMenu.add(this.closeItem = new JMenuItem("Close"));
 
 		this.menuBar.add(this.editMenu = new JMenu("Edit"));
@@ -236,8 +243,16 @@ public class ZimaFrontendSwing {
 			this.platformEdit.addActionListener((e) -> {
 				Platform newPlatform = this.platforms.get(this.platformEdit.getSelectedIndex()).getSecond();
 				this.profile.getProperties().set(ZimaConversionProfile.PLATFORM, newPlatform);
-				this.profile.getProperties().set(ZimaConversionProfile.CHARS_WIDTH, newPlatform.getBoardWidth());
-				this.profile.getProperties().set(ZimaConversionProfile.CHARS_HEIGHT, newPlatform.getBoardHeight());
+				this.profile.getProperties().set(ZimaConversionProfile.CHARS_WIDTH, newPlatform.getDefaultBoardWidth());
+				this.profile.getProperties().set(ZimaConversionProfile.CHARS_HEIGHT, newPlatform.getDefaultBoardHeight());
+
+				this.boardXEdit.setEnabled(newPlatform.isUsesBoard());
+				this.boardYEdit.setEnabled(newPlatform.isUsesBoard());
+				this.playerXEdit.setEnabled(newPlatform.isUsesBoard());
+				this.playerYEdit.setEnabled(newPlatform.isUsesBoard());
+				this.saveBrdItem.setEnabled(newPlatform.isUsesBoard());
+				this.maxBoardSizeEdit.setEnabled(newPlatform.getMaxBoardSize() > 0);
+				this.maxStatCountEdit.setEnabled(newPlatform.getMaxStatCount() > 0);
 			});
 
 			appendTabRow(this.optionsBoardPanel, gbc, "Board X", this.boardXEdit = new JSpinner(boardCoordsModel(1, false)));
@@ -442,8 +457,9 @@ public class ZimaFrontendSwing {
 		updateVisual();
 
 		this.openItem.addActionListener(this::onOpen);
-		this.saveBrdItem.addActionListener((e) -> this.onSave(e, false));
-		this.savePngItem.addActionListener((e) -> this.onSave(e, true));
+		this.saveBrdItem.addActionListener(this::onSaveBoard);
+		this.savePngItem.addActionListener(this::onSavePng);
+		this.saveMzmItem.addActionListener(this::onSaveMzm);
 		this.closeItem.addActionListener(this::onClose);
 		this.copyItem.addActionListener(this::onCopy);
 		this.pasteItem.addActionListener(this::onPaste);
@@ -532,7 +548,11 @@ public class ZimaFrontendSwing {
 	public void setRuleset(int index) {
 		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 
+		if (index >= this.rulesetOptions.get(platform).size()) {
+			index = 0;
+		}
 		ImageConverterRuleset ruleset = this.rulesetOptions.get(platform).get(index).getSecond();
+
 		List<ElementRule> customRules = new ArrayList<>();
 		// if default ruleset, disable checkboxes + copy to boxes
 		// if custom ruleset, enable checkboxes + copy from boxes
@@ -785,41 +805,75 @@ public class ZimaFrontendSwing {
 		setInputImage(null);
 	}
 
-	public void onSave(ActionEvent event, boolean png) {
-		if (this.asyncRenderer.getOutputBoard() == null || this.asyncRenderer.getOutputImage() == null) {
-			return;
-		}
-
+	private File showSaveDialog(String extension, String description) {
 		JFileChooser fc = new JFileChooser();
 		fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
 		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		fc.setFileFilter(png ? new FileNameExtensionFilter("PNG image file", "png") : new FileNameExtensionFilter("ZZT board file", ".brd"));
+		fc.setFileFilter(new FileNameExtensionFilter(description, extension));
 		int returnVal = fc.showSaveDialog(this.window);
 
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			String extension = png ? ".png" : ".brd";
 			File file = fc.getSelectedFile();
-			if (!file.getName().toLowerCase(Locale.ROOT).endsWith(extension)) {
-				file = new File(file.toString() + extension);
+			if (!file.getName().toLowerCase(Locale.ROOT).endsWith("." + extension)) {
+				file = new File(file.toString() + "." + extension);
 			}
+			return file;
+		} else {
+			return null;
+		}
+	}
 
+	public void onSaveMzm(ActionEvent event) {
+		if (this.asyncRenderer.getOutputResult() == null) {
+			return;
+		}
+
+		File file = showSaveDialog("mzm", "MegaZeux MZM file");
+		if (file != null) {
+			try (FileOutputStream fos = new FileOutputStream(file)) {
+				ImageConverter.Result result = this.asyncRenderer.getOutputResult();
+				MZMWriter.write(fos, result.getWidth(), result.getHeight(), result::getCharacter, result::getColor);
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(this.window, "Error saving file: " + e.getMessage());
+			}
+		}
+	}
+
+	public void onSaveBoard(ActionEvent event) {
+		if (this.asyncRenderer.getOutputBoard() == null) {
+			return;
+		}
+
+		File file = showSaveDialog("brd", "ZZT board file");
+		if (file != null) {
 			try {
-				if (png) {
-					ImageIO.write(this.asyncRenderer.getOutputImage(), "png", file);
-				} else {
-					Board board = this.asyncRenderer.getOutputBoard();
-					Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+				Board board = this.asyncRenderer.getOutputBoard();
+				Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 
-					try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos, platform)) {
-						String basename = file.getName();
-						int extIndex = basename.lastIndexOf('.');
-						if (extIndex > 0) {
-							basename = basename.substring(0, extIndex);
-						}
-						board.setName(basename.replaceAll("[^\\x20-\\x7E]", "?"));
-						this.asyncRenderer.getOutputBoard().writeZ(zos);
+				try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos, platform)) {
+					String basename = file.getName();
+					int extIndex = basename.lastIndexOf('.');
+					if (extIndex > 0) {
+						basename = basename.substring(0, extIndex);
 					}
+					board.setName(basename.replaceAll("[^\\x20-\\x7E]", "?"));
+					this.asyncRenderer.getOutputBoard().writeZ(zos);
 				}
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(this.window, "Error saving file: " + e.getMessage());
+			}
+		}
+	}
+
+	public void onSavePng(ActionEvent event) {
+		if (this.asyncRenderer.getOutputImage() == null) {
+			return;
+		}
+
+		File file = showSaveDialog("png", "PNG image file");
+		if (file != null) {
+			try {
+				ImageIO.write(this.asyncRenderer.getOutputImage(), "png", file);
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error saving file: " + e.getMessage());
 			}
@@ -1004,12 +1058,14 @@ public class ZimaFrontendSwing {
 
 	private SpinnerNumberModel statCountModel(int cval) {
 		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+		if (platform.getMaxStatCount() < 0) return new SpinnerNumberModel(0, 0, 0, 1);
 		if (cval > platform.getActualMaxStatCount()) cval = platform.getActualMaxStatCount();
 		return new SpinnerNumberModel(cval, 0, platform.getActualMaxStatCount(), 1);
 	}
 
 	private SpinnerNumberModel boardSizeModel(int cval) {
 		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+		if (platform.getMaxBoardSize() < 0) return new SpinnerNumberModel(0, 0, 0, 1);
 		if (cval > platform.getMaxBoardSize()) cval = platform.getMaxBoardSize();
 		return new SpinnerNumberModel(cval, 0, platform.getMaxBoardSize(), 1);
 	}

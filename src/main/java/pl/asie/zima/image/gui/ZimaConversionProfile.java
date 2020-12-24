@@ -176,7 +176,7 @@ public class ZimaConversionProfile {
         }
     }
 
-    public Pair<Board, BufferedImage> convert(BufferedImage input, ProgressCallback progressCallback, boolean fast) {
+    public Pair<ImageConverter.Result, BufferedImage> convert(BufferedImage input, ProgressCallback progressCallback, boolean fast) {
         updateImage(input);
 
         PropertyHolder localHolder = this.properties.clone(TEXT_VISUAL_RENDERER, MSE_CALCULATOR, IMAGE_CONVERTER);
@@ -201,6 +201,6 @@ public class ZimaConversionProfile {
                 properties.get(MAX_BOARD_SIZE),
                 properties.has(ALLOWED_CHARACTERS) ? properties.get(ALLOWED_CHARACTERS)::contains : null,
                 properties.has(ALLOWED_COLORS) ? properties.get(ALLOWED_COLORS)::contains : null,
-                this.renderer, progressCallback);
+                this.renderer, progressCallback, fast);
     }
 }

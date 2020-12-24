@@ -191,6 +191,7 @@ public class ZimaFrontendSwing {
 		this.window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		this.previewCanvas = new SimpleCanvas();
+		this.previewCanvas.setScrollable(true);
 		this.mainPanel = new JPanel(new GridBagLayout());
 		this.statusLabel = new JLabel("Ready.");
 		addGridBag(this.mainPanel, this.previewCanvasPane = new JScrollPane(this.previewCanvas), (c) -> { c.gridx = 0; c.gridy = 0; c.fill = GridBagConstraints.BOTH; c.weightx = 0.8; c.weighty = 1.0; });

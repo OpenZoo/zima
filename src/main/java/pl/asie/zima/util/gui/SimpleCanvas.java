@@ -31,6 +31,8 @@ public class SimpleCanvas extends JComponent {
 	private boolean allowScaling;
 	@Getter
 	private boolean doubleWide;
+	@Getter
+	private boolean scrollable;
 
 	public SimpleCanvas() {
 		this.allowScaling = false;
@@ -55,8 +57,12 @@ public class SimpleCanvas extends JComponent {
 				g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 				int xPos = (size.width - imageWidth()) / 2;
 				int yPos = (size.height - imageHeight()) / 2;
+				if (scrollable) {
+					if (xPos < 0) xPos = 0;
+					if (yPos < 0) yPos = 0;
+				}
 				if (!allowScaling || ((xPos >= 0) && (yPos >= 0))) {
-					// scrollable
+					// centered
 					g2d.drawImage(image, xPos, yPos, xPos + imageWidth(), yPos + imageHeight(), 0, 0, image.getWidth(), image.getHeight(), null);
 				} else {
 					// scaled
@@ -79,6 +85,10 @@ public class SimpleCanvas extends JComponent {
 		this.setPreferredSize(dimension);
 		this.getParent().revalidate();
 		this.getParent().repaint();
+	}
+
+	public void setScrollable(boolean scrollable) {
+		this.scrollable = scrollable;
 	}
 
 	public void setDoubleWide(boolean doubleWide) {

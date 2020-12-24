@@ -7,3 +7,4 @@ Improvements:
 Bugs fixed:
 
 * Fixed decreased performance of preview generation (regression from 0.4.1).
+* Fixed incorrect scrolling of oversized images (noticeable on non-ZZT platforms).

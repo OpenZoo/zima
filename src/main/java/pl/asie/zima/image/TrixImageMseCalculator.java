@@ -22,10 +22,11 @@ import pl.asie.zima.util.ColorUtils;
 import pl.asie.libzzt.TextVisualData;
 
 import java.awt.image.BufferedImage;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class TrixImageMseCalculator implements ImageMseCalculator {
-	private static final Set<Integer> blendingChars = Set.of(0, 32, 176, 177, 178, 219);
 	private final TextVisualData visual;
 	private final float contrastReduction;
 	private final float accurateApproximate;
@@ -34,6 +35,7 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 	private final boolean[][] charLut1x1Precalc;
 	private final float[] colDistPrecalc;
 	private final boolean blinkingDisabled;
+	private final Set<Integer> blendingChars = new HashSet<>();
 
 	private static class ImageLutHolder {
 		private final float[][] dataMacro1x1;
@@ -92,16 +94,19 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 			charLutPrecalc[i] = ColorUtils.mix(bg, fg, fgColored / 4.0f);
 		}
 
-		charLut2x2Precalc = new int[256][(visual.getCharWidth() >> 1) * (visual.getCharHeight() >> 1)];
+		int charLut2x2Count = (visual.getCharWidth() >> 1) * (visual.getCharHeight() >> 1);
+		charLut2x2Precalc = new int[256][charLut2x2Count];
 		for (int c = 0; c < 256; c++) {
 			int coff = c * visual.getCharHeight();
+			int[] charLut2x2PrecalcLocal = charLut2x2Precalc[c];
+
 			for (int cy = 0; cy < visual.getCharHeight(); cy += 2) {
 				int charLine1 = (int) visual.getCharData()[coff + cy] & 0xFF;
 				int charLine2 = (int) visual.getCharData()[coff + cy + 1] & 0xFF;
 
 				for (int cx = 0; cx < visual.getCharWidth(); cx += 2) {
 					int charLutIdx = ((charLine1 >> (6 - cx)) & 3) | (((charLine2 >> (6 - cx)) & 3) << 2);
-					charLut2x2Precalc[c][(cy >> 1) * (visual.getCharWidth() >> 1) + (cx >> 1)] = charLutIdx;
+					charLut2x2PrecalcLocal[(cy >> 1) * (visual.getCharWidth() >> 1) + (cx >> 1)] = charLutIdx;
 				}
 			}
 		}
@@ -109,10 +114,12 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 		charLut1x1Precalc = new boolean[256][visual.getCharWidth() * visual.getCharHeight()];
 		for (int c = 0; c < 256; c++) {
 			int coff = c * visual.getCharHeight();
+			boolean[] charLut1x1PrecalcLocal = charLut1x1Precalc[c];
+
 			for (int cy = 0; cy < visual.getCharHeight(); cy++) {
 				int charLine = (int) visual.getCharData()[coff + cy] & 0xFF;
 				for (int cx = 0; cx < visual.getCharWidth(); cx++) {
-					charLut1x1Precalc[c][cy * visual.getCharWidth() + cx] = (charLine & (1 << (7 - cx))) != 0;
+					charLut1x1PrecalcLocal[cy * visual.getCharWidth() + cx] = (charLine & (1 << (7 - cx))) != 0;
 				}
 			}
 		}
@@ -123,31 +130,40 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 			int fg = visual.getPalette()[i & 0x0F];
 			colDistPrecalc[i] = ColorUtils.distance(bg, fg);
 		}
+
+		blendingChars.add(176);
+		blendingChars.add(177);
+		blendingChars.add(178);
+		for (int i = 0; i < 256; i++) {
+			if (visual.isCharEmpty(i) || visual.isCharFull(i)) {
+				blendingChars.add(i);
+			}
+		}
 	}
 	
 	@Override
 	public Applier applyMse(BufferedImage image, int px, int py) {
 		final ImageLutHolder holder = new ImageLutHolder(visual, image, px, py, visual.getCharWidth(), visual.getCharHeight());
 		float[] mseContrastPrecalc = new float[256];
+		float[] macroRatioPrecalc = new float[256];
 		for (int i = 0; i < 256; i++) {
 			float imgContrast = holder.maxDistance;
 			float chrContrast = colDistPrecalc[i];
 			float contrastDiff = (imgContrast - chrContrast);
 			mseContrastPrecalc[i] = contrastReduction * contrastDiff * contrastDiff;
+
+			macroRatioPrecalc[i] = blendingChars.contains(i) ? 1.0f : accurateApproximate;
 		}
+		final int colorMask = blinkingDisabled ? 0xFF : 0x7F;
 		return (proposed, maxMse) -> {
 			int chr = proposed.getCharacter();
-			int col = blinkingDisabled ? proposed.getColor() : (proposed.getColor() & 0x7F);
+			int col = proposed.getColor() & colorMask;
 
 			float mse = 0.0f;
 			int[] dataMacro2x2 = holder.dataMacro2x2;
 
 			float mseContrastReduction = mseContrastPrecalc[col];
-
-			float macroRatio = accurateApproximate;
-			if (blendingChars.contains(chr)) {
-				macroRatio = 1.0f; // use only macro when blending
-			}
+			float macroRatio = macroRatioPrecalc[chr];
 
 			mse += dataMacro2x2.length * mseContrastReduction;
 			if (mse <= maxMse) {

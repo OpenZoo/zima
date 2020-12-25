@@ -19,6 +19,7 @@
 package pl.asie.zima.image;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import pl.asie.libzzt.Board;
 import pl.asie.libzzt.Element;
@@ -37,9 +38,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
@@ -107,6 +106,7 @@ public class ImageConverter {
 		List<ElementResult> rules = new ArrayList<>(256 * 256);
 		final int progressSize = width * height;
 		ElementResult[] previewResults = new ElementResult[width * height];
+		ElementResult emptyResult = null;
 		BufferedImage preview = null;
 
 		for (int ich = 0; ich < 256; ich++) {
@@ -114,9 +114,18 @@ public class ImageConverter {
 			if (charCheck != null && !charCheck.test(ich)) continue;
 			for (int ico = 0; ico < 256; ico++) {
 				if (colorCheck != null && !colorCheck.test(ico)) continue;
-				rules.add(new ElementResult(null, false, false, ich, ico));
+				ElementResult result = new ElementResult(null, false, false, ich, ico);
+				if (emptyResult == null) {
+					emptyResult = result;
+				}
+				rules.add(result);
 			}
 		}
+
+		if (emptyResult == null) {
+			emptyResult = new ElementResult(null, false, false, 0, 0);
+		}
+		final ElementResult emptyResultFinal = emptyResult;
 
 		// find lowest-MSE results for each tile, in parallel
 		IntStream.range(0, width * height).parallel().forEach(pos -> {
@@ -127,7 +136,7 @@ public class ImageConverter {
 			int ix = pos % width;
 			int iy = pos / width;
 
-			ElementResult minResult = null;
+			ElementResult minResult = emptyResultFinal;
 			float minMse = Float.MAX_VALUE;
 			ImageMseCalculator.Applier applyMseFunc = mseCalculator.applyMse(inputImage, ix * visual.getCharWidth(), iy * visual.getCharHeight());
 
@@ -166,6 +175,12 @@ public class ImageConverter {
 		return new Pair<>(result, preview);
 	}
 
+	@Data
+	private static class ElementRuleResult {
+		private final ElementRule rule;
+		private final List<ElementResult> result;
+	}
+
 	public Pair<Result, BufferedImage> convert(BufferedImage inputImage, ImageConverterRuleset ruleset,
 											  int x, int y, int width, int height, int playerX, int playerY, int maxStatCount, boolean blinkingDisabled,
 											  int maxBoardSize,
@@ -190,7 +205,7 @@ public class ImageConverter {
 		final BufferedImage image = inputImage;
 
 		List<Triplet<Coord2D, ElementResult, Float>> statfulStrategies = new ArrayList<>();
-		Map<ElementRule, List<ElementResult>> ruleResultMap = new LinkedHashMap<>();
+		List<ElementRuleResult> ruleResultList = new ArrayList<>(ruleset.getRules().size());
 		Set<Element> allowedElements = new HashSet<>();
 		ElementResult[] previewResults = new ElementResult[width * height];
 		float[] previewMse = new float[width * height];
@@ -248,7 +263,7 @@ public class ImageConverter {
 					break;
 			}
 
-			ruleResultMap.put(rule, proposals.collect(Collectors.toList()));
+			ruleResultList.add(new ElementRuleResult(rule, proposals.collect(Collectors.toList())));
 		}
 
 		// find lowest-MSE results for each tile, in parallel
@@ -276,8 +291,8 @@ public class ImageConverter {
 			float statfulMse = Float.MAX_VALUE;
 			ImageMseCalculator.Applier applyMseFunc = mseCalculator.applyMse(image, ix * visual.getCharWidth(), iy * visual.getCharHeight());
 
-			for (Map.Entry<ElementRule, List<ElementResult>> ruleResult : ruleResultMap.entrySet()) {
-				List<ElementResult> proposals = ruleResult.getValue();
+			for (ElementRuleResult ruleResult : ruleResultList) {
+				List<ElementResult> proposals = ruleResult.getResult();
 
 				float lowestLocalMse = statlessMse;
 				ElementResult lowestLocalResult = null;
@@ -336,10 +351,8 @@ public class ImageConverter {
 		int boardSerializationSize = count(board::writeZ);
 		int addedStats = 0;
 
+		Stat stat = new Stat();
 		for (int i = 0; i < statfulStrategies.size(); i++) {
-			if (addedStats >= realMaxStatCount) {
-				break;
-			}
 			Triplet<Coord2D, ElementResult, Float> strategyData = statfulStrategies.get(i);
 			Coord2D coords = strategyData.getFirst();
 			ElementResult result = strategyData.getSecond();
@@ -352,7 +365,7 @@ public class ImageConverter {
 			previewResults[coords.getY() * width + coords.getX()] = result;
 			board.setElement(x + coords.getX(), y + coords.getY(), result.getElement());
 			board.setColor(x + coords.getX(), y + coords.getY(), result.getColor());
-			Stat stat = new Stat();
+
 			stat.setX(x + coords.getX());
 			stat.setY(y + coords.getY());
 			stat.setCycle(1); // maybe we can reduce this to save CPU cycles?
@@ -360,9 +373,9 @@ public class ImageConverter {
 
 			if (boardSerializationSize < (realMaxBoardSize - 128)) {
 				// optimization: don't recalc full board size if only RLE could be impacted
-				boardSerializationSize += count(stat::writeZ);
+				boardSerializationSize += stat.lengthZ(platform);
 			} else {
-				boardSerializationSize = count(board::writeZ) + count(stat::writeZ);
+				boardSerializationSize = count(board::writeZ) + stat.lengthZ(platform);
 			}
 			if (boardSerializationSize > realMaxBoardSize) {
 				previewResults[coords.getY() * width + coords.getX()] = prevResult;
@@ -370,7 +383,10 @@ public class ImageConverter {
 				board.setColor(x + coords.getX(), y + coords.getY(), prevColor);
 			} else {
 				board.addStat(stat);
-				addedStats++;
+				if ((++addedStats) >= realMaxStatCount) {
+					break;
+				}
+				stat = new Stat();
 			}
 		}
 
@@ -388,7 +404,7 @@ public class ImageConverter {
 						Element element = board.getElement(x + ix, y + iy);
 						int color = board.getColor(x + ix, y + iy);
 
-						if (!element.isText() && !element.isStat()) {
+						if (!element.isText() && (!element.isStat() || board.getStatAt(x + ix, y + iy) == null)) {
 							if (!blinkingDisabled && color >= 0x80) {
 								continue;
 							}

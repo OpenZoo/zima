@@ -110,6 +110,15 @@ public class Stat {
 		boundStatId = (dataLen < 0) ? -dataLen : 0;
 	}
 
+	public int lengthZ(Platform platform) {
+		int len = (platform == Platform.ZZT ? 33 : 25);
+		if (boundStatId == 0 && data != null) {
+			byte[] dataBytes = data.getBytes(StandardCharsets.ISO_8859_1);
+			len += dataBytes.length;
+		}
+		return len;
+	}
+
 	public void writeZ(ZOutputStream stream) throws IOException {
 		byte[] dataBytes = data != null ? data.getBytes(StandardCharsets.ISO_8859_1) : null;
 		stream.writePByte(this.x);

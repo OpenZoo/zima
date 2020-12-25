@@ -3,7 +3,10 @@ Improvements:
 * Added .MZM export support for interoperability with MegaZeux.
 * Added a "MegaZeux" platform. It behaves a bit differently from previous ones - only the board width and height can be
   configured, and there are no elements to choose from. Rather, these decisions are performed by the MegaZeux editor.
+    * Note that even though "MegaZeux" is a platform, many parts of the algorithm still assume an ASCII-esque character
+      layout (solid, blending, empty characters).
 * The open/save dialogs now remember the directory they were last used in (per-type) until you close the app.
+* (Very) minor performance improvements.
 
 Bugs fixed:
 

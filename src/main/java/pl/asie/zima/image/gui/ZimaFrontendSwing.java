@@ -51,6 +51,7 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
@@ -654,15 +655,94 @@ public class ZimaFrontendSwing {
 
 	// Menu options
 
-	public void onLoadSettings(ActionEvent event) {
-		JFileChooser fc = new JFileChooser();
-		fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
+	private final Map<String, SoftReference<JFileChooser>> chooserCache = new HashMap<>();
+
+	private JFileChooser getOrCreateFileChooser(String ctx) {
+		SoftReference<JFileChooser> ref = chooserCache.get(ctx);
+		if (ref == null || ref.get() == null) {
+			if (ctx.startsWith("image")) {
+				JFileChooser nfc = ImageFileChooser.image();
+				nfc.setCurrentDirectory(new File(System.getProperty("user.dir")));
+				ref = new SoftReference<>(nfc);
+			} else {
+				JFileChooser fc = new JFileChooser();
+				fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
+				ref = new SoftReference<>(fc);
+			}
+			chooserCache.put(ctx, ref);
+		}
+		return ref.get();
+	}
+
+	private void setFileFilters(JFileChooser fc, FileNameExtensionFilter... filters) {
+		fc.resetChoosableFileFilters();
+		fc.setFileFilter(null);
+		if (filters.length >= 1) {
+			if (filters.length >= 2) {
+				for (FileNameExtensionFilter f : filters) {
+					fc.addChoosableFileFilter(f);
+				}
+			} else {
+				fc.setFileFilter(filters[0]);
+			}
+		}
+	}
+
+	private File showLoadDialog(String context, FileNameExtensionFilter... filters) {
+		JFileChooser fc = getOrCreateFileChooser(context);
+		if (!(fc instanceof ImageFileChooser)) {
+			setFileFilters(fc, filters);
+		}
 		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		fc.setFileFilter(new FileNameExtensionFilter("JSON settings file", "json"));
 		int returnVal = fc.showOpenDialog(this.window);
 
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			try (FileReader reader = new FileReader(fc.getSelectedFile())) {
+			return fc.getSelectedFile();
+		} else {
+			return null;
+		}
+	}
+
+	private File showSaveDialog(String context, FileNameExtensionFilter... filters) {
+		JFileChooser fc = getOrCreateFileChooser(context);
+		if (!(fc instanceof ImageFileChooser)) {
+			setFileFilters(fc, filters);
+		}
+		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		int returnVal = fc.showSaveDialog(this.window);
+
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			File file = fc.getSelectedFile();
+			if (!(fc instanceof ImageFileChooser)) {
+				boolean endsWithValidExtension = false;
+				String defExtension = null;
+				String lcName = file.getName().toLowerCase(Locale.ROOT);
+				for (FileNameExtensionFilter f : filters) {
+					for (String extension : f.getExtensions()) {
+						if (defExtension == null) {
+							defExtension = extension;
+						}
+						if (lcName.endsWith("." + extension)) {
+							endsWithValidExtension = true;
+							break;
+						}
+					}
+					if (endsWithValidExtension) break;
+				}
+				if (!endsWithValidExtension && defExtension != null) {
+					file = new File(file.toString() + "." + defExtension);
+				}
+			}
+			return file;
+		} else {
+			return null;
+		}
+	}
+
+	public void onLoadSettings(ActionEvent event) {
+		File file = showLoadDialog("profile", new FileNameExtensionFilter("JSON profile", "json"));
+		if (file != null) {
+			try (FileReader reader = new FileReader(file)) {
 				setSettings(gson.fromJson(reader, ZimaProfileSettings.class));
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -671,19 +751,8 @@ public class ZimaFrontendSwing {
 	}
 
 	public void onSaveSettings(ActionEvent event) {
-		JFileChooser fc = new JFileChooser();
-		fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
-		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		fc.setFileFilter(new FileNameExtensionFilter("JSON settings file", "json"));
-		int returnVal = fc.showSaveDialog(this.window);
-
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			String extension = ".json";
-			File file = fc.getSelectedFile();
-			if (!file.getName().toLowerCase(Locale.ROOT).endsWith(extension)) {
-				file = new File(file.toString() + extension);
-			}
-
+		File file = showSaveDialog("profile", new FileNameExtensionFilter("JSON profile", "json"));
+		if (file != null) {
 			try (FileWriter writer = new FileWriter(file)) {
 				writer.write(gson.toJson(getSettings()));
 			} catch (Exception e) {
@@ -698,14 +767,9 @@ public class ZimaFrontendSwing {
 	}
 
 	public void onLoadCustomCharset(ActionEvent event) {
-		JFileChooser fc = new JFileChooser();
-		fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
-		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		fc.setFileFilter(new FileNameExtensionFilter("Character set file", "chr", "bin"));
-		int returnVal = fc.showOpenDialog(this.window);
-
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			try (FileInputStream fis = new FileInputStream(fc.getSelectedFile())) {
+		File file = showLoadDialog("assets", new FileNameExtensionFilter("Character set file", "chr", "bin"));
+		if (file != null) {
+			try (FileInputStream fis = new FileInputStream(file)) {
 				this.charset = FileUtils.readAll(fis);
 				updateVisual();
 			} catch (Exception e) {
@@ -720,16 +784,12 @@ public class ZimaFrontendSwing {
 	}
 
 	public void onLoadCustomPalette(ActionEvent event) {
-		JFileChooser fc = new JFileChooser();
-		fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
-		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		fc.addChoosableFileFilter(new FileNameExtensionFilter("MegaZeux palette file", "pal"));
-		fc.addChoosableFileFilter(new FileNameExtensionFilter("PLD palette file", "pld"));
-		int returnVal = fc.showOpenDialog(this.window);
-
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			try (FileInputStream fis = new FileInputStream(fc.getSelectedFile())) {
-				String name = fc.getSelectedFile().getName().toLowerCase(Locale.ROOT);
+		File file = showLoadDialog("assets",
+				new FileNameExtensionFilter("MegaZeux palette file", "pal"),
+				new FileNameExtensionFilter("PLD palette file", "pld"));
+		if (file != null) {
+			try (FileInputStream fis = new FileInputStream(file)) {
+				String name = file.getName().toLowerCase(Locale.ROOT);
 				int[] colors = null;
 				if (name.endsWith(".pld")) {
 					colors = PaletteLoaderUtils.readPldFile(fis);
@@ -789,13 +849,10 @@ public class ZimaFrontendSwing {
 	}
 
 	public void onOpen(ActionEvent event) {
-		ImageFileChooser fc = ImageFileChooser.image();
-		fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
-		int returnVal = fc.showOpenDialog(this.window);
-
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
+		File file = showLoadDialog("imageInput");
+		if (file != null) {
 			try {
-				setInputImage(ImageIO.read(fc.getSelectedFile()));
+				setInputImage(ImageIO.read(file));
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 			}
@@ -806,30 +863,12 @@ public class ZimaFrontendSwing {
 		setInputImage(null);
 	}
 
-	private File showSaveDialog(String extension, String description) {
-		JFileChooser fc = new JFileChooser();
-		fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
-		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		fc.setFileFilter(new FileNameExtensionFilter(description, extension));
-		int returnVal = fc.showSaveDialog(this.window);
-
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			File file = fc.getSelectedFile();
-			if (!file.getName().toLowerCase(Locale.ROOT).endsWith("." + extension)) {
-				file = new File(file.toString() + "." + extension);
-			}
-			return file;
-		} else {
-			return null;
-		}
-	}
-
 	public void onSaveMzm(ActionEvent event) {
 		if (this.asyncRenderer.getOutputResult() == null) {
 			return;
 		}
 
-		File file = showSaveDialog("mzm", "MegaZeux MZM file");
+		File file = showSaveDialog("outputMzm", new FileNameExtensionFilter("MegaZeux MZM file", "mzm"));
 		if (file != null) {
 			try (FileOutputStream fos = new FileOutputStream(file)) {
 				ImageConverter.Result result = this.asyncRenderer.getOutputResult();
@@ -845,7 +884,7 @@ public class ZimaFrontendSwing {
 			return;
 		}
 
-		File file = showSaveDialog("brd", "ZZT board file");
+		File file = showSaveDialog("outputBrd", new FileNameExtensionFilter("ZZT board file", "brd"));
 		if (file != null) {
 			try {
 				Board board = this.asyncRenderer.getOutputBoard();
@@ -871,7 +910,7 @@ public class ZimaFrontendSwing {
 			return;
 		}
 
-		File file = showSaveDialog("png", "PNG image file");
+		File file = showSaveDialog("outputPng", new FileNameExtensionFilter("PNG image file", "png"));
 		if (file != null) {
 			try {
 				ImageIO.write(this.asyncRenderer.getOutputImage(), "png", file);

@@ -1,0 +1,13 @@
+Improvements:
+
+* In order to combat the issue of border halfchars forming around images, new aspect ratio preservation modes have been
+  added as follows:
+    * Snap to char (new default) - rounds width/height to the nearest character.
+    * Snap to center - rounds width/height to the nearest character which allows the image to be centered.
+* The aspect ratio preservation mode is now saved as part of the profile.
+* The window title now displays the program version.
+
+Bugs fixed:
+
+* The window pane showing scroll bars when unnecessary on some platforms has been fixed.
+* The correct program version is now displayed (regression in 0.4.2+).

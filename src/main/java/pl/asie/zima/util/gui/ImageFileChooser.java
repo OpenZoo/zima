@@ -25,6 +25,7 @@ import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.TextVisualRenderer;
 import pl.asie.libzzt.World;
 import pl.asie.libzzt.ZInputStream;
+import pl.asie.zima.util.AspectRatioPreservationMode;
 import pl.asie.zima.util.ImageUtils;
 
 import javax.imageio.ImageIO;
@@ -127,7 +128,7 @@ public class ImageFileChooser extends JFileChooser {
 						g2d.drawImage(image, xPos, yPos, null);
 					} else {
 						g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-						ImageUtils.drawScaled(image, (int) size.getWidth(), (int) size.getHeight(), g2d, true);
+						ImageUtils.drawScaled(image, (int) size.getWidth(), (int) size.getHeight(), g2d, AspectRatioPreservationMode.PRESERVE);
 					}
 					g2d.dispose();
 				}
@@ -151,7 +152,7 @@ public class ImageFileChooser extends JFileChooser {
 		public void run() {
 			this.image = imageGetterFunction.apply(imageFile);
 
-			BufferedImage scaledIconImage = ImageUtils.scale(this.image, 16, 16, true, null);
+			BufferedImage scaledIconImage = ImageUtils.scale(this.image, 16, 16, AspectRatioPreservationMode.PRESERVE, null);
 			this.icon.setImage(scaledIconImage);
 			ImageFileChooser.this.repaint();
 		}

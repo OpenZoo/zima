@@ -16,28 +16,22 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.zima.image.gui;
+package pl.asie.zima.util;
 
-import lombok.Data;
-import pl.asie.zima.image.ElementRule;
-import pl.asie.zima.util.AspectRatioPreservationMode;
+public enum AspectRatioPreservationMode {
+    PRESERVE("Preserve"),
+    SNAP_CHAR("Snap to character"),
+    SNAP_CENTER("Snap to center"),
+    IGNORE("Stretch");
 
-import java.util.List;
+    private final String label;
 
-@Data
-public class ZimaProfileSettings {
-    private int[] allowedCharacters;
-    private int[] allowedColors;
-    private int[] allowedColorPairs;
-    private List<ElementRule> allowedElements;
+    AspectRatioPreservationMode(String label) {
+        this.label = label;
+    }
 
-    private byte[] customCharset;
-    private int[] customPalette;
-
-    private Integer maxStatCount;
-    private Boolean colorsBlink;
-    private Float contrastReduction;
-    private Float accurateApproximate;
-
-    private AspectRatioPreservationMode aspectRatioPreservationMode;
+    @Override
+    public String toString() {
+        return label;
+    }
 }

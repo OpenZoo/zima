@@ -22,7 +22,9 @@ import pl.asie.zima.util.ColorUtils;
 import pl.asie.libzzt.TextVisualData;
 
 import java.awt.image.BufferedImage;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -35,6 +37,7 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 	private final boolean[][] charLut1x1Precalc;
 	private final float[] colDistPrecalc;
 	private final boolean blinkingDisabled;
+	private final int[][] blendingColorPrecalc;
 	private final Set<Integer> blendingChars = new HashSet<>();
 
 	private static class ImageLutHolder {
@@ -139,21 +142,39 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 				blendingChars.add(i);
 			}
 		}
+
+		blendingColorPrecalc = new int[256][];
+		Map<Integer, int[]> bcpMap = new HashMap<>();
+		final int bcpMax = (visual.getCharWidth() * visual.getCharHeight());
+		for (int i = 0; i < 256; i++) {
+			if (blendingChars.contains(i)) {
+				int count = 0;
+				for (int j = 0; j < bcpMax; j++) {
+					count += charLut1x1Precalc[i][j] ? 1 : 0;
+				}
+				blendingColorPrecalc[i] = bcpMap.computeIfAbsent(count, c -> {
+					float factor = c / (float) bcpMax;
+					int[] data = new int[256];
+					for (int k = 0; k < 256; k++) {
+						data[k] = ColorUtils.mix(visual.getPalette()[k >> 4], visual.getPalette()[k & 15], factor);
+					}
+					return data;
+				});
+			}
+		}
 	}
 	
 	@Override
 	public Applier applyMse(BufferedImage image, int px, int py) {
 		final ImageLutHolder holder = new ImageLutHolder(visual, image, px, py, visual.getCharWidth(), visual.getCharHeight());
 		float[] mseContrastPrecalc = new float[256];
-		float[] macroRatioPrecalc = new float[256];
 		for (int i = 0; i < 256; i++) {
 			float imgContrast = holder.maxDistance;
 			float chrContrast = colDistPrecalc[i];
 			float contrastDiff = (imgContrast - chrContrast);
 			mseContrastPrecalc[i] = contrastReduction * contrastDiff * contrastDiff;
-
-			macroRatioPrecalc[i] = blendingChars.contains(i) ? 1.0f : accurateApproximate;
 		}
+		final int[] palette = visual.getPalette();
 		final int colorMask = blinkingDisabled ? 0xFF : 0x7F;
 		return (proposed, maxMse) -> {
 			int chr = proposed.getCharacter();
@@ -163,10 +184,21 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 			int[] dataMacro2x2 = holder.dataMacro2x2;
 
 			float mseContrastReduction = mseContrastPrecalc[col];
-			float macroRatio = macroRatioPrecalc[chr];
+			float macroRatio = accurateApproximate;
 
 			mse += dataMacro2x2.length * mseContrastReduction;
 			if (mse <= maxMse) {
+				int[] blendingRatio = blendingColorPrecalc[chr];
+				if (blendingRatio != null) {
+					for (int i = 0; i < dataMacro2x2.length; i++) {
+						mse += ColorUtils.distance(blendingRatio[col], dataMacro2x2[i]);
+						if (mse > maxMse) {
+							return Float.MAX_VALUE;
+						}
+					}
+					return mse;
+				}
+
 				if (macroRatio < 1.0f) {
 					float invMacroRatio = ((1 - macroRatio) * 0.25f);
 					float[][] dataMacro1x1 = holder.dataMacro1x1;
@@ -178,7 +210,7 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 						int charColor = charData[dm1p] ? fg : bg;
 						mse += dataMacro1x1[dm1p][charColor] * invMacroRatio;
 						if (mse > maxMse) {
-							return mse;
+							return Float.MAX_VALUE;
 						}
 					}
 				}
@@ -192,7 +224,7 @@ public class TrixImageMseCalculator implements ImageMseCalculator {
 						float dist2x2 = ColorUtils.distance(char2x2Lut, dataMacro2x2[i]);
 						mse += dist2x2 * macroRatio;
 						if (mse > maxMse) {
-							return mse;
+							return Float.MAX_VALUE;
 						}
 					}
 				}

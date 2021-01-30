@@ -27,11 +27,8 @@ import pl.asie.libzzt.PaletteLoaderUtils;
 import pl.asie.libzzt.Platform;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.ZOutputStream;
-import pl.asie.zima.util.FileUtils;
-import pl.asie.zima.util.MZMWriter;
-import pl.asie.zima.util.Pair;
-import pl.asie.zima.util.Property;
-import pl.asie.zima.util.PropertyHolder;
+import pl.asie.zima.Version;
+import pl.asie.zima.util.*;
 import pl.asie.zima.image.*;
 import pl.asie.zima.util.gui.ImageFileChooser;
 import pl.asie.zima.util.gui.SimpleCanvas;
@@ -140,7 +137,7 @@ public class ZimaFrontendSwing {
 	// "Image" tab
 	private JLabel imageDataLabel;
 	private JCheckBox showInputImageEdit;
-	private JCheckBox preserveAspectRatioEdit;
+	private JComboBox<AspectRatioPreservationMode> aspectRatioEdit;
 	private JSlider brightnessEdit;
 	private JButton brightnessReset;
 	private JSlider contrastEdit;
@@ -188,7 +185,7 @@ public class ZimaFrontendSwing {
 		this.profile.getProperties().set(ZimaConversionProfile.PLATFORM, Platform.ZZT);
 		this.profile.getProperties().set(ZimaConversionProfile.FAST_RULESET, ImageConverterRulesZZT.RULES_BLOCKS);
 
-		this.window = new JFrame("zima :: image converter");
+		this.window = new JFrame(Version.getCurrentWindowName("image converter"));
 		this.window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		this.previewCanvas = new SimpleCanvas();
@@ -313,8 +310,8 @@ public class ZimaFrontendSwing {
 
 			appendTabRow(this.optionsImagePanel, gbc, "Image info", this.imageDataLabel = new JLabel(""));
 
-			appendTabRow(this.optionsImagePanel, gbc, "Preserve aspect ratio", this.preserveAspectRatioEdit = new JCheckBox());
-			bindPropertyBoolean(this.profile.getProperties(), ZimaConversionProfile.PRESERVE_ASPECT_RATIO, this.preserveAspectRatioEdit);
+			appendTabRow(this.optionsImagePanel, gbc, "Aspect ratio", this.aspectRatioEdit = createEnumComboBox(AspectRatioPreservationMode.class));
+			bindPropertyEnum(this.profile.getProperties(), ZimaConversionProfile.ASPECT_RATIO_PRESERVATION_MODE, this.aspectRatioEdit);
 
 			appendTabRow(this.optionsImagePanel, gbc, "Brightness",
 					this.brightnessEdit = new JSlider(JSlider.HORIZONTAL, -160, 160, 0),
@@ -476,6 +473,7 @@ public class ZimaFrontendSwing {
 		this.copyItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK));
 		this.pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK));
 
+		this.previewCanvasPane.setBorder(null);
 		this.previewCanvas.setMinimumSize(new Dimension(480, 350));
 		this.previewCanvasPane.setMinimumSize(this.previewCanvas.getMinimumSize());
 		this.previewCanvas.setPreferredSize(this.previewCanvas.getMinimumSize());
@@ -942,6 +940,8 @@ public class ZimaFrontendSwing {
 		settings.setContrastReduction(this.profile.getProperties().get(ZimaConversionProfile.TRIX_CONTRAST_REDUCTION));
 		settings.setAccurateApproximate(this.profile.getProperties().get(ZimaConversionProfile.TRIX_ACCURATE_APPROXIMATE));
 
+		settings.setAspectRatioPreservationMode(this.profile.getProperties().get(ZimaConversionProfile.ASPECT_RATIO_PRESERVATION_MODE));
+
 		return settings;
 	}
 
@@ -1018,10 +1018,28 @@ public class ZimaFrontendSwing {
 			this.profile.getProperties().set(ZimaConversionProfile.TRIX_ACCURATE_APPROXIMATE, settings.getAccurateApproximate());
 		}
 
+		if (settings.getAspectRatioPreservationMode() != null) {
+			this.profile.getProperties().set(ZimaConversionProfile.ASPECT_RATIO_PRESERVATION_MODE, settings.getAspectRatioPreservationMode());
+		}
+
 		rerender();
 	}
 
 	// Re-render call listeners
+
+	public <T extends Enum<?>> JComboBox<T> createEnumComboBox(Class<T> enumClass) {
+		JComboBox<T> comboBox = new JComboBox<>();
+		for (T value : enumClass.getEnumConstants()) {
+			comboBox.addItem(value);
+		}
+		return comboBox;
+	}
+
+	public <T extends Enum<?>> void bindPropertyEnum(PropertyHolder holder, Property<T> property, JComboBox<T> comboBox) {
+		comboBox.setSelectedItem(property.getDefaultValue());
+		comboBox.addItemListener((e) -> holder.set(property, (T) comboBox.getSelectedItem()));
+		holder.addChangeListener(property, (k, v) -> comboBox.setSelectedItem(v));
+	}
 
 	public void bindPropertyBoolean(PropertyHolder holder, Property<Boolean> property, JCheckBox checkBox) {
 		Boolean defValue = property.getDefaultValue();

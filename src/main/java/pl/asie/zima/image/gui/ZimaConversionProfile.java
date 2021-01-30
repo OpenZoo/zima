@@ -19,7 +19,6 @@
 package pl.asie.zima.image.gui;
 
 import lombok.Getter;
-import pl.asie.libzzt.Board;
 import pl.asie.libzzt.Platform;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.TextVisualRenderer;
@@ -54,7 +53,7 @@ public class ZimaConversionProfile {
     public static final Property<Float> BRIGHTNESS = Property.create("image.colorFilter.brightness", 0.0f, FILTERED_IMAGE);
     public static final Property<Float> CONTRAST = Property.create("image.colorFilter.contrast", 0.0f, FILTERED_IMAGE);
     public static final Property<Float> SATURATION = Property.create("image.colorFilter.saturation", 0.0f, FILTERED_IMAGE);
-    public static final Property<Boolean> PRESERVE_ASPECT_RATIO = Property.create("image.preserveAspectRatio", true, SCALED_IMAGE);
+    public static final Property<AspectRatioPreservationMode> ASPECT_RATIO_PRESERVATION_MODE = Property.create("image.preserveAspectRatio", AspectRatioPreservationMode.SNAP_CHAR, SCALED_IMAGE);
 
     public static final Property<Integer> CROP_LEFT = Property.create("image.crop.left", 0, SCALED_IMAGE);
     public static final Property<Integer> CROP_RIGHT = Property.create("image.crop.right", 0, SCALED_IMAGE);
@@ -167,7 +166,7 @@ public class ZimaConversionProfile {
             int width = properties.get(VISUAL_DATA).getCharWidth() * properties.get(CHARS_WIDTH);
             int height = properties.get(VISUAL_DATA).getCharHeight() * properties.get(CHARS_HEIGHT);
 
-            this.scaledImage = ImageUtils.scale(img, width, height, properties.get(PRESERVE_ASPECT_RATIO), properties.get(PLATFORM).isDoubleWide(), Color.BLACK);
+            this.scaledImage = ImageUtils.scale(img, width, height, properties.get(ASPECT_RATIO_PRESERVATION_MODE), properties.get(PLATFORM).isDoubleWide(), Color.BLACK);
             localHolder.affect(FILTERED_IMAGE);
         }
 

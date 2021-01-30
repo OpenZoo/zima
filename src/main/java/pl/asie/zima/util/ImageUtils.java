@@ -32,28 +32,56 @@ public final class ImageUtils {
         return aspectRatioSrc > aspectRatioDst ? ((float) width / image.getWidth()) : ((float) height / image.getHeight());
     }
 
-    public static void drawScaled(BufferedImage inputImage, int width, int height, Graphics2D scaledGraphics, boolean preserveAspectRatio) {
-        drawScaled(inputImage, width, height, scaledGraphics, preserveAspectRatio, false);
-    }
-
-    public static void drawScaled(BufferedImage inputImage, int width, int height, Graphics2D scaledGraphics, boolean preserveAspectRatio, boolean doubleWide) {
-        if (preserveAspectRatio) {
+    public static int[] calculateSize(BufferedImage inputImage, int width, int height, AspectRatioPreservationMode preserveAspectRatio, int charWidth, int charHeight, boolean doubleWide) {
+        if (preserveAspectRatio == AspectRatioPreservationMode.IGNORE) {
+            return new int[] { width, height };
+        } else {
             float factor = calculateScaleFactor(inputImage, width * (doubleWide ? 2 : 1), height);
             int drawWidth = Math.round(inputImage.getWidth() * factor);
             int drawHeight = Math.round(inputImage.getHeight() * factor);
-            int xOffset = (width - (drawWidth / (doubleWide ? 2 : 1))) / 2;
-            int yOffset = (height - drawHeight) / 2;
-            scaledGraphics.drawImage(inputImage, xOffset, yOffset, (drawWidth / (doubleWide ? 2 : 1)) + xOffset, drawHeight + yOffset, 0, 0, inputImage.getWidth(), inputImage.getHeight(), null);
-        } else {
-            scaledGraphics.drawImage(inputImage, 0, 0, width, height, 0, 0, inputImage.getWidth(), inputImage.getHeight(), null);
+            if (preserveAspectRatio == AspectRatioPreservationMode.SNAP_CHAR) {
+                if (drawWidth != width) {
+                    drawWidth = Math.round(drawWidth / (float) charWidth) * charWidth;
+                } else if (drawHeight != height) {
+                    drawHeight = Math.round(drawHeight / (float) charHeight) * charHeight;
+                }
+            } else if (preserveAspectRatio == AspectRatioPreservationMode.SNAP_CENTER) {
+                // one of the axes is guaranteed to be snapped
+                if (drawWidth != width) {
+                    int oddOffset = (width % (charWidth * 2)) >= charWidth ? charWidth : 0;
+                    drawWidth = Math.round((drawWidth - oddOffset) / (float) (charWidth * 2)) * (charWidth * 2) + oddOffset;
+                } else if (drawHeight != height) {
+                    int oddOffset = (height % (charHeight * 2)) >= charHeight ? charHeight : 0;
+                    drawHeight = Math.round((drawHeight - oddOffset) / (float) (charHeight * 2)) * (charHeight * 2) + oddOffset;
+                }
+            }
+            return new int[] { drawWidth, drawHeight };
         }
     }
 
-    public static BufferedImage scale(BufferedImage inputImage, int width, int height, boolean preserveAspectRatio, Color fillColor) {
+    public static void drawScaled(BufferedImage inputImage, int width, int height, Graphics2D scaledGraphics, AspectRatioPreservationMode preserveAspectRatio) {
+        drawScaled(inputImage, width, height, scaledGraphics, preserveAspectRatio, false);
+    }
+
+    public static void drawScaled(BufferedImage inputImage, int width, int height, Graphics2D scaledGraphics, AspectRatioPreservationMode preserveAspectRatio, boolean doubleWide) {
+        // TODO: pass char width/height as argument
+        int charWidth = doubleWide ? 16 : 8;
+        int charHeight = 14;
+        int[] drawSize = calculateSize(inputImage, width, height, preserveAspectRatio, charWidth, charHeight, doubleWide);
+        int xOffset = (width - (drawSize[0] / (doubleWide ? 2 : 1))) / 2;
+        int yOffset = (height - drawSize[1]) / 2;
+        if (preserveAspectRatio == AspectRatioPreservationMode.SNAP_CENTER || preserveAspectRatio == AspectRatioPreservationMode.SNAP_CHAR) {
+            xOffset = Math.round(xOffset / (float) charWidth) * charWidth;
+            yOffset = Math.round(yOffset / (float) charHeight) * charHeight;
+        }
+        scaledGraphics.drawImage(inputImage, xOffset, yOffset, (drawSize[0] / (doubleWide ? 2 : 1)) + xOffset, drawSize[1] + yOffset, 0, 0, inputImage.getWidth(), inputImage.getHeight(), null);
+    }
+
+    public static BufferedImage scale(BufferedImage inputImage, int width, int height, AspectRatioPreservationMode preserveAspectRatio, Color fillColor) {
         return scale(inputImage, width, height, preserveAspectRatio, false, fillColor);
     }
 
-    public static BufferedImage scale(BufferedImage inputImage, int width, int height, boolean preserveAspectRatio, boolean doubleWide, Color fillColor) {
+    public static BufferedImage scale(BufferedImage inputImage, int width, int height, AspectRatioPreservationMode preserveAspectRatio, boolean doubleWide, Color fillColor) {
         if (inputImage.getWidth() == width && inputImage.getHeight() == height) {
             return inputImage;
         }

@@ -28,6 +28,14 @@ import java.util.stream.Stream;
 public final class Version {
     private static final List<String> versions;
 
+    public static String getCurrentWindowName(String appName) {
+        if (appName.isBlank()) {
+            return "zima " + getCurrent();
+        } else {
+            return "zima " + getCurrent() + " :: " + appName;
+        }
+    }
+
     public static String getCurrent() {
         return versions != null && !versions.isEmpty() ? versions.get(versions.size() - 1) : "[unknown version]";
     }

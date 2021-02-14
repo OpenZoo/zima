@@ -25,6 +25,10 @@ public final class MiscUtils {
 
     }
 
+    public static int clamp(int i, int min, int max) {
+        return (i < min) ? min : Math.min(i, max);
+    }
+
     public static <T> T[] shift(T[] input, int count, IntFunction<T[]> function) {
         if (count >= input.length) {
             return function.apply(0);

@@ -127,6 +127,18 @@ public final class ColorUtils {
 		return (RtosR(cr) << 16) | (RtosR(cg) << 8) | (RtosR(cb));
 	}
 
+	public static int add(int a, float br, float bg, float bb, float amount) {
+		float ar = ColorUtils.sRtoR((a >> 16) & 0xFF);
+		float ag = ColorUtils.sRtoR((a >> 8) & 0xFF);
+		float ab = ColorUtils.sRtoR(a & 0xFF);
+
+		ar += br * amount;
+		ag += bg * amount;
+		ab += bb * amount;
+
+		return (RtosR(ar) << 16) | (RtosR(ag) << 8) | (RtosR(ab));
+	}
+
 	public static void main(String[] args) {
 		System.out.println(distance(0x000000, 0x010101));
 		System.out.println(distance(0x000000, 0x020202));

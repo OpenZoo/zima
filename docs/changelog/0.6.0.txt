@@ -1,0 +1,3 @@
+Improvements:
+
+* Added experimental coarse (character-level) dithering support!

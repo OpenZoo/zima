@@ -28,8 +28,11 @@ import pl.asie.libzzt.Stat;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.TextVisualRenderer;
 import pl.asie.libzzt.ZOutputStream;
+import pl.asie.zima.util.ColorUtils;
 import pl.asie.zima.util.Coord2D;
 import pl.asie.zima.util.CountOutputStream;
+import pl.asie.zima.util.DitherMatrix;
+import pl.asie.zima.util.ImageUtils;
 import pl.asie.zima.util.Pair;
 import pl.asie.zima.util.Triplet;
 
@@ -101,6 +104,7 @@ public class ImageConverter {
 
 	private Pair<Result, BufferedImage> convertBoardless(BufferedImage inputImage, int width, int height, boolean blinkingDisabled,
 	                                                     IntPredicate charCheck, IntPredicate colorCheck,
+	                                                     float coarseDitherStrength, DitherMatrix coarseDitherMatrixEnum,
 	                                                     TextVisualRenderer previewRenderer,
 	                                                     ProgressCallback progressCallback, boolean fast) {
 		List<ElementResult> rules = new ArrayList<>(256 * 256);
@@ -127,8 +131,18 @@ public class ImageConverter {
 		}
 		final ElementResult emptyResultFinal = emptyResult;
 
-		// find lowest-MSE results for each tile, in parallel
-		IntStream.range(0, width * height).parallel().forEach(pos -> {
+		float[] ditherMatrix = coarseDitherMatrixEnum != null ? coarseDitherMatrixEnum.getMatrix() : null;
+		int ditherMatrixSize = ditherMatrix != null ? (int) Math.sqrt(ditherMatrix.length) : 0;
+		int ditherMatrixOffset = (ditherMatrixSize - 1) / 2;
+		IntStream blocks = IntStream.range(0, width * height);
+		if (coarseDitherStrength > 0.0f) {
+			blocks = blocks.parallel();
+		}
+
+		final BufferedImage image = coarseDitherStrength > 0.0f ? ImageUtils.cloneRgb(inputImage) : inputImage;
+
+		// find lowest-MSE results for each tile
+		blocks.forEach(pos -> {
 			synchronized (progressCallback) {
 				progressCallback.step(progressSize);
 			}
@@ -138,7 +152,9 @@ public class ImageConverter {
 
 			ElementResult minResult = emptyResultFinal;
 			float minMse = Float.MAX_VALUE;
-			ImageMseCalculator.Applier applyMseFunc = mseCalculator.applyMse(inputImage, ix * visual.getCharWidth(), iy * visual.getCharHeight());
+			int px = ix * visual.getCharWidth();
+			int py = iy * visual.getCharHeight();
+			ImageMseCalculator.Applier applyMseFunc = mseCalculator.applyMse(image, px, py);
 
 			for (ElementResult result : rules) {
 				float localMse = applyMseFunc.apply(result, minMse);
@@ -149,6 +165,10 @@ public class ImageConverter {
 			}
 
 			previewResults[pos] = minResult;
+
+			if (coarseDitherStrength > 0.0f) {
+				applyCoarseDither(coarseDitherStrength, ditherMatrix, ditherMatrixSize, ditherMatrixOffset, image, minResult, px, py);
+			}
 		});
 
 		// result
@@ -183,7 +203,7 @@ public class ImageConverter {
 
 	public Pair<Result, BufferedImage> convert(BufferedImage inputImage, ImageConverterRuleset ruleset,
 											  int x, int y, int width, int height, int playerX, int playerY, int maxStatCount, boolean blinkingDisabled,
-											  int maxBoardSize,
+											  int maxBoardSize, float coarseDitherStrength, DitherMatrix coarseDitherMatrixEnum,
 											  IntPredicate charCheck, IntPredicate colorCheck,
 											  TextVisualRenderer previewRenderer,
 											  ProgressCallback progressCallback, boolean fast) {
@@ -193,7 +213,7 @@ public class ImageConverter {
 		final boolean blinkingDisabledFinal = blinkingDisabled;
 
 		if (!platform.isUsesBoard()) {
-			return convertBoardless(inputImage, width, height, blinkingDisabled, charCheck, colorCheck, previewRenderer, progressCallback, fast);
+			return convertBoardless(inputImage, width, height, blinkingDisabled, charCheck, colorCheck, coarseDitherStrength, coarseDitherMatrixEnum, previewRenderer, progressCallback, fast);
 		}
 
 		Board board = new Board(platform, playerX, playerY);
@@ -201,8 +221,6 @@ public class ImageConverter {
 
 		int pixelWidth = width * visual.getCharWidth();
 		int pixelHeight = height * visual.getCharHeight();
-
-		final BufferedImage image = inputImage;
 
 		List<Triplet<Coord2D, ElementResult, Float>> statfulStrategies = new ArrayList<>();
 		List<ElementRuleResult> ruleResultList = new ArrayList<>(ruleset.getRules().size());
@@ -266,8 +284,18 @@ public class ImageConverter {
 			ruleResultList.add(new ElementRuleResult(rule, proposals.collect(Collectors.toList())));
 		}
 
+		float[] ditherMatrix = coarseDitherMatrixEnum != null ? coarseDitherMatrixEnum.getMatrix() : null;
+		int ditherMatrixSize = ditherMatrix != null ? (int) Math.sqrt(ditherMatrix.length) : 0;
+		int ditherMatrixOffset = (ditherMatrixSize - 1) / 2;
+		IntStream blocks = IntStream.range(0, width * height);
+		if (coarseDitherStrength > 0.0f) {
+			blocks = blocks.parallel();
+		}
+
+		final BufferedImage image = coarseDitherStrength > 0.0f ? ImageUtils.cloneRgb(inputImage) : inputImage;
+
 		// find lowest-MSE results for each tile, in parallel
-		IntStream.range(0, width * height).parallel().forEach(pos -> {
+		blocks.forEach(pos -> {
 			synchronized (progressCallback) {
 				progressCallback.step(progressSize);
 			}
@@ -289,7 +317,9 @@ public class ImageConverter {
 			float statlessMse = Float.MAX_VALUE;
 			ElementResult statfulResult = null;
 			float statfulMse = Float.MAX_VALUE;
-			ImageMseCalculator.Applier applyMseFunc = mseCalculator.applyMse(image, ix * visual.getCharWidth(), iy * visual.getCharHeight());
+			int px = ix * visual.getCharWidth();
+			int py = iy * visual.getCharHeight();
+			ImageMseCalculator.Applier applyMseFunc = mseCalculator.applyMse(image, px, py);
 
 			for (ElementRuleResult ruleResult : ruleResultList) {
 				List<ElementResult> proposals = ruleResult.getResult();
@@ -323,6 +353,11 @@ public class ImageConverter {
 			// apply statless result to board
 			if (statlessResult == null) {
 				throw new RuntimeException();
+			}
+
+			if (coarseDitherStrength > 0.0f) {
+				ElementResult ditherResult = statfulResult != null ? statfulResult : statlessResult;
+				applyCoarseDither(coarseDitherStrength, ditherMatrix, ditherMatrixSize, ditherMatrixOffset, image, ditherResult, px, py);
 			}
 
 			int idx = iy * width + ix;
@@ -461,5 +496,54 @@ public class ImageConverter {
 		}
 
 		return new Pair<>(result, preview);
+	}
+
+	private void applyCoarseDither(float coarseDitherStrength, float[] ditherMatrix, int ditherMatrixSize, int ditherMatrixOffset, BufferedImage image, ElementResult ditherResult, int px, int py) {
+		float errorR = 0;
+		float errorG = 0;
+		float errorB = 0;
+		int ebg = visual.getPalette()[ditherResult.getColor() >> 4];
+		int efg = visual.getPalette()[ditherResult.getColor() & 0xF];
+		for (int ey = 0; ey < visual.getCharHeight(); ey++) {
+			int epy = py + ey;
+			byte ech = visual.getCharData()[ditherResult.getCharacter() * visual.getCharHeight() + ey];
+			for (int ex = 0; ex < visual.getCharWidth(); ex++) {
+				int epx = px + ex;
+				int imagePx = image.getRGB(epx, epy);
+
+				int imageR = (imagePx >> 16) & 0xFF;
+				int imageG = (imagePx >> 8) & 0xFF;
+				int imageB = imagePx & 0xFF;
+
+				int stratPx = (((ech >> (7 - ex)) & 0x1) != 0) ? efg : ebg;
+				int stratR = (stratPx >> 16) & 0xFF;
+				int stratG = (stratPx >> 8) & 0xFF;
+				int stratB = stratPx & 0xFF;
+
+				errorR += (ColorUtils.sRtoR(imageR) - ColorUtils.sRtoR(stratR));
+				errorG += (ColorUtils.sRtoR(imageG) - ColorUtils.sRtoR(stratG));
+				errorB += (ColorUtils.sRtoR(imageB) - ColorUtils.sRtoR(stratB));
+			}
+		}
+		errorR /= visual.getCharWidth() * visual.getCharHeight();
+		errorG /= visual.getCharWidth() * visual.getCharHeight();
+		errorB /= visual.getCharWidth() * visual.getCharHeight();
+		for (int ey = 0; ey < visual.getCharHeight(); ey++) {
+			int epy = py + ey;
+			for (int ex = 0; ex < visual.getCharWidth(); ex++) {
+				int epx = px + ex;
+				for (int dmp = 0; dmp < ditherMatrix.length; dmp++) {
+					if (ditherMatrix[dmp] > 0.0f) {
+						int dmx = (dmp % ditherMatrixSize) - ditherMatrixOffset;
+						int dmy = (dmp / ditherMatrixSize) - ditherMatrixOffset;
+						int epmx = epx + (visual.getCharWidth() * dmx);
+						int epmy = epy + (visual.getCharHeight() * dmy);
+						if (epmx >= 0 && epmy >= 0 && epmx < image.getWidth() && epmy < image.getHeight()) {
+							image.setRGB(epmx, epmy, ColorUtils.add(image.getRGB(epmx, epmy), errorR, errorG, errorB, ditherMatrix[dmp] * coarseDitherStrength));
+						}
+					}
+				}
+			}
+		}
 	}
 }

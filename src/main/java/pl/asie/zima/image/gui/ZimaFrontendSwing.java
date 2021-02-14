@@ -133,6 +133,9 @@ public class ZimaFrontendSwing {
 	private JButton contrastReductionReset;
 	private JSlider accurateApproximateEdit;
 	private JButton accurateApproximateReset;
+	private JSlider coarseDitherStrengthEdit;
+	private JButton coarseDitherStrengthReset;
+	private JComboBox<DitherMatrix> coarseDitherMatrixEdit;
 
 	// "Image" tab
 	private JLabel imageDataLabel;
@@ -297,6 +300,15 @@ public class ZimaFrontendSwing {
 					this.accurateApproximateReset = new JButton("Reset"));
 			bindPropertyFloatScaled(this.profile.getProperties(), ZimaConversionProfile.TRIX_ACCURATE_APPROXIMATE, this.accurateApproximateEdit, 1000.0f);
 			this.accurateApproximateReset.addActionListener((e) -> { this.profile.getProperties().reset(ZimaConversionProfile.TRIX_ACCURATE_APPROXIMATE); });
+
+			appendTabRow(this.optionsBoardPanel, gbc, "Coarse dither strength",
+					this.coarseDitherStrengthEdit = new JSlider(JSlider.HORIZONTAL, 0, 1000, 0),
+					this.coarseDitherStrengthReset = new JButton("Reset"));
+			bindPropertyFloatScaled(this.profile.getProperties(), ZimaConversionProfile.COARSE_DITHER_STRENGTH, this.coarseDitherStrengthEdit, 1000.0f);
+			this.coarseDitherStrengthReset.addActionListener((e) -> { this.profile.getProperties().reset(ZimaConversionProfile.COARSE_DITHER_STRENGTH); });
+
+			appendTabRow(this.optionsBoardPanel, gbc, "Coarse dither matrix", this.coarseDitherMatrixEdit = createEnumComboBox(DitherMatrix.class));
+			bindPropertyEnum(this.profile.getProperties(), ZimaConversionProfile.COARSE_DITHER_MATRIX, this.coarseDitherMatrixEdit);
 		}
 
 		{

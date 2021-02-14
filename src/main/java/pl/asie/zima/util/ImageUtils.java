@@ -97,4 +97,11 @@ public final class ImageUtils {
         return scaledImage;
     }
 
+	public static BufferedImage cloneRgb(BufferedImage inputImage) {
+        BufferedImage image = new BufferedImage(inputImage.getWidth(), inputImage.getHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics g = image.getGraphics();
+        g.drawImage(inputImage, 0, 0, null);
+        g.dispose();
+        return image;
+	}
 }

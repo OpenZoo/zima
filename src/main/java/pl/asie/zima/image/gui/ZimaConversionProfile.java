@@ -66,6 +66,9 @@ public class ZimaConversionProfile {
     public static final Property<Set<Integer>> ALLOWED_COLORS = Property.create("converter.allowedColorPairs");
     public static final Property<Boolean> BLINKING_DISABLED = Property.create("converter.blinkingDisabled", false, MSE_CALCULATOR, IMAGE_CONVERTER);
 
+    public static final Property<Float> COARSE_DITHER_STRENGTH = Property.create("converter.coarseDither.strength", 0.0f);
+    public static final Property<DitherMatrix> COARSE_DITHER_MATRIX = Property.create("converter.coarseDither.matrix", DitherMatrix.FLOYD_STEINBERG);
+
     @Getter
     private final PropertyHolder properties = new PropertyHolder();
 
@@ -198,6 +201,8 @@ public class ZimaConversionProfile {
                 properties.get(MAX_STAT_COUNT),
                 properties.get(BLINKING_DISABLED),
                 properties.get(MAX_BOARD_SIZE),
+                properties.get(COARSE_DITHER_STRENGTH),
+                properties.get(COARSE_DITHER_MATRIX),
                 properties.has(ALLOWED_CHARACTERS) ? properties.get(ALLOWED_CHARACTERS)::contains : null,
                 properties.has(ALLOWED_COLORS) ? properties.get(ALLOWED_COLORS)::contains : null,
                 this.renderer, progressCallback, fast);

@@ -90,7 +90,15 @@ public final class ColorUtils {
 		return ((xr & 0xFF) << 16) | ((xg & 0xFF) << 8) | (xb & 0xFF); */
 	}
 
-	public static float sRtoR(int v) {
+	private static final float[] sRtoR_table = new float[256];
+
+	static {
+		for (int i = 0; i < 256; i++) {
+			sRtoR_table[i] = sRtoR_uncached(i);
+		}
+	}
+
+	private static float sRtoR_uncached(int v) {
 		float r;
 		if (v <= (255.0f * 0.04045f)) {
 			r = (v / 255.0f) / 12.92f;
@@ -98,6 +106,10 @@ public final class ColorUtils {
 			r = (float) Math.pow(((v / 255.0f) + 0.055f) / 1.055f, 2.4f);
 		}
 		return r;
+	}
+
+	public static float sRtoR(int v) {
+		return sRtoR_table[v];
 	}
 
 	public static int RtosR(float v) {

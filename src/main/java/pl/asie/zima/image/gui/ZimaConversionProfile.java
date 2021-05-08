@@ -45,6 +45,7 @@ public class ZimaConversionProfile {
     public static final Property<Integer> BOARD_Y = Property.create("output.boardY", 1);
     public static final Property<Integer> PLAYER_X = Property.create("output.playerX", 60);
     public static final Property<Integer> PLAYER_Y = Property.create("output.playerY", 25);
+    public static final Property<Integer> STAT_CYCLE = Property.create("output.statCycle", 0);
     public static final Property<Integer> MAX_STAT_COUNT = Property.create("converter.maxStatCount", 150);
     public static final Property<Integer> MAX_BOARD_SIZE = Property.create("converter.maxBoardSize", 20002);
     public static final Property<Float> TRIX_CONTRAST_REDUCTION = Property.create("converter.trix.contrastReduction", 0.0035f, MSE_CALCULATOR);
@@ -205,6 +206,7 @@ public class ZimaConversionProfile {
                 properties.get(COARSE_DITHER_MATRIX),
                 properties.has(ALLOWED_CHARACTERS) ? properties.get(ALLOWED_CHARACTERS)::contains : null,
                 properties.has(ALLOWED_COLORS) ? properties.get(ALLOWED_COLORS)::contains : null,
+                properties.get(STAT_CYCLE),
                 this.renderer, progressCallback, fast);
     }
 }

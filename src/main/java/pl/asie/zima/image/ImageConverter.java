@@ -204,7 +204,7 @@ public class ImageConverter {
 	public Pair<Result, BufferedImage> convert(BufferedImage inputImage, ImageConverterRuleset ruleset,
 											  int x, int y, int width, int height, int playerX, int playerY, int maxStatCount, boolean blinkingDisabled,
 											  int maxBoardSize, float coarseDitherStrength, DitherMatrix coarseDitherMatrixEnum,
-											  IntPredicate charCheck, IntPredicate colorCheck,
+											  IntPredicate charCheck, IntPredicate colorCheck, int defStatCycle,
 											  TextVisualRenderer previewRenderer,
 											  ProgressCallback progressCallback, boolean fast) {
 		if (!platform.isSupportsBlinking()) {
@@ -403,7 +403,7 @@ public class ImageConverter {
 
 			stat.setX(x + coords.getX());
 			stat.setY(y + coords.getY());
-			stat.setCycle(1); // maybe we can reduce this to save CPU cycles?
+			stat.setCycle(defStatCycle); // maybe we can reduce this to save CPU cycles?
 			stat.setP1(result.getCharacter());
 
 			if (boardSerializationSize < (realMaxBoardSize - 128)) {

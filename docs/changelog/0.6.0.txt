@@ -1,4 +1,6 @@
 Improvements:
 
 * Added experimental coarse (character-level) dithering support.
+* Added option to change the stat cycles for statful elements.
+  * By default, it is now a cycle speed of 0, as opposed to 1!
 * Minor performance optimizations.

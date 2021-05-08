@@ -155,6 +155,7 @@ public class ZimaFrontendSwing {
 	// "Advanced" tab
 	private JCheckBox fastPreviewEdit;
 	private JCheckBox allowFacesEdit;
+	private JSpinner statCycleEdit;
 
 	private final byte[] defaultCharset;
 	private final int[] defaultPalette;
@@ -255,6 +256,7 @@ public class ZimaFrontendSwing {
 				this.saveBrdItem.setEnabled(newPlatform.isUsesBoard());
 				this.maxBoardSizeEdit.setEnabled(newPlatform.getMaxBoardSize() > 0);
 				this.maxStatCountEdit.setEnabled(newPlatform.getMaxStatCount() > 0);
+				this.statCycleEdit.setEnabled(newPlatform.getMaxStatCount() > 0);
 			});
 
 			appendTabRow(this.optionsBoardPanel, gbc, "Board X", this.boardXEdit = new JSpinner(boardCoordsModel(1, false)));
@@ -453,6 +455,10 @@ public class ZimaFrontendSwing {
 					this.contrastReductionReset = new JButton("Reset"));
 			bindPropertyFloat(this.profile.getProperties(), ZimaConversionProfile.TRIX_CONTRAST_REDUCTION, this.contrastReductionEdit, (f) -> (int) Math.sqrt(f * 10000000.0f), (i) -> (i * i) / 10000000.0f);
 			this.contrastReductionReset.addActionListener((e) -> { this.profile.getProperties().reset(ZimaConversionProfile.TRIX_CONTRAST_REDUCTION); });
+
+			appendTabRow(this.optionsAdvancedPanel, gbc, "Statful element cycles", this.statCycleEdit = new JSpinner(new SpinnerNumberModel(0, 0, 420, 1)));
+			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.STAT_CYCLE, this.statCycleEdit);
+			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.statCycleEdit.setModel(new SpinnerNumberModel(((Number) this.statCycleEdit.getValue()).intValue(), 0, 420, 1)));
 		}
 
 		for (JPanel panel : List.of(this.optionsBoardPanel, this.optionsImagePanel, this.optionsCharsetPanel, this.optionsPalettePanel, this.optionsElementsPanel, this.optionsAdvancedPanel)) {

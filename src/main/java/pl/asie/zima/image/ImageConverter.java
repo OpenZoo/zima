@@ -288,7 +288,7 @@ public class ImageConverter {
 		int ditherMatrixSize = ditherMatrix != null ? (int) Math.sqrt(ditherMatrix.length) : 0;
 		int ditherMatrixOffset = (ditherMatrixSize - 1) / 2;
 		IntStream blocks = IntStream.range(0, width * height);
-		if (coarseDitherStrength > 0.0f) {
+		if (coarseDitherStrength == 0.0f) {
 			blocks = blocks.parallel();
 		}
 
@@ -502,6 +502,7 @@ public class ImageConverter {
 		float errorR = 0;
 		float errorG = 0;
 		float errorB = 0;
+		int errorDiv = visual.getCharWidth() * visual.getCharHeight();
 		int ebg = visual.getPalette()[ditherResult.getColor() >> 4];
 		int efg = visual.getPalette()[ditherResult.getColor() & 0xF];
 		for (int ey = 0; ey < visual.getCharHeight(); ey++) {
@@ -525,9 +526,9 @@ public class ImageConverter {
 				errorB += (ColorUtils.sRtoR(imageB) - ColorUtils.sRtoR(stratB));
 			}
 		}
-		errorR /= visual.getCharWidth() * visual.getCharHeight();
-		errorG /= visual.getCharWidth() * visual.getCharHeight();
-		errorB /= visual.getCharWidth() * visual.getCharHeight();
+		errorR /= errorDiv;
+		errorG /= errorDiv;
+		errorB /= errorDiv;
 		for (int ey = 0; ey < visual.getCharHeight(); ey++) {
 			int epy = py + ey;
 			for (int ex = 0; ex < visual.getCharWidth(); ex++) {

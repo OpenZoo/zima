@@ -20,6 +20,7 @@ package pl.asie.zima.image.gui;
 
 import lombok.Data;
 import pl.asie.zima.image.ElementRule;
+import pl.asie.zima.image.ImageConverterType;
 import pl.asie.zima.util.AspectRatioPreservationMode;
 
 import java.util.List;
@@ -40,4 +41,5 @@ public class ZimaProfileSettings {
     private Float accurateApproximate;
 
     private AspectRatioPreservationMode aspectRatioPreservationMode;
+    private ImageConverterType imageConverterType;
 }

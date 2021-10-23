@@ -978,6 +978,7 @@ public class ZimaFrontendSwing {
 
 		settings.setContrastReduction(this.profile.getProperties().get(ZimaConversionProfile.TRIX_CONTRAST_REDUCTION));
 		settings.setAccurateApproximate(this.profile.getProperties().get(ZimaConversionProfile.TRIX_ACCURATE_APPROXIMATE));
+		settings.setImageConverterType(this.profile.getProperties().get(ZimaConversionProfile.IMAGE_CONVERTER_TYPE));
 
 		settings.setAspectRatioPreservationMode(this.profile.getProperties().get(ZimaConversionProfile.ASPECT_RATIO_PRESERVATION_MODE));
 
@@ -1051,6 +1052,10 @@ public class ZimaFrontendSwing {
 
 		if (settings.getContrastReduction() != null) {
 			this.profile.getProperties().set(ZimaConversionProfile.TRIX_CONTRAST_REDUCTION, settings.getContrastReduction());
+		}
+
+		if (settings.getImageConverterType() != null) {
+			this.profile.getProperties().set(ZimaConversionProfile.IMAGE_CONVERTER_TYPE, settings.getImageConverterType());
 		}
 
 		if (settings.getAccurateApproximate() != null) {

@@ -519,6 +519,7 @@ public class ZimaFrontendSwing {
 	public void rebuildElementsPanel() {
 		optionsElementsPanel.removeAll();
 		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+		List<JCheckBox> checkBoxes = new ArrayList<>();
 
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.gridx = GridBagConstraints.RELATIVE;
@@ -540,6 +541,7 @@ public class ZimaFrontendSwing {
 			optionsElementsPanel.add(box, gbc);
 			optionsElementsPanel.add(label, gbc);
 			rulesetBoxEdit.put(rule, box);
+			checkBoxes.add(box);
 
 			i++;
 			if ((i % 3) == 0) gbc.gridy++;
@@ -550,6 +552,21 @@ public class ZimaFrontendSwing {
 		this.rulesetEdit = new JComboBox<>(this.rulesetOptions.get(platform).stream().map(Pair::getFirst).toArray(String[]::new));
 		this.rulesetEdit.addActionListener((e) -> setRuleset(this.rulesetEdit.getSelectedIndex()));
 		optionsElementsPanel.add(this.rulesetEdit, gbc);
+
+		// create toggle buttons
+		gbc.gridy++;
+		gbc.gridwidth = 2;
+		gbc.gridx = GridBagConstraints.RELATIVE;
+
+		JButton toggleAllButton = new JButton("Toggle all");
+		toggleAllButton.addActionListener(e -> {
+			boolean anySet = checkBoxes.stream().filter(Component::isEnabled).anyMatch(AbstractButton::isSelected);
+			boolean newSet = !anySet;
+			checkBoxes.stream().filter(Component::isEnabled).forEach(c -> c.setSelected(newSet));
+			onChangeRulesetCheckbox();
+		});
+		optionsElementsPanel.add(toggleAllButton, gbc);
+
 		setRuleset(0); // default
 	}
 

@@ -189,6 +189,7 @@ public class ZimaConversionProfile {
         }
         if (localHolder.isAffected(MSE_CALCULATOR) || this.mseCalculator == null) {
            this.mseCalculator = new TrixImageMseCalculator(properties.get(VISUAL_DATA), properties.get(BLINKING_DISABLED), properties.get(TRIX_CONTRAST_REDUCTION), properties.get(TRIX_ACCURATE_APPROXIMATE));
+           //this.mseCalculator = new GmseImageMseCalculator(properties.get(VISUAL_DATA), properties.get(BLINKING_DISABLED), properties.get(TRIX_CONTRAST_REDUCTION));
            localHolder.affect(IMAGE_CONVERTER);
         }
         if (localHolder.isAffected(IMAGE_CONVERTER) || this.converter == null) {

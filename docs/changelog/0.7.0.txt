@@ -1,0 +1,8 @@
+Improvements:
+
+* Added experimental "GMse" converter algorithm.
+* Added "Toggle all" button to the Elements tab.
+
+Bugs fixed:
+
+* Fixed performance regression from zima 0.6.0.

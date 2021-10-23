@@ -129,6 +129,7 @@ public class ZimaFrontendSwing {
 	);
 	private Map<ElementRule, JCheckBox> rulesetBoxEdit = new HashMap<>();
 	private ImageConverterRuleset customRuleset;
+	private JComboBox<ImageConverterType> converterTypeEdit;
 	private JSlider contrastReductionEdit;
 	private JButton contrastReductionReset;
 	private JSlider accurateApproximateEdit;
@@ -296,6 +297,9 @@ public class ZimaFrontendSwing {
 			appendTabRow(this.optionsBoardPanel, gbc, "Max. board size", this.maxBoardSizeEdit = new JSpinner(boardSizeModel(Platform.ZZT.getMaxBoardSize())));
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.MAX_BOARD_SIZE, this.maxBoardSizeEdit);
 			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.maxBoardSizeEdit.setModel(boardSizeModel(((Number) this.maxBoardSizeEdit.getValue()).intValue())));
+
+			appendTabRow(this.optionsBoardPanel, gbc, "Conversion algorithm", this.converterTypeEdit = createEnumComboBox(ImageConverterType.class));
+			bindPropertyEnum(this.profile.getProperties(), ZimaConversionProfile.IMAGE_CONVERTER_TYPE, this.converterTypeEdit);
 
 			appendTabRow(this.optionsBoardPanel, gbc, "Accurate/Approximate",
 					this.accurateApproximateEdit = new JSlider(JSlider.HORIZONTAL, 0, 1000, 0),

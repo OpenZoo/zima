@@ -48,6 +48,8 @@ public class ZimaConversionProfile {
     public static final Property<Integer> STAT_CYCLE = Property.create("output.statCycle", 0);
     public static final Property<Integer> MAX_STAT_COUNT = Property.create("converter.maxStatCount", 150);
     public static final Property<Integer> MAX_BOARD_SIZE = Property.create("converter.maxBoardSize", 20002);
+
+    public static final Property<ImageConverterType> IMAGE_CONVERTER_TYPE = Property.create("converter.type", ImageConverterType.TRIX, MSE_CALCULATOR);
     public static final Property<Float> TRIX_CONTRAST_REDUCTION = Property.create("converter.trix.contrastReduction", 0.0035f, MSE_CALCULATOR);
     public static final Property<Float> TRIX_ACCURATE_APPROXIMATE = Property.create("converter.trix.accurateApproximate", 0.45f, MSE_CALCULATOR);
 
@@ -188,8 +190,14 @@ public class ZimaConversionProfile {
             this.renderer = new TextVisualRenderer(properties.get(VISUAL_DATA), properties.get(PLATFORM));
         }
         if (localHolder.isAffected(MSE_CALCULATOR) || this.mseCalculator == null) {
-           this.mseCalculator = new TrixImageMseCalculator(properties.get(VISUAL_DATA), properties.get(BLINKING_DISABLED), properties.get(TRIX_CONTRAST_REDUCTION), properties.get(TRIX_ACCURATE_APPROXIMATE));
-           //this.mseCalculator = new GmseImageMseCalculator(properties.get(VISUAL_DATA), properties.get(BLINKING_DISABLED), properties.get(TRIX_CONTRAST_REDUCTION));
+            switch (properties.get(IMAGE_CONVERTER_TYPE)) {
+                case TRIX:
+                    this.mseCalculator = new TrixImageMseCalculator(properties.get(VISUAL_DATA), properties.get(BLINKING_DISABLED), properties.get(TRIX_CONTRAST_REDUCTION), properties.get(TRIX_ACCURATE_APPROXIMATE));
+                    break;
+                case GMSE:
+                    this.mseCalculator = new GmseImageMseCalculator(properties.get(VISUAL_DATA), properties.get(BLINKING_DISABLED), properties.get(TRIX_CONTRAST_REDUCTION), properties.get(TRIX_ACCURATE_APPROXIMATE));
+                    break;
+            }
            localHolder.affect(IMAGE_CONVERTER);
         }
         if (localHolder.isAffected(IMAGE_CONVERTER) || this.converter == null) {

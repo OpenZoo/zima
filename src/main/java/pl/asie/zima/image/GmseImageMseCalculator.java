@@ -20,7 +20,6 @@ package pl.asie.zima.image;
 
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.zima.util.ColorUtils;
-import pl.asie.zima.util.DebugUtils;
 import pl.asie.zima.util.Gaussian2DKernel;
 
 import java.awt.image.BufferedImage;
@@ -108,8 +107,6 @@ public class GmseImageMseCalculator implements ImageMseCalculator {
 				float[] data = this.cache.get(entries.getKey());
 				Arrays.fill(data, entries.getValue());
 			}
-
-			DebugUtils.print1DArray(this.cache.get(178), visual.getCharWidth());
 		}
 
 		public float[] getGaussian(int chr) {
@@ -123,12 +120,14 @@ public class GmseImageMseCalculator implements ImageMseCalculator {
 	private final float contrastReduction;
 	private final boolean blinkingDisabled;
 
-	public GmseImageMseCalculator(TextVisualData visual, boolean blinkingDisabled, float contrastReduction) {
+	public GmseImageMseCalculator(TextVisualData visual, boolean blinkingDisabled, float contrastReduction, float accurateApproximate) {
 		this.visual = visual;
-		this.gaussCache = new GaussianCharCache(visual, 3, 1.5f);
-		this.mixCache = new ColorMixCache(visual, 256);
 		this.contrastReduction = contrastReduction;
 		this.blinkingDisabled = blinkingDisabled;
+
+		float size = 0.05f + (accurateApproximate * 1.45f);
+		this.gaussCache = new GaussianCharCache(visual, 3, size);
+		this.mixCache = new ColorMixCache(visual, 256);
 	}
 	
 	@Override

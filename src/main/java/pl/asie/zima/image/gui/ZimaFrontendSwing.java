@@ -28,6 +28,10 @@ import pl.asie.libzzt.Platform;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.ZOutputStream;
 import pl.asie.zima.Version;
+import pl.asie.zima.gui.BaseFrontendSwing;
+import pl.asie.zima.gui.ElementJsonSerdes;
+import pl.asie.zima.gui.ZimaChangelogWindow;
+import pl.asie.zima.gui.ZimaLicenseWindow;
 import pl.asie.zima.util.*;
 import pl.asie.zima.image.*;
 import pl.asie.zima.util.gui.ImageFileChooser;
@@ -55,11 +59,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
-public class ZimaFrontendSwing {
-	private final Gson gson = new GsonBuilder().registerTypeAdapter(Element.class, ElementJsonSerdes.INSTANCE).create();
-	private final JFrame window;
-	private final JPanel mainPanel;
-	private final JMenuBar menuBar;
+public class ZimaFrontendSwing extends BaseFrontendSwing {
 	private final JMenu fileMenu, editMenu, profileMenu, helpMenu;
 	private final JMenuItem openItem, saveBrdItem, saveMzmItem, savePngItem, closeItem;
 	private final JMenuItem copyItem ,pasteItem;
@@ -164,8 +164,6 @@ public class ZimaFrontendSwing {
 	private int[] palette;
 	private TextVisualData visual;
 
-	private final String zimaVersion;
-
 	@Getter
 	private BufferedImage inputImage;
 	@Getter
@@ -176,8 +174,9 @@ public class ZimaFrontendSwing {
 
 	private boolean uiReady;
 
-	public ZimaFrontendSwing(byte[] defaultCharset, int[] defaultPalette, String zimaVersion) {
-		this.zimaVersion = zimaVersion;
+	public ZimaFrontendSwing(byte[] defaultCharset, int[] defaultPalette) {
+		super("image converter");
+
 		this.defaultCharset = defaultCharset;
 		this.defaultPalette = defaultPalette;
 
@@ -190,12 +189,8 @@ public class ZimaFrontendSwing {
 		this.profile.getProperties().set(ZimaConversionProfile.PLATFORM, Platform.ZZT);
 		this.profile.getProperties().set(ZimaConversionProfile.FAST_RULESET, ImageConverterRulesZZT.RULES_BLOCKS);
 
-		this.window = new JFrame(Version.getCurrentWindowName("image converter"));
-		this.window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
 		this.previewCanvas = new SimpleCanvas();
 		this.previewCanvas.setScrollable(true);
-		this.mainPanel = new JPanel(new GridBagLayout());
 		this.statusLabel = new JLabel("Ready.");
 		addGridBag(this.mainPanel, this.previewCanvasPane = new JScrollPane(this.previewCanvas), (c) -> { c.gridx = 0; c.gridy = 0; c.fill = GridBagConstraints.BOTH; c.weightx = 0.8; c.weighty = 1.0; });
 		addGridBag(this.mainPanel, this.optionsPane = new JTabbedPane(), (c) -> { c.gridx = 1; c.gridy = 0; c.gridheight = 2; c.fill = GridBagConstraints.VERTICAL; });
@@ -217,7 +212,6 @@ public class ZimaFrontendSwing {
 
 		this.optionsPane.addChangeListener((e) -> updateCanvas());
 
-		this.window.setJMenuBar(this.menuBar = new JMenuBar());
 		this.menuBar.add(this.fileMenu = new JMenu("File"));
 		this.fileMenu.add(this.openItem = new JMenuItem("Open"));
 		this.fileMenu.add(this.saveBrdItem = new JMenuItem("Save (.brd)"));
@@ -692,90 +686,6 @@ public class ZimaFrontendSwing {
 
 	// Menu options
 
-	private final Map<String, SoftReference<JFileChooser>> chooserCache = new HashMap<>();
-
-	private JFileChooser getOrCreateFileChooser(String ctx) {
-		SoftReference<JFileChooser> ref = chooserCache.get(ctx);
-		if (ref == null || ref.get() == null) {
-			if (ctx.startsWith("image")) {
-				JFileChooser nfc = ImageFileChooser.image();
-				nfc.setCurrentDirectory(new File(System.getProperty("user.dir")));
-				ref = new SoftReference<>(nfc);
-			} else {
-				JFileChooser fc = new JFileChooser();
-				fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
-				ref = new SoftReference<>(fc);
-			}
-			chooserCache.put(ctx, ref);
-		}
-		return ref.get();
-	}
-
-	private void setFileFilters(JFileChooser fc, FileNameExtensionFilter... filters) {
-		fc.resetChoosableFileFilters();
-		fc.setFileFilter(null);
-		if (filters.length >= 1) {
-			if (filters.length >= 2) {
-				for (FileNameExtensionFilter f : filters) {
-					fc.addChoosableFileFilter(f);
-				}
-			} else {
-				fc.setFileFilter(filters[0]);
-			}
-		}
-	}
-
-	private File showLoadDialog(String context, FileNameExtensionFilter... filters) {
-		JFileChooser fc = getOrCreateFileChooser(context);
-		if (!(fc instanceof ImageFileChooser)) {
-			setFileFilters(fc, filters);
-		}
-		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		int returnVal = fc.showOpenDialog(this.window);
-
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			return fc.getSelectedFile();
-		} else {
-			return null;
-		}
-	}
-
-	private File showSaveDialog(String context, FileNameExtensionFilter... filters) {
-		JFileChooser fc = getOrCreateFileChooser(context);
-		if (!(fc instanceof ImageFileChooser)) {
-			setFileFilters(fc, filters);
-		}
-		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		int returnVal = fc.showSaveDialog(this.window);
-
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			File file = fc.getSelectedFile();
-			if (!(fc instanceof ImageFileChooser)) {
-				boolean endsWithValidExtension = false;
-				String defExtension = null;
-				String lcName = file.getName().toLowerCase(Locale.ROOT);
-				for (FileNameExtensionFilter f : filters) {
-					for (String extension : f.getExtensions()) {
-						if (defExtension == null) {
-							defExtension = extension;
-						}
-						if (lcName.endsWith("." + extension)) {
-							endsWithValidExtension = true;
-							break;
-						}
-					}
-					if (endsWithValidExtension) break;
-				}
-				if (!endsWithValidExtension && defExtension != null) {
-					file = new File(file.toString() + "." + defExtension);
-				}
-			}
-			return file;
-		} else {
-			return null;
-		}
-	}
-
 	public void onLoadSettings(ActionEvent event) {
 		File file = showLoadDialog("profile", new FileNameExtensionFilter("JSON profile", "json"));
 		if (file != null) {
@@ -870,18 +780,6 @@ public class ZimaFrontendSwing {
 			}
 		} catch (Exception e) {
 			// pass
-		}
-	}
-
-	public void onChangelog(ActionEvent event) {
-		new ZimaChangelogWindow(window);
-	}
-
-	public void onAbout(ActionEvent event) {
-		try {
-			new ZimaLicenseWindow(window, this.zimaVersion);
-		} catch (IOException e) {
-			JOptionPane.showMessageDialog(this.window, "zima " + zimaVersion + " - Copyright (c) 2020 asie", "About", JOptionPane.INFORMATION_MESSAGE);
 		}
 	}
 
@@ -1142,13 +1040,6 @@ public class ZimaFrontendSwing {
 		}
 		gbc.gridx = 0;
 		gbc.gridy += 1;
-	}
-
-	private void addGridBag(JPanel panel, Component c, Consumer<GridBagConstraints> gbcConsumer) {
-		GridBagConstraints gbc = new GridBagConstraints();
-		gbc.insets = new Insets(4, 4, 4, 4);
-		gbcConsumer.accept(gbc);
-		panel.add(c, gbc);
 	}
 
 	private SpinnerNumberModel boardCoordsModel(int cval, boolean height) {

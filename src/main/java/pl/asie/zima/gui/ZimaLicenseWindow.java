@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.zima.image.gui;
+package pl.asie.zima.gui;
 
 import pl.asie.zima.util.FileUtils;
 import pl.asie.zima.util.Triplet;
@@ -28,7 +28,8 @@ import java.util.List;
 public class ZimaLicenseWindow {
     private static final List<Triplet<String, String, String>> LICENSE_TEXTS = List.of(
             new Triplet<>("zima", "licenses/COPYING", "licenses/COPYING.GPL"),
-            new Triplet<>("gson", "licenses/3rdparty/LICENSE-GSON", "licenses/3rdparty/LICENSE-GSON.long"),
+            new Triplet<>("Gson", "licenses/3rdparty/LICENSE-GSON", "licenses/3rdparty/LICENSE-GSON.long"),
+            new Triplet<>("Guava", "licenses/3rdparty/LICENSE-GUAVA", "licenses/3rdparty/LICENSE-GUAVA.long"),
             new Triplet<>("Reconstruction of ZZT", "licenses/3rdparty/LICENSE-ROZ", "licenses/3rdparty/LICENSE-ROZ")
     );
 

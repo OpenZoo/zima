@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.zima.image.gui;
+package pl.asie.zima.gui;
 
 import com.google.gson.*;
 import pl.asie.libzzt.Element;

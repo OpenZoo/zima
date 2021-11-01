@@ -16,20 +16,16 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.zima.image;
+package pl.asie.zima.zxtedit;
 
 import pl.asie.zima.Constants;
-import pl.asie.zima.Version;
-import pl.asie.zima.util.FileUtils;
 import pl.asie.zima.image.gui.ZimaFrontendSwing;
+import pl.asie.zima.util.FileUtils;
 
 import java.util.Objects;
 
-public class ImageConverterMain {
+public class ZxtEditMain {
 	public static void main(String[] args) throws Exception {
-		ZimaFrontendSwing frontend = new ZimaFrontendSwing(
-				FileUtils.readAll(Objects.requireNonNull(ImageConverterMain.class.getClassLoader().getResourceAsStream("8x14.bin"))),
-				Constants.EGA_PALETTE
-		);
+		ZxtEditFrontendSwing frontend = new ZxtEditFrontendSwing();
 	}
 }

@@ -18,7 +18,7 @@
  */
 package pl.asie.zima.util;
 
-import pl.asie.zima.image.gui.ZimaLicenseWindow;
+import pl.asie.zima.gui.ZimaLicenseWindow;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -51,6 +51,11 @@ public final class FileUtils {
 
 	private FileUtils() {
 
+	}
+
+	public static String getExtension(File file) {
+		String[] parts = file.getName().split("\\.");
+		return parts[parts.length - 1];
 	}
 
 	public static void setProjectDirectory(File directory) {

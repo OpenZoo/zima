@@ -610,7 +610,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 
 	private void updateCharRatioLabel() {
 		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
-		int width = this.profile.getProperties().get(ZimaConversionProfile.CHARS_WIDTH) * this.visual.getCharWidth() * (platform.isDoubleWide() ? 2 : 1);
+		int width = this.profile.getProperties().get(ZimaConversionProfile.CHARS_WIDTH) * this.visual.getCharWidth() * (platform.isDoubleWide(this.visual) ? 2 : 1);
 		int height = this.profile.getProperties().get(ZimaConversionProfile.CHARS_HEIGHT) * this.visual.getCharHeight();
 		if (width > 0 && height > 0) {
 			this.charRatioLabel.setText(String.format("%.2f (%dx%d pixels)", (float) width / height, width, height));
@@ -652,7 +652,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 			this.profile.updateImage(inputImage);
 			this.previewCanvas.setAllowScaling(true);
-			this.previewCanvas.setDoubleWide(platform.isDoubleWide());
+			this.previewCanvas.setDoubleWide(platform.isDoubleWide(this.visual));
 			this.previewCanvas.setImage(this.profile.getFilteredImage());
 		} else {
 			this.previewCanvas.setAllowScaling(false);

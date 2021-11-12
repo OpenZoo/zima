@@ -18,13 +18,15 @@
  */
 package pl.asie.libzzt;
 
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 
 @SuppressWarnings("ConstantConditions")
 @Data
 @Builder
-public class Platform {
+public final class Platform {
     private final boolean usesBoard;
     private final int boardWidth;
     private final int boardHeight;
@@ -37,6 +39,7 @@ public class Platform {
     @Builder.Default
     private final int maxStatCount = -1;
     @Builder.Default
+    @Getter(AccessLevel.PRIVATE)
     private final boolean doubleWide = false;
     @Builder.Default
     private final boolean maxStatCountIsActual = false;
@@ -58,6 +61,10 @@ public class Platform {
 
     public int getDefaultBoardHeight() {
         return defaultBoardHeight < 0 ? boardHeight : defaultBoardHeight;
+    }
+
+    public boolean isDoubleWide(TextVisualData visual) {
+        return isDoubleWide() && visual.getCharHeight() >= (visual.getCharWidth() * 3 / 2);
     }
 
     static {

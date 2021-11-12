@@ -77,7 +77,7 @@ public class TextVisualRenderer {
 	} */
 
 	public BufferedImage render(int width, int height, ByteGetter charGetter, ByteGetter colorGetter) {
-		int charXInc = (platform.isDoubleWide() ? 2 : 1);
+		int charXInc = (platform.isDoubleWide(visual) ? 2 : 1);
 		int charWidth = visual.getCharWidth() * charXInc;
 		int charHeight = visual.getCharHeight();
 		BufferedImage image = new BufferedImage(width * charWidth, height * charHeight, BufferedImage.TYPE_INT_RGB);

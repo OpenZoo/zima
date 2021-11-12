@@ -172,7 +172,7 @@ public class ZimaConversionProfile {
             int width = properties.get(VISUAL_DATA).getCharWidth() * properties.get(CHARS_WIDTH);
             int height = properties.get(VISUAL_DATA).getCharHeight() * properties.get(CHARS_HEIGHT);
 
-            this.scaledImage = ImageUtils.scale(img, width, height, properties.get(ASPECT_RATIO_PRESERVATION_MODE), properties.get(PLATFORM).isDoubleWide(), Color.BLACK);
+            this.scaledImage = ImageUtils.scale(img, width, height, properties.get(ASPECT_RATIO_PRESERVATION_MODE), properties.get(PLATFORM).isDoubleWide(properties.get(VISUAL_DATA)), Color.BLACK);
             localHolder.affect(FILTERED_IMAGE);
         }
 

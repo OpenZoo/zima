@@ -65,11 +65,11 @@ public class GmseImageMseCalculator implements ImageMseCalculator {
 			else if (cx >= visual.getCharWidth()) cx = visual.getCharWidth() - 1;
 			if (cy < 0) cy = 0;
 			else if (cy >= visual.getCharHeight()) cy = visual.getCharHeight() - 1;
-			return (visual.getCharData()[(chr * 14) + cy] >> (7 - cx)) & 1;
+			return (visual.getCharData()[(chr * visual.getCharHeight()) + cy] >> (7 - cx)) & 1;
 
 
 			/* if (cx >= 0 && cy >= 0 && cx < visual.getCharWidth() && cy < visual.getCharHeight()) {
-				return (visual.getCharData()[(chr * 14) + cy] >> (7 - cx)) & 1;
+				return (visual.getCharData()[(chr * visual.getCharHeight()) + cy] >> (7 - cx)) & 1;
 			} else {
 				return 0;
 			} */

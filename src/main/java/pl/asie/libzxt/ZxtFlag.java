@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2020, 2021 Adrian Siekierka
+ * Copyright (c) 2020, 2021, 2022 Adrian Siekierka
  *
  * This file is part of zima.
  *

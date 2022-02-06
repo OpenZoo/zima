@@ -18,6 +18,8 @@
  */
 package pl.asie.libzzt;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +44,10 @@ public class ElementLibrary {
         if (empty == null) {
             throw new RuntimeException();
         }
+    }
+
+    public Collection<Element> getElements() {
+        return Collections.unmodifiableCollection(elementsById.values());
     }
 
     public Element byId(int id) {

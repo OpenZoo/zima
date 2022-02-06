@@ -63,12 +63,12 @@ public class ElementRule {
 		return new ElementRule(element, element.getId() == 0 ? Strategy.EMPTY : Strategy.ELEMENT, chr, -1);
 	}
 
-	public static ElementRule text(Platform platform, String name, int color) {
+	public static ElementRule text(Platform platform, String name) {
 		Element element = platform.getLibrary().byInternalName(name);
 		if (element == null) {
 			throw new RuntimeException();
 		}
-		return new ElementRule(element, Strategy.TEXT, -1, color);
+		return new ElementRule(element, Strategy.TEXT, -1, element.getTextColor());
 	}
 
 	public static ElementRule statP1(Platform platform, String name) {

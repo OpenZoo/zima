@@ -21,12 +21,13 @@ package pl.asie.zima.image.gui;
 import lombok.Getter;
 import pl.asie.ctif.PaletteGeneratorKMeans;
 import pl.asie.libzzt.Board;
+import pl.asie.libzzt.ElementLibraryWeaveZZT;
+import pl.asie.libzzt.ElementLibraryZZT;
 import pl.asie.libzzt.PaletteLoaderUtils;
 import pl.asie.libzzt.Platform;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.ZOutputStream;
 import pl.asie.zima.gui.BaseFrontendSwing;
-import pl.asie.zima.gui.ZimaChangelogWindow;
 import pl.asie.zima.gui.ZimaTextWindow;
 import pl.asie.zima.util.*;
 import pl.asie.zima.image.*;
@@ -93,34 +94,15 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 	private final List<Pair<String, Platform>> platforms = List.of(
 			new Pair<>("ZZT", Platform.ZZT),
 			new Pair<>("Super ZZT", Platform.SUPER_ZZT),
+			new Pair<>("WeaveZZT 2.5", Platform.WEAVE_ZZT_25),
 			new Pair<>("MegaZeux", Platform.MEGAZEUX)
 	);
 	private JComboBox<String> rulesetEdit;
-	private final Map<Platform, ImageConverterRuleset> allRulesRuleset = Map.of(
-			Platform.ZZT, ImageConverterRulesZZT.ALL_RULES,
-			Platform.SUPER_ZZT, ImageConverterRulesSuperZZT.ALL_RULES,
-			Platform.MEGAZEUX, new ImageConverterRuleset(List.of())
-	);
-	private final Map<Platform, List<Pair<String, ImageConverterRuleset>>> rulesetOptions = Map.of(
-			Platform.ZZT, List.of(
-					new Pair<>("Default", ImageConverterRulesZZT.RULES_UNSAFE_STATLESS),
-					new Pair<>("Default (Clone-safe)", ImageConverterRulesZZT.RULES_SAFE_STATLESS),
-					new Pair<>("Default (Elements only)", ImageConverterRulesZZT.RULES_SAFE),
-					new Pair<>("Blocks", ImageConverterRulesZZT.RULES_BLOCKS),
-					new Pair<>("Walkable", ImageConverterRulesZZT.RULES_WALKABLE),
-					new Pair<>("Custom", null)
-			),
-			Platform.SUPER_ZZT, List.of(
-					new Pair<>("Default", ImageConverterRulesSuperZZT.RULES_UNSAFE_STATLESS),
-					new Pair<>("Default (Clone-safe)", ImageConverterRulesSuperZZT.RULES_SAFE_STATLESS),
-					new Pair<>("Default (Elements only)", ImageConverterRulesSuperZZT.RULES_SAFE),
-					new Pair<>("Blocks", ImageConverterRulesSuperZZT.RULES_BLOCKS),
-					new Pair<>("Walkable", ImageConverterRulesSuperZZT.RULES_WALKABLE),
-					new Pair<>("Custom", null)
-			),
-			Platform.MEGAZEUX, List.of(
-					new Pair<>("N/A", null)
-			)
+	private final Map<Platform, ImageConverterRules> rulesByPlatform = Map.of(
+			Platform.ZZT, new ImageConverterRules(Platform.ZZT, false),
+			Platform.SUPER_ZZT, new ImageConverterRules(Platform.SUPER_ZZT, true),
+			Platform.WEAVE_ZZT_25, new ImageConverterRules(Platform.WEAVE_ZZT_25, false),
+			Platform.MEGAZEUX, new ImageConverterRules()
 	);
 	private Map<ElementRule, JCheckBox> rulesetBoxEdit = new HashMap<>();
 	private ImageConverterRuleset customRuleset;
@@ -182,7 +164,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		this.profile.getProperties().addGlobalChangeListener((k, v) -> rerender());
 		// TODO: move both
 		this.profile.getProperties().set(ZimaConversionProfile.PLATFORM, Platform.ZZT);
-		this.profile.getProperties().set(ZimaConversionProfile.FAST_RULESET, ImageConverterRulesZZT.RULES_BLOCKS);
+		this.profile.getProperties().set(ZimaConversionProfile.FAST_RULESET, new ImageConverterRules(Platform.ZZT, false).getRuleset("Blocks"));
 
 		this.previewCanvas = new SimpleCanvas();
 		this.previewCanvas.setScrollable(true);
@@ -234,7 +216,12 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			appendTabRow(this.optionsBoardPanel, gbc, "Platform",
 					this.platformEdit = new JComboBox<>(this.platforms.stream().map(Pair::getFirst).toArray(String[]::new)));
 			this.platformEdit.addActionListener((e) -> {
-				Platform newPlatform = this.platforms.get(this.platformEdit.getSelectedIndex()).getSecond();
+				Pair<String, Platform> newEntry = this.platforms.get(this.platformEdit.getSelectedIndex());
+				Platform newPlatform = newEntry.getSecond();
+				if ("WeaveZZT 2.5".equals(newEntry.getFirst())) {
+					newPlatform = loadWeaveCfg(newPlatform);
+				}
+
 				this.profile.getProperties().set(ZimaConversionProfile.PLATFORM, newPlatform);
 				this.profile.getProperties().set(ZimaConversionProfile.CHARS_WIDTH, newPlatform.getDefaultBoardWidth());
 				this.profile.getProperties().set(ZimaConversionProfile.CHARS_HEIGHT, newPlatform.getDefaultBoardHeight());
@@ -246,6 +233,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				this.saveBrdItem.setEnabled(newPlatform.isUsesBoard());
 				this.maxBoardSizeEdit.setEnabled(newPlatform.getMaxBoardSize() > 0);
 				this.maxStatCountEdit.setEnabled(newPlatform.getMaxStatCount() > 0);
+				this.maxStatCountEdit.setValue(newPlatform.getMaxStatCount());
 				this.statCycleEdit.setEnabled(newPlatform.getMaxStatCount() > 0);
 			});
 
@@ -542,7 +530,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		gbc.anchor = GridBagConstraints.WEST;
 
 		int i = 0;
-		for (ElementRule rule : allRulesRuleset.get(platform).getRules()) {
+		for (ElementRule rule : getRulesByPlatform(platform).getAllRules().getRules()) {
 			StringBuilder labelStr = new StringBuilder(platform.getLibrary().getInternalName(rule.getElement()));
 			if (rule.getStrategy().isRequiresStat()) {
 				labelStr.append(" (Stat)");
@@ -562,7 +550,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
-		this.rulesetEdit = new JComboBox<>(this.rulesetOptions.get(platform).stream().map(Pair::getFirst).toArray(String[]::new));
+		this.rulesetEdit = new JComboBox<>(getRulesByPlatform(platform).getRulesetPresets().stream().map(Pair::getFirst).toArray(String[]::new));
 		this.rulesetEdit.addActionListener((e) -> setRuleset(this.rulesetEdit.getSelectedIndex()));
 		optionsElementsPanel.add(this.rulesetEdit, gbc);
 
@@ -587,7 +575,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 
 		int index = this.rulesetEdit.getSelectedIndex();
-		ImageConverterRuleset ruleset = this.rulesetOptions.get(platform).get(index).getSecond();
+		ImageConverterRuleset ruleset = getRulesByPlatform(platform).getRulesetPresets().get(index).getSecond();
 		if (ruleset == null) {
 			setRuleset(index);
 		}
@@ -596,15 +584,15 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 	public void setRuleset(int index) {
 		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 
-		if (index >= this.rulesetOptions.get(platform).size()) {
+		if (index >= getRulesByPlatform(platform).getRulesetPresets().size()) {
 			index = 0;
 		}
-		ImageConverterRuleset ruleset = this.rulesetOptions.get(platform).get(index).getSecond();
+		ImageConverterRuleset ruleset = getRulesByPlatform(platform).getRulesetPresets().get(index).getSecond();
 
 		List<ElementRule> customRules = new ArrayList<>();
 		// if default ruleset, disable checkboxes + copy to boxes
 		// if custom ruleset, enable checkboxes + copy from boxes
-		for (ElementRule rule : allRulesRuleset.get(platform).getRules()) {
+		for (ElementRule rule : getRulesByPlatform(platform).getAllRules().getRules()) {
 			JCheckBox box = rulesetBoxEdit.get(rule);
 			box.setEnabled(rule.getElement().getId() != 0 && ruleset == null);
 			if (ruleset != null) {
@@ -709,6 +697,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				setSettings(gson.fromJson(reader, ZimaProfileSettings.class));
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+				e.printStackTrace();
 			}
 		}
 	}
@@ -720,6 +709,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				writer.write(gson.toJson(getSettings()));
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error saving file: " + e.getMessage());
+				e.printStackTrace();
 			}
 		}
 	}
@@ -737,7 +727,23 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				updateVisual();
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+				e.printStackTrace();
 			}
+		}
+	}
+
+	private Platform loadWeaveCfg(Platform parent) {
+		File file = showLoadDialog("worlds", new FileNameExtensionFilter("WeaveZZT 2.5 configuration file", "cfg"));
+		if (file != null) {
+			try (FileInputStream fis = new FileInputStream(file)) {
+				return parent.withLibrary(ElementLibraryWeaveZZT.create(ElementLibraryZZT.INSTANCE, fis));
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+				e.printStackTrace();
+				return parent;
+			}
+		} else {
+			return parent;
 		}
 	}
 
@@ -805,6 +811,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				updateVisual();
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+				e.printStackTrace();
 			}
 		}
 	}
@@ -841,6 +848,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				setInputImage(ImageIO.read(file));
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+				e.printStackTrace();
 			}
 		}
 	}
@@ -861,6 +869,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				MZMWriter.write(fos, result.getWidth(), result.getHeight(), result::getCharacter, result::getColor);
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error saving file: " + e.getMessage());
+				e.printStackTrace();
 			}
 		}
 	}
@@ -886,6 +895,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				}
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error saving file: " + e.getMessage());
+				e.printStackTrace();
 			}
 		}
 	}
@@ -901,6 +911,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				ImageIO.write(this.asyncRenderer.getOutputImage(), "png", file);
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error saving file: " + e.getMessage());
+				e.printStackTrace();
 			}
 		}
 	}
@@ -917,6 +928,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				}
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error saving file: " + e.getMessage());
+				e.printStackTrace();
 			}
 		}
 	}
@@ -1006,8 +1018,8 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			boolean found = false;
 			int emptyIndex = -1;
 			Set<ElementRule> settingsElementSet = new HashSet<>(settings.getAllowedElements());
-			for (int i = 0; i < rulesetOptions.get(platform).size(); i++) {
-				ImageConverterRuleset ruleset = rulesetOptions.get(platform).get(i).getSecond();
+			for (int i = 0; i < getRulesByPlatform(platform).getRulesetPresets().size(); i++) {
+				ImageConverterRuleset ruleset = getRulesByPlatform(platform).getRulesetPresets().get(i).getSecond();
 				if (ruleset != null) {
 					Set<ElementRule> rulesElementSet = new HashSet<>(ruleset.getRules());
 					if (rulesElementSet.equals(settingsElementSet)) {
@@ -1050,6 +1062,14 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		}
 
 		rerender();
+	}
+
+	private ImageConverterRules getRulesByPlatform(Platform platform) {
+		ImageConverterRules rules = rulesByPlatform.get(platform);
+		if (rules == null) {
+			rules = new ImageConverterRules(platform, false);
+		}
+		return rules;
 	}
 
 	// Re-render call listeners

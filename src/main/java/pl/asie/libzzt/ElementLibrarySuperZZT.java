@@ -51,7 +51,7 @@ class ElementLibrarySuperZZT {
     private static final Element BOULDER = Element.builder().character(254).pushable(true).name("Boulder").id(24).build();
     private static final Element SLIDER_NS = Element.builder().character(18).name("Slider (NS)").id(25).build();
     private static final Element SLIDER_EW = Element.builder().character(29).name("Slider (EW)").id(26).build();
-    private static final Element FAKE = Element.builder().character(178).name("Fake").id(27).build();
+    private static final Element FAKE = Element.builder().character(178).name("Fake").walkable(true).id(27).build();
     private static final Element INVISIBLE = Element.builder().character(' ').name("Invisible").id(28).build();
     private static final Element BLINK_WALL = Element.builder().character(206).cycle(1).hasDrawProc(true).name("Blink wall").id(29).build();
     private static final Element TRANSPORTER = Element.builder().character(197).hasDrawProc(true).cycle(2).name("Transporter").id(30).build();
@@ -86,13 +86,13 @@ class ElementLibrarySuperZZT {
     private static final Element BLINK_RAY_EW = Element.builder().character(205).id(70).build();
     private static final Element BLINK_RAY_NS = Element.builder().character(186).id(71).build();
     private static final Element STAR = Element.builder().character('S').color(0x0F).destructible(false).cycle(1).hasDrawProc(true).name("Star").id(72).build();
-    private static final Element TEXT_BLUE = Element.builder().id(73).textBackgroundColor(1).build();
-    private static final Element TEXT_GREEN = Element.builder().id(74).textBackgroundColor(2).build();
-    private static final Element TEXT_CYAN = Element.builder().id(75).textBackgroundColor(3).build();
-    private static final Element TEXT_RED = Element.builder().id(76).textBackgroundColor(4).build();
-    private static final Element TEXT_PURPLE = Element.builder().id(77).textBackgroundColor(5).build();
-    private static final Element TEXT_YELLOW = Element.builder().id(78).textBackgroundColor(6).build();
-    private static final Element TEXT_WHITE = Element.builder().id(79).textBackgroundColor(0).build();
+    private static final Element TEXT_BLUE = Element.builder().id(73).textColor(0x1F).build();
+    private static final Element TEXT_GREEN = Element.builder().id(74).textColor(0x2F).build();
+    private static final Element TEXT_CYAN = Element.builder().id(75).textColor(0x3F).build();
+    private static final Element TEXT_RED = Element.builder().id(76).textColor(0x4F).build();
+    private static final Element TEXT_PURPLE = Element.builder().id(77).textColor(0x5F).build();
+    private static final Element TEXT_YELLOW = Element.builder().id(78).textColor(0x6F).build();
+    private static final Element TEXT_WHITE = Element.builder().id(79).textColor(0x0F).build();
     
     public static final ElementLibrary INSTANCE;
     

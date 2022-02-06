@@ -20,6 +20,7 @@ package pl.asie.libzzt;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.With;
 import pl.asie.libzzt.oop.OopUtils;
 
 import java.util.Objects;
@@ -27,6 +28,7 @@ import java.util.Objects;
 @SuppressWarnings("ConstantConditions")
 @Getter
 @Builder
+@With
 public final class Element {
     @Builder.Default
     private final int character = ' ';
@@ -45,7 +47,7 @@ public final class Element {
     @Builder.Default
     private final boolean hasDrawProc = false;
     @Builder.Default
-    private final int textBackgroundColor = -1;
+    private final int textColor = -1;
     @Builder.Default
     private final int cycle = -1;
     @Builder.Default
@@ -64,11 +66,11 @@ public final class Element {
     }
 
     public int getColor() {
-        return textBackgroundColor >= 0 ? (textBackgroundColor * 16 + 15) : this.color;
+        return textColor >= 0 ? this.textColor : this.color;
     }
 
     public boolean isText() {
-        return textBackgroundColor >= 0;
+        return textColor >= 0;
     }
 
     public boolean isStat() {

@@ -18,6 +18,7 @@
  */
 package pl.asie.zima.image.gui;
 
+import lombok.Getter;
 import pl.asie.libzzt.Platform;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.TextVisualRenderer;
@@ -36,7 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class CharacterSelector extends JComponent implements MouseListener, MouseMotionListener {
-    private TextVisualData visual;
+    @Getter private TextVisualData visual;
     private TextVisualRenderer renderer;
     private final boolean[] allowedChars = new boolean[256];
     private Boolean settingMode = null;
@@ -56,10 +57,6 @@ public class CharacterSelector extends JComponent implements MouseListener, Mous
                 (x, y) -> allowedChars[(y << 5) | x] ? 0x2F : 0x04
         );
         graphics.drawImage(image, 0, 0, null);
-    }
-
-    public TextVisualData getVisual() {
-        return visual;
     }
 
     public void setVisual(TextVisualData visual) {

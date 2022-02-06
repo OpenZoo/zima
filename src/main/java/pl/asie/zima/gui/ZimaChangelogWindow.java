@@ -25,11 +25,12 @@ import javax.swing.*;
 import java.io.IOException;
 import java.util.List;
 
-public class ZimaChangelogWindow {
+public class ZimaChangelogWindow extends ZimaTextWindow {
     public ZimaChangelogWindow(JFrame parent) {
-        JDialog dialog = new JDialog(parent, "Changelog", true);
-        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        super(parent, "Changelog", generateChangelogText());
+    }
 
+    private static String generateChangelogText() {
         StringBuilder text = new StringBuilder();
         List<String> versions = Version.getAll();
 
@@ -47,12 +48,6 @@ public class ZimaChangelogWindow {
             }
         }
 
-        JTextArea area = new JTextArea(text.toString());
-        area.setRows(30);
-        JScrollPane pane = new JScrollPane(area);
-
-        dialog.add(pane);
-        dialog.pack();
-        dialog.setVisible(true);
+        return text.toString();
     }
 }

@@ -38,6 +38,7 @@ import pl.asie.libzzt.oop.commands.OopCommandIdle;
 import pl.asie.libzzt.oop.commands.OopCommandIf;
 import pl.asie.libzzt.oop.commands.OopCommandLabel;
 import pl.asie.libzzt.oop.commands.OopCommandLock;
+import pl.asie.libzzt.oop.commands.OopCommandNull;
 import pl.asie.libzzt.oop.commands.OopCommandPlay;
 import pl.asie.libzzt.oop.commands.OopCommandPut;
 import pl.asie.libzzt.oop.commands.OopCommandRestart;
@@ -88,14 +89,6 @@ public class OopProgramParser {
 	private boolean lineFinished;
 	private int lastPosition;
 
-	private static int upCase(int c) {
-		if (c >= 'a' && c <= 'z') {
-			return c - 32;
-		} else {
-			return c;
-		}
-	}
-
 	private void readChar() {
 		if (position >= 0 && position < data.length()) {
 			oopChar = data.charAt(position++);
@@ -110,12 +103,12 @@ public class OopProgramParser {
 		while (oopChar == ' ') {
 			readChar();
 		}
-		oopChar = upCase(oopChar);
+		oopChar = OopUtils.upCase(oopChar);
 		if (oopChar < '0' || oopChar > '9') {
 			while ((oopChar >= 'A' && oopChar <= 'Z') || oopChar == ':' || (oopChar >= '0' && oopChar <= '9') || oopChar == '_') {
 				s.appendCodePoint(oopChar);
 				readChar();
-				oopChar = upCase(oopChar);
+				oopChar = OopUtils.upCase(oopChar);
 			}
 		}
 		oopWord = s.toString();
@@ -131,11 +124,11 @@ public class OopProgramParser {
 			readChar();
 		}
 
-		oopChar = upCase(oopChar);
+		oopChar = OopUtils.upCase(oopChar);
 		while (oopChar >= '0' && oopChar <= '9') {
 			s.appendCodePoint(oopChar);
 			readChar();
-			oopChar = upCase(oopChar);
+			oopChar = OopUtils.upCase(oopChar);
 		}
 
 		if (position > 0) {
@@ -371,7 +364,7 @@ public class OopProgramParser {
 					boolean restoreFindStringVisible = false;
 					int lastPosition = position;
 					readChar();
-					oopChar = upCase(oopChar);
+					oopChar = OopUtils.upCase(oopChar);
 					restoreFindStringVisible = !((oopChar >= 'A' && oopChar <= 'Z') || (oopChar == '_'));
 					position = lastPosition;
 					cmd = new OopCommandLabel(s, zapped, restoreFindStringVisible);
@@ -402,8 +395,7 @@ public class OopProgramParser {
 				cmd.setPosition(lastPosition);
 				program.commands.add(cmd);
 			} else if (oopChar == 0) {
-				// TODO: Formally different from #END (doesn't change position), but does it matter?
-				OopCommand cmd = new OopCommandEnd();
+				OopCommand cmd = new OopCommandNull();
 				cmd.setPosition(lastPosition);
 				program.commands.add(cmd);
 			} else {

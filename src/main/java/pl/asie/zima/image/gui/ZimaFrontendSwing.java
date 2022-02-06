@@ -18,23 +18,18 @@
  */
 package pl.asie.zima.image.gui;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import lombok.Getter;
+import pl.asie.ctif.PaletteGeneratorKMeans;
 import pl.asie.libzzt.Board;
-import pl.asie.libzzt.Element;
 import pl.asie.libzzt.PaletteLoaderUtils;
 import pl.asie.libzzt.Platform;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.ZOutputStream;
-import pl.asie.zima.Version;
 import pl.asie.zima.gui.BaseFrontendSwing;
-import pl.asie.zima.gui.ElementJsonSerdes;
 import pl.asie.zima.gui.ZimaChangelogWindow;
-import pl.asie.zima.gui.ZimaLicenseWindow;
+import pl.asie.zima.gui.ZimaTextWindow;
 import pl.asie.zima.util.*;
 import pl.asie.zima.image.*;
-import pl.asie.zima.util.gui.ImageFileChooser;
 import pl.asie.zima.util.gui.SimpleCanvas;
 import pl.asie.zima.util.gui.TransferableImage;
 
@@ -52,10 +47,8 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
@@ -82,6 +75,8 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 	private CharacterSelector characterSelector;
 	@Getter
 	private PaletteSelector paletteSelector;
+	@Getter
+	private ColorSelector customColorSelector;
 
 	// "Board" tab
 	private JSpinner boardXEdit;
@@ -391,8 +386,8 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			gbc.gridy = 3;
 			appendCharSelToggle(optionsCharsetPanel, "Lines", gbc, 179, 218);
 			gbc.gridy = 4;
-			appendCharSelButton(optionsCharsetPanel, "Load default", gbc, this::onLoadDefaultCharset);
-			appendCharSelButton(optionsCharsetPanel, "Load custom", gbc, this::onLoadCustomCharset);
+			appendButton(optionsCharsetPanel, "Load default", gbc, this::onLoadDefaultCharset);
+			appendButton(optionsCharsetPanel, "Load custom", gbc, this::onLoadCustomCharset);
 		}
 
 		{
@@ -402,6 +397,9 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 
 			paletteSelector = new PaletteSelector(() -> this.profile.getProperties().set(ZimaConversionProfile.ALLOWED_COLORS, paletteSelector.toSet()));
 			paletteSelector.change();
+
+			customColorSelector = new ColorSelector(() -> {});
+			customColorSelector.change();
 
 			gbc.insets = new Insets(2, 4, 2, 4);
 			gbc.gridwidth = GridBagConstraints.REMAINDER;
@@ -429,8 +427,25 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			gbc.gridy = 2;
 			gbc.gridwidth = 2;
 			gbc.anchor = GridBagConstraints.CENTER;
-			appendCharSelButton(optionsPalettePanel, "Load default", gbc, this::onLoadDefaultPalette);
-			appendCharSelButton(optionsPalettePanel, "Load custom", gbc, this::onLoadCustomPalette);
+			appendButton(optionsPalettePanel, "Load default", gbc, this::onLoadDefaultPalette);
+			appendButton(optionsPalettePanel, "Load custom", gbc, this::onLoadCustomPalette);
+
+			//
+			gbc.gridy = 3;
+			gbc.gridwidth = GridBagConstraints.REMAINDER;
+			gbc.anchor = GridBagConstraints.CENTER;
+			optionsPalettePanel.add(customColorSelector, gbc);
+
+			//
+			gbc.gridy = 4;
+			gbc.gridwidth = 2;
+			gbc.anchor = GridBagConstraints.WEST;
+			appendButton(optionsPalettePanel, "Generate/Roll", gbc, this::generateCustomPalette);
+
+			//
+			gbc.gridy = 5;
+			appendButton(optionsPalettePanel, "Save .PAL", gbc, this::onSavePal);
+			appendButton(optionsPalettePanel, "#PALETTE", gbc, this::onSaveWeavePalette);
 		}
 
 		{
@@ -629,6 +644,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		this.visual = new TextVisualData(8, charset.length >> 8, charset, palette);
 		this.characterSelector.setVisual(this.visual);
 		this.paletteSelector.setVisual(this.visual);
+		this.customColorSelector.setVisual(this.visual);
 		this.profile.getProperties().set(ZimaConversionProfile.VISUAL_DATA, this.visual);
 	}
 
@@ -723,6 +739,41 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 			}
 		}
+	}
+
+	private void generateCustomPalette(ActionEvent actionEvent) {
+		if (getInputImage() == null) return;
+		int[] colors = Arrays.copyOf(this.visual.getPalette(), this.visual.getPalette().length);
+		// reorder colors
+		Color[] reorderedColors = new Color[colors.length];
+		float[] weights = new float[colors.length];
+		int j = 0;
+		for (int i = 0; i < colors.length; i++) {
+			if (this.customColorSelector.isColorAllowed(i)) {
+				weights[j] = 1.0f; // TODO
+				reorderedColors[j++] = ColorUtils.toAwtColor(i);
+			}
+		}
+		int reorderedColorCount = j;
+		if (reorderedColorCount == 0) return;
+		for (int i = 0; i < colors.length; i++) {
+			if (!this.customColorSelector.isColorAllowed(i)) {
+				reorderedColors[j++] = ColorUtils.toAwtColor(i);
+			}
+		}
+		if (j != colors.length) throw new RuntimeException("Unexpected state!");
+		// generate
+		PaletteGeneratorKMeans gen = new PaletteGeneratorKMeans(getInputImage(), reorderedColors, weights, reorderedColorCount, 0);
+		Color[] updatedColors = gen.generate(2);
+		// reinsert colors
+		j = 0;
+		for (int i = 0; i < colors.length; i++) {
+			if (this.customColorSelector.isColorAllowed(i)) {
+				colors[i] = ColorUtils.fromAwtColor(updatedColors[j++]);
+			}
+		}
+		this.palette = colors;
+		updateVisual();
 	}
 
 	public void onLoadDefaultPalette(ActionEvent event) {
@@ -823,9 +874,8 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		if (file != null) {
 			try {
 				Board board = this.asyncRenderer.getOutputBoard();
-				Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 
-				try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos, platform)) {
+				try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos)) {
 					String basename = file.getName();
 					int extIndex = basename.lastIndexOf('.');
 					if (extIndex > 0) {
@@ -853,6 +903,41 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				JOptionPane.showMessageDialog(this.window, "Error saving file: " + e.getMessage());
 			}
 		}
+	}
+
+	private void onSavePal(ActionEvent actionEvent) {
+		File file = showSaveDialog("outputPalette", new FileNameExtensionFilter("MegaZeux palette file", "pal"));
+		if (file != null) {
+			try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos)) {
+				int[] colors = this.visual.getPalette();
+				for (int i = 0; i < 16; i++) {
+					zos.writePByte(((colors[i] >> 16) * 63 / 255) & 0xFF);
+					zos.writePByte(((colors[i] >> 8) * 63 / 255) & 0xFF);
+					zos.writePByte((colors[i] * 63 / 255) & 0xFF);
+				}
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(this.window, "Error saving file: " + e.getMessage());
+			}
+		}
+	}
+
+	private void onSaveWeavePalette(ActionEvent actionEvent) {
+		StringBuilder oopText = new StringBuilder();
+
+		int[] colors = this.visual.getPalette();
+		for (int i = 0; i < 16; i++) {
+			if (this.customColorSelector.isColorAllowed(i)) {
+				int cr = (((colors[i] >> 16) * 63 / 255) & 0xFF);
+				int cg = (((colors[i] >> 8) * 63 / 255) & 0xFF);
+				int cb = ((colors[i] * 63 / 255) & 0xFF);
+				if (cr == 0 && cg == 0 && cb == 0) {
+					cb = 1;
+				}
+				oopText.append("#palette ").append(i).append(" ").append(cr).append(" ").append(cg).append(" ").append(cb).append("\n");
+			}
+		}
+
+		new ZimaTextWindow(window, "OOP code", oopText.toString());
 	}
 
 	// Profile serialization
@@ -1009,14 +1094,14 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 	// Swing layout utils
 
 	private void appendCharSelToggle(JPanel panel, String name, GridBagConstraints gbc, int... ranges) {
-		appendCharSelButton(panel, name, gbc, (e) -> this.characterSelector.toggleCharAllowed(ranges));
+		appendButton(panel, name, gbc, (e) -> this.characterSelector.toggleCharAllowed(ranges));
 	}
 
 	private void appendPalSelToggle(JPanel panel, String name, GridBagConstraints gbc, int... ranges) {
-		appendCharSelButton(panel, name, gbc, (e) -> this.paletteSelector.toggleColorAllowed(ranges));
+		appendButton(panel, name, gbc, (e) -> this.paletteSelector.toggleColorAllowed(ranges));
 	}
 
-	private void appendCharSelButton(JPanel panel, String name, GridBagConstraints gbc, ActionListener al) {
+	private void appendButton(JPanel panel, String name, GridBagConstraints gbc, ActionListener al) {
 		JButton toggle = new JButton(name);
 		toggle.addActionListener(al);
 		panel.add(toggle, gbc);

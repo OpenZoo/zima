@@ -84,7 +84,7 @@ public class ZimaAsynchronousRenderer {
 					int statCount = output.getFirst().getBoard().getStats().size() - 1;
 					int boardSize = -1;
 
-					try (CountOutputStream cos = new CountOutputStream(); ZOutputStream stream = new ZOutputStream(cos, output.getFirst().getBoard().getPlatform())) {
+					try (CountOutputStream cos = new CountOutputStream(); ZOutputStream stream = new ZOutputStream(cos)) {
 						output.getFirst().getBoard().writeZ(stream);
 						boardSize = cos.getCount();
 					} catch (IOException e) {

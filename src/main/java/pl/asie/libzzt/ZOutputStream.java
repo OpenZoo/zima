@@ -26,12 +26,9 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 public class ZOutputStream extends FilterOutputStream {
-	@Getter
-	private final Platform platform;
 
-	public ZOutputStream(OutputStream out, Platform platform) {
+	public ZOutputStream(OutputStream out) {
 		super(out);
-		this.platform = platform;
 	}
 
 	public void pad(int amount) throws IOException {

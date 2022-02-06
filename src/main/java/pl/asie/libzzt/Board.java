@@ -20,6 +20,7 @@ package pl.asie.libzzt;
 
 import lombok.Data;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -68,7 +69,7 @@ public class Board {
 			setElement(i, 0, boardEdge);
 			setElement(i, this.outerHeight - 1, boardEdge);
 		}
-		for (int i = 0; i < this.outerHeight; i++) {
+		for (int i = 1; i < this.outerHeight - 1; i++) {
 			setElement(0, i, boardEdge);
 			setElement(this.outerWidth - 1, i, boardEdge);
 		}
@@ -136,71 +137,76 @@ public class Board {
 		return null;
 	}
 
-	public void readZ(ZInputStream stream) throws IOException {
-		// TODO: take board size into account
-		stream.readPShort();
+	public void readZ(ZInputStream inStream) throws IOException {
+		int boardSize = inStream.readPWord();
+		byte[] data = new byte[boardSize];
+		int dataRead = inStream.read(data, 0, boardSize);
+		if (dataRead != boardSize) {
+			throw new IOException("Could not read all board bytes: read " + dataRead + " bytes, expected " + boardSize + " bytes");
+		}
 
-		this.name = stream.readPString(platform == Platform.SUPER_ZZT ? 60 : 50);
+		try (ByteArrayInputStream byteStream = new ByteArrayInputStream(data); ZInputStream stream = new ZInputStream(byteStream)) {
+			this.name = stream.readPString(platform == Platform.SUPER_ZZT ? 60 : 50);
 
-		int ix = 1;
-		int iy = 1;
-		int rleCount = 0;
-		Element rleElement = platform.getLibrary().getEmpty();
-		int rleColor = 0;
-		do {
-			if (rleCount <= 0) {
-				rleCount = stream.readPByte();
-				if (rleCount == 0) rleCount = 256;
-				rleElement = platform.getLibrary().byId(stream.readPByte());
-				rleColor = stream.readPByte();
+			int ix = 1;
+			int iy = 1;
+			int rleCount = 0;
+			Element rleElement = platform.getLibrary().getEmpty();
+			int rleColor = 0;
+			do {
+				if (rleCount <= 0) {
+					rleCount = stream.readPByte();
+					if (rleCount == 0) rleCount = 256;
+					rleElement = platform.getLibrary().byId(stream.readPByte());
+					rleColor = stream.readPByte();
+				}
+				setElement(ix, iy, rleElement);
+				setColor(ix, iy, rleColor);
+				ix++;
+				if (ix > this.width) {
+					ix = 1;
+					iy++;
+				}
+				rleCount--;
+			} while (iy <= this.height);
+
+			this.maxShots = stream.readPByte();
+			if (platform == Platform.ZZT) {
+				this.dark = stream.readPBoolean();
 			}
-			setElement(ix, iy, rleElement);
-			setColor(ix, iy, rleColor);
-			ix++;
-			if (ix > this.width) {
-				ix = 1;
-				iy++;
+			for (int i = 0; i < 4; i++)
+				this.neighborBoards[i] = stream.readPByte();
+			this.reenterWhenZapped = stream.readPBoolean();
+			if (platform == Platform.ZZT) {
+				this.message = stream.readPString(58);
 			}
-			rleCount--;
-		} while (iy <= this.height);
+			this.startPlayerX = stream.readPByte();
+			this.startPlayerY = stream.readPByte();
+			if (platform == Platform.SUPER_ZZT) {
+				stream.readPShort(); // DrawXOffset - TOOD
+				stream.readPShort(); // DrawYOffset - TOOD
+			}
+			this.timeLimitSec = stream.readPShort();
+			int skipCount = platform == Platform.SUPER_ZZT ? 14 : 16;
+			if (stream.skip(skipCount) != skipCount) {
+				throw new IOException();
+			}
 
-		this.maxShots = stream.readPByte();
-		if (platform == Platform.ZZT) {
-			this.dark = stream.readPBoolean();
-		}
-		for (int i = 0; i < 4; i++)
-			this.neighborBoards[i] = stream.readPByte();
-		this.reenterWhenZapped = stream.readPBoolean();
-		if (platform == Platform.ZZT) {
-			this.message = stream.readPString(58);
-		}
-		this.startPlayerX = stream.readPByte();
-		this.startPlayerY = stream.readPByte();
-		if (platform == Platform.SUPER_ZZT) {
-			stream.readPShort(); // DrawXOffset - TOOD
-			stream.readPShort(); // DrawYOffset - TOOD
-		}
-		this.timeLimitSec = stream.readPShort();
-		int skipCount = platform == Platform.SUPER_ZZT ? 14 : 16;
-		if (stream.skip(skipCount) != skipCount) {
-			throw new IOException();
-		}
-
-		int statCount = stream.readPShort();
-		stats = new ArrayList<>();
-		for (int i = 0; i <= statCount; i++) {
-			Stat stat = new Stat();
-			stat.readZ(stream);
-			stats.add(stat);
-		}
-		for (Stat stat : stats) {
-			stat.copyStatIdToStat(this);
+			int statCount = stream.readPShort();
+			stats = new ArrayList<>();
+			for (int i = 0; i <= statCount; i++) {
+				Stat stat = new Stat();
+				stat.readZ(stream, platform);
+				stats.add(stat);
+			}
+			for (Stat stat : stats) {
+				stat.copyStatIdToStat(this);
+			}
 		}
 	}
 
 	public void writeZ(ZOutputStream outStream) throws IOException {
-		try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream(); ZOutputStream stream = new ZOutputStream(byteStream, outStream.getPlatform())) {
-			Platform platform = stream.getPlatform();
+		try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream(); ZOutputStream stream = new ZOutputStream(byteStream)) {
 			stream.writePString(this.name, platform == Platform.SUPER_ZZT ? 60 : 50);
 
 			// fancy RLE logic
@@ -253,7 +259,7 @@ public class Board {
 				stat.copyStatToStatId(this);
 			}
 			for (Stat stat : stats) {
-				stat.writeZ(stream);
+				stat.writeZ(stream, platform);
 			}
 
 			byte[] result = byteStream.toByteArray();

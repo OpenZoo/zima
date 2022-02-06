@@ -18,9 +18,19 @@
  */
 package pl.asie.zima.util;
 
+import java.awt.*;
+
 public final class ColorUtils {
 	private ColorUtils() {
 
+	}
+
+	public static int fromAwtColor(Color color) {
+		return color.getRGB() & 0xFFFFFF;
+	}
+
+	public static Color toAwtColor(int rgb) {
+		return new Color((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
 	}
 
 	public static float lumaDistance(int a, int b) {

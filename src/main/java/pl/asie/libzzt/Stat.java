@@ -96,7 +96,7 @@ public class Stat {
 		}
 	}
 
-	public void readZ(ZInputStream stream) throws IOException {
+	public void readZ(ZInputStream stream, Platform platform) throws IOException {
 		this.x = stream.readPByte();
 		this.y = stream.readPByte();
 		this.stepX = stream.readPShort();
@@ -107,14 +107,14 @@ public class Stat {
 		this.p3 = stream.readPByte();
 		this.follower = stream.readPShort();
 		this.leader = stream.readPShort();
-		this.underElement = stream.getPlatform().getLibrary().byId(stream.readPByte());
+		this.underElement = platform.getLibrary().byId(stream.readPByte());
 		this.underColor = stream.readPByte();
 		if (stream.skip(4) != 4) {
 			throw new IOException("Could not skip data^!");
 		}
 		this.dataPos = stream.readPShort();
 		int dataLen = stream.readPShort();
-		if (stream.getPlatform() == Platform.ZZT) {
+		if (platform == Platform.ZZT) {
 			if (stream.skip(8) != 8) {
 				throw new IOException("Could not skip unk!");
 			}
@@ -138,7 +138,7 @@ public class Stat {
 		return len;
 	}
 
-	public void writeZ(ZOutputStream stream) throws IOException {
+	public void writeZ(ZOutputStream stream, Platform platform) throws IOException {
 		byte[] dataBytes = data != null ? data.getBytes(StandardCharsets.ISO_8859_1) : null;
 		stream.writePByte(this.x);
 		stream.writePByte(this.y);
@@ -155,7 +155,7 @@ public class Stat {
 		stream.pad(4); // data^
 		stream.writePShort(this.dataPos);
 		stream.writePShort(boundStatId > 0 ? (-boundStatId) : ((dataBytes != null) ? dataBytes.length : 0));
-		if (stream.getPlatform() == Platform.ZZT) {
+		if (platform == Platform.ZZT) {
 			stream.pad(8); // unk
 		}
 		if (boundStatId == 0 && dataBytes != null) {

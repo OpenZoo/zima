@@ -18,20 +18,15 @@
  */
 package pl.asie.libzzt;
 
-import lombok.Getter;
-
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 public class ZInputStream extends FilterInputStream {
-	@Getter
-	private final Platform platform;
 
-	public ZInputStream(InputStream in, Platform platform) {
+	public ZInputStream(InputStream in) {
 		super(in);
-		this.platform = platform;
 	}
 
 	public int readPByte() throws IOException {
@@ -50,6 +45,11 @@ public class ZInputStream extends FilterInputStream {
 		} else {
 			return value;
 		}
+	}
+
+	public int readPWord() throws IOException {
+		int lsb = read() & 0xFF;
+		return lsb | ((read() & 0xFF) << 8);
 	}
 
 	public String readPString(int length) throws IOException {

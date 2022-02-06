@@ -18,7 +18,9 @@
  */
 package pl.asie.zima.image.gui;
 
+import lombok.Getter;
 import pl.asie.libzzt.TextVisualData;
+import pl.asie.zima.util.ColorUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -32,7 +34,7 @@ import java.util.stream.IntStream;
 
 public class PaletteSelector extends JComponent implements MouseListener {
     private static final int BOX_SIZE = 14;
-    private TextVisualData visual;
+    @Getter private TextVisualData visual;
     private boolean blinkingDisabled;
     private boolean selectBlinking;
     private final boolean[] allowedColors = new boolean[256];
@@ -48,10 +50,6 @@ public class PaletteSelector extends JComponent implements MouseListener {
         }
     }
 
-    private Color toAwt(int rgb) {
-        return new Color((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
-    }
-
     private void drawB(Graphics graphics, int xPos, int yPos) {
         graphics.fillRect(xPos, yPos, 2, 5);
         graphics.fillRect(xPos, yPos, 5, 1);
@@ -65,7 +63,7 @@ public class PaletteSelector extends JComponent implements MouseListener {
     public void paintComponent(Graphics graphics) {
         Color[] awtPalette = new Color[16];
         for (int i = 0; i < 16; i++) {
-            awtPalette[i] = toAwt(visual.getPalette()[i]);
+            awtPalette[i] = ColorUtils.toAwtColor(visual.getPalette()[i]);
         }
         graphics.setColor(Color.BLACK);
         graphics.fillRect(0, 0, 17 * BOX_SIZE, 18 * BOX_SIZE);
@@ -122,10 +120,6 @@ public class PaletteSelector extends JComponent implements MouseListener {
                 drawB(graphics, xPos + 4, yPos + 4);
             }
         }
-    }
-
-    public TextVisualData getVisual() {
-        return visual;
     }
 
     public void setVisual(TextVisualData visual) {

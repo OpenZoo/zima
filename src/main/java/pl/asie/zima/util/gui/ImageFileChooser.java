@@ -48,7 +48,7 @@ import java.util.function.Function;
 public class ImageFileChooser extends JFileChooser {
 	private static final BufferedImage LOADING_ICON = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
 	private static final BufferedImage MISSING_IMAGE = LOADING_ICON;
-	private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
+	private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(1);
 	private final Map<File, SoftReference<ImageCache>> thumbnailMap = new HashMap<>();
 	private final Function<File, BufferedImage> imageGetterFunction;
 

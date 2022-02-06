@@ -16,11 +16,17 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.libzzt;
+package pl.asie.libzzt.oop.directions;
 
-public final class ZztUtils {
-	private ZztUtils() {
+import lombok.Data;
+import pl.asie.libzzt.oop.ChildrenIterable;
 
+import java.util.List;
+
+@Data
+public abstract class OopDirection implements ChildrenIterable<OopDirection> {
+	@Override
+	public List<OopDirection> getChildren() {
+		return List.of();
 	}
-
 }

@@ -16,11 +16,10 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.libzzt;
+package pl.asie.libzzt.oop;
 
-public final class ZztUtils {
-	private ZztUtils() {
+import java.util.List;
 
-	}
-
+public interface ChildrenIterable<T> {
+	List<T> getChildren();
 }

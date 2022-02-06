@@ -20,6 +20,7 @@ package pl.asie.libzzt;
 
 import lombok.Builder;
 import lombok.Getter;
+import pl.asie.libzzt.oop.OopUtils;
 
 import java.util.Objects;
 
@@ -57,7 +58,7 @@ public final class Element {
 
     public String getOopName() {
         if (oopName == null) {
-            oopName = ZztUtils.oopStripChars(name);
+            oopName = OopUtils.stripChars(name);
         }
         return oopName;
     }

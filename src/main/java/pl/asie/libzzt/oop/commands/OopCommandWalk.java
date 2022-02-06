@@ -16,11 +16,14 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.libzzt;
+package pl.asie.libzzt.oop.commands;
 
-public final class ZztUtils {
-	private ZztUtils() {
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import pl.asie.libzzt.oop.directions.OopDirection;
 
-	}
-
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class OopCommandWalk extends OopCommand {
+	private final OopDirection direction;
 }

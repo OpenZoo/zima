@@ -22,6 +22,8 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import pl.asie.libzzt.oop.OopParseException;
+import pl.asie.libzzt.oop.OopProgram;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -41,11 +43,28 @@ public class Stat {
 	private Element underElement = null;
 	private int underColor = 0;
 	private String data;
+	@Setter(AccessLevel.PRIVATE)
+	private OopProgram code;
 	private int dataPos;
 	@Getter(AccessLevel.PACKAGE)
 	@Setter(AccessLevel.PACKAGE)
 	private int boundStatId;
 	private Stat boundStat;
+
+	public void setData(String data) {
+		this.data = data;
+		this.code = null;
+	}
+
+	public OopProgram getCode() {
+		if (this.boundStat != null) {
+			return this.boundStat.getCode();
+		}
+		if (this.code == null && this.data != null && !this.data.isEmpty()) {
+			this.code = new OopProgram(this.data);
+		}
+		return this.code;
+	}
 
 	void copyStatIdToStat(Board board) {
 		if (boundStatId > 0) {
@@ -58,7 +77,7 @@ public class Stat {
 		}
 	}
 
-	void copyStatToStatId(Board board) {
+	public void copyStatToStatId(Board board) {
 		if (boundStat != null) {
 			boundStatId = board.getStatId(boundStat).orElse(0);
 			int statId = board.getStatId(this).orElse(0);

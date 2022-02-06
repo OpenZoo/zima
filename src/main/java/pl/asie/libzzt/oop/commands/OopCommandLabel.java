@@ -16,11 +16,22 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.libzzt;
+package pl.asie.libzzt.oop.commands;
 
-public final class ZztUtils {
-	private ZztUtils() {
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
+import java.util.List;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class OopCommandLabel extends OopCommand {
+	private final String label;
+	private final boolean zapped;
+	private final boolean restoreFindStringVisible;
+
+	@Override
+	public List<String> getLabels() {
+		return List.of(label);
 	}
-
 }

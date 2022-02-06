@@ -16,11 +16,23 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.libzzt;
+package pl.asie.libzzt.oop;
 
-public final class ZztUtils {
-	private ZztUtils() {
+import lombok.Data;
 
+@Data
+public class OopLabelTarget {
+	private final String target;
+	private final String label;
+
+	public OopLabelTarget(String labelTarget) {
+		if (labelTarget.indexOf(':') <= 0) {
+			target = "";
+			label = labelTarget;
+		} else {
+			String[] splits = labelTarget.split(":", 2);
+			target = splits[0];
+			label = splits[1];
+		}
 	}
-
 }

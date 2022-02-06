@@ -21,6 +21,7 @@ package pl.asie.zima.image.gui;
 import lombok.Getter;
 import pl.asie.ctif.PaletteGeneratorKMeans;
 import pl.asie.libzzt.Board;
+import pl.asie.libzzt.Element;
 import pl.asie.libzzt.ElementLibraryWeaveZZT;
 import pl.asie.libzzt.ElementLibraryZZT;
 import pl.asie.libzzt.PaletteLoaderUtils;
@@ -748,7 +749,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 	}
 
 	private void generateCustomPalette(ActionEvent actionEvent) {
-		if (getInputImage() == null) return;
+		if (this.profile.getFilteredImage() == null) return;
 		int[] colors = Arrays.copyOf(this.visual.getPalette(), this.visual.getPalette().length);
 		// reorder colors
 		Color[] reorderedColors = new Color[colors.length];
@@ -756,7 +757,34 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		int j = 0;
 		for (int i = 0; i < colors.length; i++) {
 			if (this.customColorSelector.isColorAllowed(i)) {
-				weights[j] = 1.0f; // TODO
+				// Weight rules:
+				// - a more flexible *COLOR* has a higher weight
+				weights[j] = 0.0f;
+				for (int k = 0; k < 16; k++) {
+					int color1 = (i << 4) | k;
+					int color2 = (k << 4) | i;
+					if (this.paletteSelector.isTwoColorAllowed(color1)) {
+						weights[j] += 0.5f;
+					}
+					if (this.paletteSelector.isTwoColorAllowed(color2)) {
+						weights[j] += 0.5f;
+					}
+					Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+					if (platform != null) {
+						boolean foundTextC1 = false;
+						boolean foundTextC2 = false;
+						for (Element e : platform.getLibrary().getElements()) {
+							if (e.getTextColor() == color1 && !foundTextC1) {
+								foundTextC1 = true;
+								weights[j] += 3.5f;
+							}
+							if (e.getTextColor() == color2 && !foundTextC2) {
+								foundTextC2 = true;
+								weights[j] += 3.5f;
+							}
+						}
+					}
+				}
 				reorderedColors[j++] = ColorUtils.toAwtColor(i);
 			}
 		}
@@ -769,7 +797,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		}
 		if (j != colors.length) throw new RuntimeException("Unexpected state!");
 		// generate
-		PaletteGeneratorKMeans gen = new PaletteGeneratorKMeans(getInputImage(), reorderedColors, weights, reorderedColorCount, 0);
+		PaletteGeneratorKMeans gen = new PaletteGeneratorKMeans(this.profile.getFilteredImage(), reorderedColors, weights, reorderedColorCount, 0);
 		Color[] updatedColors = gen.generate(2);
 		// reinsert colors
 		j = 0;
@@ -962,6 +990,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 
 		settings.setAllowedCharacters(IntStream.range(0, 256).filter(this.characterSelector::isCharAllowed).toArray());
 		settings.setAllowedColorPairs(IntStream.range(0, 256).filter(this.paletteSelector::isTwoColorAllowed).toArray());
+		settings.setChangeableColors(IntStream.range(0, 16).filter(this.customColorSelector::isColorAllowed).toArray());
 		settings.setAllowedElements(this.profile.getProperties().get(ZimaConversionProfile.RULESET).getRules());
 
 		if (!Arrays.equals(this.defaultCharset, this.charset)) {
@@ -1011,6 +1040,11 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		if (settings.getAllowedColorPairs() != null) {
 			Set<Integer> allowedColorsSet = toIntSet(settings.getAllowedColorPairs());
 			IntStream.range(0, 256).forEach(i -> this.paletteSelector.setColorAllowed(i, allowedColorsSet.contains(i)));
+		}
+
+		if (settings.getChangeableColors() != null) {
+			Set<Integer> allowedColorsSet = toIntSet(settings.getChangeableColors());
+			IntStream.range(0, 16).forEach(i -> this.customColorSelector.setColorAllowed(i, allowedColorsSet.contains(i)));
 		}
 
 		if (settings.getAllowedElements() != null) {

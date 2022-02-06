@@ -135,6 +135,10 @@ public class PaletteSelector extends JComponent implements MouseListener {
         return allowedColors[c];
     }
 
+    public boolean isTwoColorAllowed(int bg, int fg) {
+        return allowedColors[((bg & 0x0F) << 4) | (fg & 0x0F)];
+    }
+
     @Deprecated
     public boolean isColorAllowed(int c) {
         for (int i = 0; i < 16; i++) {

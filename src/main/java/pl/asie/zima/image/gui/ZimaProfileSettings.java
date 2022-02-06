@@ -30,6 +30,7 @@ public class ZimaProfileSettings {
     private int[] allowedCharacters;
     private int[] allowedColors;
     private int[] allowedColorPairs;
+    private int[] changeableColors;
     private List<ElementRule> allowedElements;
 
     private byte[] customCharset;

@@ -26,6 +26,8 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class PaletteGeneratorKMeans {
     static class Result {
@@ -43,7 +45,12 @@ public class PaletteGeneratorKMeans {
 
         @Override
         public void run() {
-            result = generateKMeans();
+            try {
+                result = generateKMeans();
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -174,9 +181,14 @@ public class PaletteGeneratorKMeans {
 
         double totalError = 0;
 
+        double[] importancePerColor = new double[colors];
+        int[] importancePerColorOccurences = new int[colors];
+
         for (int reps = 0; reps < 128; reps++) {
             float[][] means = new float[centroids.length][3];
             int[] meanDivs = new int[centroids.length];
+            Arrays.fill(importancePerColorOccurences, 0);
+            Arrays.fill(importancePerColor, 0.0);
 
             totalError = 0;
             for (Map.Entry<float[], Integer> weight : pointsWeight.entrySet()) {
@@ -193,6 +205,10 @@ public class PaletteGeneratorKMeans {
                     }
                 }
 
+                if (bestCentroid < colors) {
+                    importancePerColor[bestCentroid] += bestError * mul;
+                    importancePerColorOccurences[bestCentroid] += mul;
+                }
                 totalError += bestError * mul;
                 means[bestCentroid][0] += weight.getKey()[0] * mul;
                 means[bestCentroid][1] += weight.getKey()[1] * mul;
@@ -219,10 +235,21 @@ public class PaletteGeneratorKMeans {
             }
         }
 
+        // sort colors by centroids - first color is most important
+        List<Integer> centroidIdsByImportance = IntStream.range(0, colors).boxed()
+                .sorted(Comparator.comparing(c -> importancePerColor[c] / importancePerColorOccurences[c]))
+                .collect(Collectors.toList());
+
+        // sort colors by weights - first color is most important
+        List<Integer> colorIdsByWeight = IntStream.range(0, colors).boxed()
+                .collect(Collectors.toList());
+        if (weights != null) {
+            colorIdsByWeight.sort(Comparator.comparing(c -> -weights[c]));
+        }
+
         Color[] out = Arrays.copyOf(base, base.length);
-        // TODO: implement weights
         for (int k = 0; k < colors; k++) {
-            out[k] = new Color(toRGB(centroids[k]) | 0xFF000000);
+            out[colorIdsByWeight.get(k)] = new Color(toRGB(centroids[centroidIdsByImportance.get(k)]) | 0xFF000000);
         }
         return new Result(out, totalError);
     }

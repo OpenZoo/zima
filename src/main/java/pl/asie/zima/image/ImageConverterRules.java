@@ -169,6 +169,18 @@ public class ImageConverterRules {
 		if (unknown46.isText()) {
 			rules.add(ElementRule.text(platform, "UNKNOWN_46"));
 		}
+		Element monitor = platform.getLibrary().byInternalName("MONITOR");
+		if (monitor.getCharacter() != 32 && monitor.getCharacter() != 0) {
+			statlessRules.add(ElementRule.element(platform, "MONITOR"));
+		}
+		Element edge = platform.getLibrary().byInternalName("BOARD_EDGE");
+		if (edge.getCharacter() != 32 && edge.getCharacter() != 0) {
+			rules.add(ElementRule.element(platform, "BOARD_EDGE"));
+		}
+		Element messageTimer = platform.getLibrary().byInternalName("MESSAGE_TIMER");
+		if (messageTimer.getCharacter() != 32 && messageTimer.getCharacter() != 0) {
+			statlessRules.add(ElementRule.element(platform, "MESSAGE_TIMER"));
+		}
 
 		// for custom rulesets
 		this.allRules = rulesetSorted(true, alwaysRules, blockyRules, rules, statlessRules, unsafeStatlessRules);

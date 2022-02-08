@@ -1,0 +1,18 @@
+Improvements:
+
+* Added custom palette generation support!
+  * You can now select colors in the "Palette" menu to be replaced with
+    image-specific colors.
+  * The colors are allocated in a way where the areas covered by the
+    fixed/unchanged colors are taken into account.
+  * Resulting palettes can be exported as .PAL files or in Weave ZZT
+    #PALETTE command format.
+* Added WeaveZZT 2.5 support!
+  * .CFG file parsing supported for custom element characters.
+  * "CUSTOMTEXT" (element ID 46) is also supported.
+* Square character sets in Super ZZT are no longer stretched.
+
+Bugs fixed:
+
+* Fixed freeze when opening directories with thousands of files.
+* Fixed GMse algorithm not working with non-8x14 character sets.

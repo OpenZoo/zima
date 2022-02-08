@@ -66,7 +66,7 @@ public class ElementLibraryZZT {
     private static final Element SPINNING_GUN = Element.builder().character(24).cycle(2).hasDrawProc(true).name("Spinning gun").id(39).build();
     private static final Element PUSHER = Element.builder().character(16).color(Element.COLOR_CHOICE_ON_BLACK).hasDrawProc(true).cycle(4).name("Pusher").id(40).build();
     private static final Element LION = Element.builder().character(234).color(0x0C).destructible(true).pushable(true).cycle(2).name("Lion").scoreValue(1).id(41).build();
-    private static final Element TIGER = Element.builder().character(227).color(0x0B).destructible(true).pushable(true).cycle(2).name("Lion").scoreValue(2).id(42).build();
+    private static final Element TIGER = Element.builder().character(227).color(0x0B).destructible(true).pushable(true).cycle(2).name("Tiger").scoreValue(2).id(42).build();
     private static final Element BLINK_RAY_NS = Element.builder().character(186).id(43).build();
     private static final Element CENTIPEDE_HEAD = Element.builder().character(233).destructible(true).cycle(2).name("Head").scoreValue(1).id(44).build();
     private static final Element CENTIPEDE_SEGMENT = Element.builder().character('O').destructible(true).cycle(2).name("Segment").scoreValue(3).id(45).build();

@@ -6,7 +6,7 @@ plugins {
 }
 
 group 'pl.asie.zima'
-version '0.7.0'
+version '0.8.0'
 
 repositories {
     mavenCentral()
@@ -54,3 +54,7 @@ shadowJar {
 }
 
 build.dependsOn(shadowJar)
+
+tasks.withType(Copy).all {
+    duplicatesStrategy 'exclude'
+}

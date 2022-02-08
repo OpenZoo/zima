@@ -1,7 +1,0 @@
-Improvements:
-
-* Square character sets in Super ZZT are no longer stretched.
-
-Bugs fixed:
-
-* Fixed GMse algorithm not working with non-8x14 character sets.

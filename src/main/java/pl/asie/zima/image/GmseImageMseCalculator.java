@@ -44,9 +44,7 @@ public class GmseImageMseCalculator implements ImageMseCalculator {
 				int fgColor = visual.getPalette()[col & 0x0F];
 				float accAsFloat = (float) accuracy;
 
-				return IntStream.rangeClosed(0, accuracy).map(mixFactor -> {
-					return ColorUtils.mix(bgColor, fgColor, mixFactor / accAsFloat);
-				}).toArray();
+				return IntStream.rangeClosed(0, accuracy).map(mixFactor -> ColorUtils.mix(bgColor, fgColor, mixFactor / accAsFloat)).toArray();
 			}).collect(Collectors.toList());
 		}
 
@@ -127,7 +125,7 @@ public class GmseImageMseCalculator implements ImageMseCalculator {
 
 		float size = 0.05f + (accurateApproximate * 1.45f);
 		this.gaussCache = new GaussianCharCache(visual, 3, size);
-		this.mixCache = new ColorMixCache(visual, 256);
+		this.mixCache = new ColorMixCache(visual, 1024);
 	}
 	
 	@Override

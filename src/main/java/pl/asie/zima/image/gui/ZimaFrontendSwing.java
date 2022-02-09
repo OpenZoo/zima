@@ -22,7 +22,7 @@ import lombok.Getter;
 import pl.asie.ctif.PaletteGeneratorKMeans;
 import pl.asie.libzzt.Board;
 import pl.asie.libzzt.Element;
-import pl.asie.libzzt.ElementLibraryWeaveZZT;
+import pl.asie.libzzt.WeaveZZTPlatformData;
 import pl.asie.libzzt.ElementLibraryZZT;
 import pl.asie.libzzt.PaletteLoaderUtils;
 import pl.asie.libzzt.Platform;
@@ -96,6 +96,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			new Pair<>("ZZT", Platform.ZZT),
 			new Pair<>("Super ZZT", Platform.SUPER_ZZT),
 			new Pair<>("WeaveZZT 2.5", Platform.WEAVE_ZZT_25),
+			new Pair<>("Super ClassicZoo", Platform.SUPER_CLASSICZOO),
 			new Pair<>("MegaZeux", Platform.MEGAZEUX)
 	);
 	private JComboBox<String> rulesetEdit;
@@ -103,6 +104,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			Platform.ZZT, new ImageConverterRules(Platform.ZZT, false),
 			Platform.SUPER_ZZT, new ImageConverterRules(Platform.SUPER_ZZT, true),
 			Platform.WEAVE_ZZT_25, new ImageConverterRules(Platform.WEAVE_ZZT_25, false),
+			Platform.SUPER_CLASSICZOO, new ImageConverterRules(Platform.SUPER_ZZT, true),
 			Platform.MEGAZEUX, new ImageConverterRules()
 	);
 	private Map<ElementRule, JCheckBox> rulesetBoxEdit = new HashMap<>();
@@ -219,13 +221,31 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			this.platformEdit.addActionListener((e) -> {
 				Pair<String, Platform> newEntry = this.platforms.get(this.platformEdit.getSelectedIndex());
 				Platform newPlatform = newEntry.getSecond();
+				Boolean blinkingDisabled = null;
+
 				if ("WeaveZZT 2.5".equals(newEntry.getFirst())) {
-					newPlatform = loadWeaveCfg(newPlatform);
+					WeaveZZTPlatformData platformData = loadWeaveCfg();
+					if (platformData != null) {
+						newPlatform = newPlatform
+								.withLibrary(platformData.getLibrary())
+								.withMaxStatCount(platformData.getMaxStatCount());
+						blinkingDisabled = platformData.isBlinkingDisabled();
+						if (platformData.getPalette() != null) {
+							this.palette = platformData.getPalette();
+							updateVisual();
+						}
+					}
+				} else if (!newPlatform.isSupportsBlinking()) {
+					blinkingDisabled = true;
 				}
 
 				this.profile.getProperties().set(ZimaConversionProfile.PLATFORM, newPlatform);
 				this.profile.getProperties().set(ZimaConversionProfile.CHARS_WIDTH, newPlatform.getDefaultBoardWidth());
 				this.profile.getProperties().set(ZimaConversionProfile.CHARS_HEIGHT, newPlatform.getDefaultBoardHeight());
+
+				if (blinkingDisabled != null && blinkingDisabled != this.paletteSelector.isBlinkingDisabled()) {
+					this.paletteSelector.setBlinkingDisabled(blinkingDisabled, true);
+				}
 
 				this.boardXEdit.setEnabled(newPlatform.isUsesBoard());
 				this.boardYEdit.setEnabled(newPlatform.isUsesBoard());
@@ -409,7 +429,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			optionsPalettePanel.add(this.blinkingDisabledEdit = new JCheckBox(), gbc);
 			bindPropertyBoolean(this.profile.getProperties(), ZimaConversionProfile.BLINKING_DISABLED, this.blinkingDisabledEdit);
 			this.profile.getProperties().addChangeListener(ZimaConversionProfile.BLINKING_DISABLED, (k, v) -> {
-				this.paletteSelector.setBlinkingDisabled(Objects.equals(v, Boolean.TRUE));
+				this.paletteSelector.setBlinkingDisabled(Objects.equals(v, Boolean.TRUE), true);
 			});
 			optionsPalettePanel.add(new JLabel("High colors"), gbc);
 
@@ -733,18 +753,19 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		}
 	}
 
-	private Platform loadWeaveCfg(Platform parent) {
+	private WeaveZZTPlatformData loadWeaveCfg() {
 		File file = showLoadDialog("worlds", new FileNameExtensionFilter("WeaveZZT 2.5 configuration file", "cfg"));
 		if (file != null) {
 			try (FileInputStream fis = new FileInputStream(file)) {
-				return parent.withLibrary(ElementLibraryWeaveZZT.create(ElementLibraryZZT.INSTANCE, fis));
+				WeaveZZTPlatformData platformData = WeaveZZTPlatformData.parse(ElementLibraryZZT.INSTANCE, fis);
+				return platformData;
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 				e.printStackTrace();
-				return parent;
+				return null;
 			}
 		} else {
-			return parent;
+			return null;
 		}
 	}
 

@@ -1,0 +1,13 @@
+Improvements:
+
+* [#11] Warning before overwriting an already saved file.
+* Coarse dither-enabled conversion is now multithreaded! Expect much faster performance.
+* Super ClassicZoo profile added; for now it's just the Super ZZT profile with an increased board size limit.
+  * As ZZT 3.2 can't generate a Zima board above the 20000-byte limit, a ClassicZoo option is not necessary for now.
+* WeaveZZT's other.maxstats setting is now respected.
+* WeaveZZT's theme.blinking setting is now respected.
+* WeaveZZT's pal.* settings are now respected.
+
+Bugs fixed:
+
+* Fixed performance regression from zima 0.6.0 in MegaZeux conversion mode.

@@ -132,43 +132,45 @@ public class ImageConverter {
 		final ElementResult emptyResultFinal = emptyResult;
 
 		float[] ditherMatrix = coarseDitherMatrixEnum != null ? coarseDitherMatrixEnum.getMatrix() : null;
-		int ditherMatrixSize = ditherMatrix != null ? (int) Math.sqrt(ditherMatrix.length) : 0;
-		int ditherMatrixOffset = (ditherMatrixSize - 1) / 2;
-		IntStream blocks = IntStream.range(0, width * height);
-		if (coarseDitherStrength > 0.0f) {
-			blocks = blocks.parallel();
-		}
+		int ditherMatrixSize = coarseDitherMatrixEnum != null ? coarseDitherMatrixEnum.getDimSize() : 0;
+		int ditherMatrixOffset = coarseDitherMatrixEnum != null ? coarseDitherMatrixEnum.getDimOffset() : 0;
+		List<IntStream> blockIndexes = getBlockIndexes(width, height, coarseDitherStrength, coarseDitherMatrixEnum);
 
 		final BufferedImage image = coarseDitherStrength > 0.0f ? ImageUtils.cloneRgb(inputImage) : inputImage;
+		final Object ditherApplicationSync = new Object();
 
-		// find lowest-MSE results for each tile
-		blocks.forEach(pos -> {
-			synchronized (progressCallback) {
-				progressCallback.step(progressSize);
-			}
-
-			int ix = pos % width;
-			int iy = pos / width;
-
-			ElementResult minResult = emptyResultFinal;
-			float minMse = Float.MAX_VALUE;
-			int px = ix * visual.getCharWidth();
-			int py = iy * visual.getCharHeight();
-			ImageMseCalculator.Applier applyMseFunc = mseCalculator.applyMse(image, px, py);
-
-			for (ElementResult result : rules) {
-				float localMse = applyMseFunc.apply(result, minMse);
-				if (localMse < minMse) {
-					minMse = localMse;
-					minResult = result;
+		// find lowest-MSE results for each tile, in parallel
+		blockIndexes.forEach(idxs -> {
+			idxs.parallel().forEach(pos -> {
+				synchronized (progressCallback) {
+					progressCallback.step(progressSize);
 				}
-			}
 
-			previewResults[pos] = minResult;
+				int ix = pos % width;
+				int iy = pos / width;
 
-			if (coarseDitherStrength > 0.0f) {
-				applyCoarseDither(coarseDitherStrength, ditherMatrix, ditherMatrixSize, ditherMatrixOffset, image, minResult, px, py);
-			}
+				ElementResult minResult = emptyResultFinal;
+				float minMse = Float.MAX_VALUE;
+				int px = ix * visual.getCharWidth();
+				int py = iy * visual.getCharHeight();
+				ImageMseCalculator.Applier applyMseFunc = mseCalculator.applyMse(image, px, py);
+
+				for (ElementResult result : rules) {
+					float localMse = applyMseFunc.apply(result, minMse);
+					if (localMse < minMse) {
+						minMse = localMse;
+						minResult = result;
+					}
+				}
+
+				previewResults[pos] = minResult;
+
+				if (coarseDitherStrength > 0.0f) {
+					synchronized (ditherApplicationSync) {
+						applyCoarseDither(coarseDitherStrength, ditherMatrix, ditherMatrixSize, ditherMatrixOffset, image, minResult, px, py);
+					}
+				}
+			});
 		});
 
 		// result
@@ -285,93 +287,95 @@ public class ImageConverter {
 		}
 
 		float[] ditherMatrix = coarseDitherMatrixEnum != null ? coarseDitherMatrixEnum.getMatrix() : null;
-		int ditherMatrixSize = ditherMatrix != null ? (int) Math.sqrt(ditherMatrix.length) : 0;
-		int ditherMatrixOffset = (ditherMatrixSize - 1) / 2;
-		IntStream blocks = IntStream.range(0, width * height);
-		if (coarseDitherStrength == 0.0f) {
-			blocks = blocks.parallel();
-		}
+		int ditherMatrixSize = coarseDitherMatrixEnum != null ? coarseDitherMatrixEnum.getDimSize() : 0;
+		int ditherMatrixOffset = coarseDitherMatrixEnum != null ? coarseDitherMatrixEnum.getDimOffset() : 0;
+		List<IntStream> blockIndexes = getBlockIndexes(width, height, coarseDitherStrength, coarseDitherMatrixEnum);
 
 		final BufferedImage image = coarseDitherStrength > 0.0f ? ImageUtils.cloneRgb(inputImage) : inputImage;
+		final Object ditherApplicationSync = new Object();
 
 		// find lowest-MSE results for each tile, in parallel
-		blocks.forEach(pos -> {
-			synchronized (progressCallback) {
-				progressCallback.step(progressSize);
-			}
-
-			int ix = pos % width;
-			int iy = pos / width;
-			boolean spaceForbidden = ((x + ix) < 1 || (y + iy) < 1 || (x + ix) > platform.getBoardWidth() || (y + iy) > platform.getBoardHeight());
-
-			if ((x + ix) == playerX && (y + iy) == playerY) {
-				spaceForbidden = true;
-			}
-
-			if (spaceForbidden) {
-				previewResults[iy * width + ix] = emptyResult;
-				return;
-			}
-
-			ElementResult statlessResult = null;
-			float statlessMse = Float.MAX_VALUE;
-			ElementResult statfulResult = null;
-			float statfulMse = Float.MAX_VALUE;
-			int px = ix * visual.getCharWidth();
-			int py = iy * visual.getCharHeight();
-			ImageMseCalculator.Applier applyMseFunc = mseCalculator.applyMse(image, px, py);
-
-			for (ElementRuleResult ruleResult : ruleResultList) {
-				List<ElementResult> proposals = ruleResult.getResult();
-
-				float lowestLocalMse = statlessMse;
-				ElementResult lowestLocalResult = null;
-				float weight = 1.0f;
-
-				for (ElementResult result : proposals) {
-					float localMse = applyMseFunc.apply(result, lowestLocalMse) * weight;
-					if (localMse < lowestLocalMse) {
-						lowestLocalMse = localMse;
-						lowestLocalResult = result;
-					}
+		blockIndexes.forEach(idxs -> {
+			idxs.parallel().forEach(pos -> {
+				synchronized (progressCallback) {
+					progressCallback.step(progressSize);
 				}
 
-				if (lowestLocalResult != null) {
-					if (!lowestLocalResult.isHasStat()) {
-						if (lowestLocalMse < statlessMse) {
-							statlessResult = lowestLocalResult;
-							statlessMse = lowestLocalMse;
+				int ix = pos % width;
+				int iy = pos / width;
+				boolean spaceForbidden = ((x + ix) < 1 || (y + iy) < 1 || (x + ix) > platform.getBoardWidth() || (y + iy) > platform.getBoardHeight());
+
+				if ((x + ix) == playerX && (y + iy) == playerY) {
+					spaceForbidden = true;
+				}
+
+				if (spaceForbidden) {
+					previewResults[iy * width + ix] = emptyResult;
+					return;
+				}
+
+				ElementResult statlessResult = null;
+				float statlessMse = Float.MAX_VALUE;
+				ElementResult statfulResult = null;
+				float statfulMse = Float.MAX_VALUE;
+				int px = ix * visual.getCharWidth();
+				int py = iy * visual.getCharHeight();
+				ImageMseCalculator.Applier applyMseFunc = mseCalculator.applyMse(image, px, py);
+
+				for (ElementRuleResult ruleResult : ruleResultList) {
+					List<ElementResult> proposals = ruleResult.getResult();
+
+					float lowestLocalMse = statlessMse;
+					ElementResult lowestLocalResult = null;
+					float weight = 1.0f;
+
+					for (ElementResult result : proposals) {
+						float localMse = applyMseFunc.apply(result, lowestLocalMse) * weight;
+						if (localMse < lowestLocalMse) {
+							lowestLocalMse = localMse;
+							lowestLocalResult = result;
 						}
 					}
-					if (lowestLocalMse < statfulMse) {
-						statfulResult = lowestLocalResult;
-						statfulMse = lowestLocalMse;
+
+					if (lowestLocalResult != null) {
+						if (!lowestLocalResult.isHasStat()) {
+							if (lowestLocalMse < statlessMse) {
+								statlessResult = lowestLocalResult;
+								statlessMse = lowestLocalMse;
+							}
+						}
+						if (lowestLocalMse < statfulMse) {
+							statfulResult = lowestLocalResult;
+							statfulMse = lowestLocalMse;
+						}
 					}
 				}
-			}
 
-			// apply statless result to board
-			if (statlessResult == null) {
-				throw new RuntimeException();
-			}
-
-			if (coarseDitherStrength > 0.0f) {
-				ElementResult ditherResult = statfulResult != null ? statfulResult : statlessResult;
-				applyCoarseDither(coarseDitherStrength, ditherMatrix, ditherMatrixSize, ditherMatrixOffset, image, ditherResult, px, py);
-			}
-
-			int idx = iy * width + ix;
-			previewResults[idx] = statlessResult;
-			previewMse[idx] = statlessMse;
-			board.setElement(x + ix, y + iy, statlessResult.getElement());
-			board.setColor(x + ix, y + iy, statlessResult.isText() ? statlessResult.getCharacter() : statlessResult.getColor());
-
-			if (statfulResult.isHasStat() && statfulMse < statlessMse) {
-				synchronized (statfulStrategies) {
-					// lowest result has stat, add to statfulStrategies
-					statfulStrategies.add(new Triplet<>(new Coord2D(ix, iy), statfulResult, statfulMse));
+				// apply statless result to board
+				if (statlessResult == null) {
+					throw new RuntimeException();
 				}
-			}
+
+				if (coarseDitherStrength > 0.0f) {
+					ElementResult ditherResult = statfulResult != null ? statfulResult : statlessResult;
+					synchronized (ditherApplicationSync) {
+						applyCoarseDither(coarseDitherStrength, ditherMatrix, ditherMatrixSize, ditherMatrixOffset, image, ditherResult, px, py);
+					}
+				}
+
+				int idx = iy * width + ix;
+				previewResults[idx] = statlessResult;
+				previewMse[idx] = statlessMse;
+				board.setElement(x + ix, y + iy, statlessResult.getElement());
+				board.setColor(x + ix, y + iy, statlessResult.isText() ? statlessResult.getCharacter() : statlessResult.getColor());
+
+				if (statfulResult.isHasStat() && statfulMse < statlessMse) {
+					synchronized (statfulStrategies) {
+						// lowest result has stat, add to statfulStrategies
+						statfulStrategies.add(new Triplet<>(new Coord2D(ix, iy), statfulResult, statfulMse));
+					}
+				}
+			});
 		});
 
 		// apply statful strategies - lowest to highest MSE
@@ -496,6 +500,63 @@ public class ImageConverter {
 		}
 
 		return new Pair<>(result, preview);
+	}
+
+	private List<IntStream> getBlockIndexes(int width, int height, float coarseDitherStrength, DitherMatrix coarseDitherMatrixEnum) {
+		float[] ditherMatrix = coarseDitherMatrixEnum != null ? coarseDitherMatrixEnum.getMatrix() : null;
+		int ditherMatrixSize = coarseDitherMatrixEnum != null ? coarseDitherMatrixEnum.getDimSize() : 0;
+		int ditherMatrixOffset = coarseDitherMatrixEnum != null ? coarseDitherMatrixEnum.getDimOffset() : 0;
+
+		List<IntStream> blockIndexes;
+		if (coarseDitherStrength > 0.0f && ditherMatrix != null) {
+			blockIndexes = new ArrayList<>();
+			boolean[] addedIntegers = new boolean[width * height];
+			int addedIntCount = 0;
+
+			while (addedIntCount < addedIntegers.length) {
+				List<Integer> integers = new ArrayList<>();
+
+				for (int pos = 0; pos < width * height; pos++) {
+					if (addedIntegers[pos]) continue;
+					int ix = pos % width;
+					int iy = pos / width;
+
+					boolean ditherDepsFound = true;
+					for (int dmp = 0; dmp < ditherMatrix.length; dmp++) {
+						if (ditherMatrix[dmp] > 0.0f) {
+							int dmx = (dmp % ditherMatrixSize) - ditherMatrixOffset;
+							int dmy = (dmp / ditherMatrixSize) - ditherMatrixOffset;
+							int dmix = ix - dmx;
+							int dmiy = iy - dmy;
+							if (dmix >= 0 && dmiy >= 0 && dmix < width && dmiy < height) {
+								int dmipos = (dmiy * width) + dmix;
+								if (!addedIntegers[dmipos]) {
+									ditherDepsFound = false;
+									break;
+								}
+							}
+						}
+					}
+
+					if (ditherDepsFound) {
+						integers.add(pos);
+						addedIntCount++;
+					}
+				}
+
+				if (integers.isEmpty()) {
+					throw new RuntimeException("Unsatisfiable constraints for dither matrix!");
+				} else {
+					for (Integer pos : integers) {
+						addedIntegers[pos] = true;
+					}
+					blockIndexes.add(integers.stream().mapToInt(i -> i));
+				}
+			}
+		} else {
+			blockIndexes = List.of(IntStream.range(0, width * height));
+		}
+		return blockIndexes;
 	}
 
 	private void applyCoarseDither(float coarseDitherStrength, float[] ditherMatrix, int ditherMatrixSize, int ditherMatrixOffset, BufferedImage image, ElementResult ditherResult, int px, int py) {

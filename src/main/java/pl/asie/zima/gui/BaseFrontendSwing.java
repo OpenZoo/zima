@@ -116,33 +116,50 @@ public class BaseFrontendSwing {
             setFileFilters(fc, filters);
         }
         fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        int returnVal = fc.showSaveDialog(this.window);
 
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
-            File file = fc.getSelectedFile();
-            if (!(fc instanceof ImageFileChooser)) {
-                boolean endsWithValidExtension = false;
-                String defExtension = null;
-                String lcName = file.getName().toLowerCase(Locale.ROOT);
-                for (FileNameExtensionFilter f : filters) {
-                    for (String extension : f.getExtensions()) {
-                        if (defExtension == null) {
-                            defExtension = extension;
+        while (true) {
+            int returnVal = fc.showSaveDialog(this.window);
+
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                File file = fc.getSelectedFile();
+                if (!(fc instanceof ImageFileChooser)) {
+                    boolean endsWithValidExtension = false;
+                    String defExtension = null;
+                    String lcName = file.getName().toLowerCase(Locale.ROOT);
+                    for (FileNameExtensionFilter f : filters) {
+                        for (String extension : f.getExtensions()) {
+                            if (defExtension == null) {
+                                defExtension = extension;
+                            }
+                            if (lcName.endsWith("." + extension)) {
+                                endsWithValidExtension = true;
+                                break;
+                            }
                         }
-                        if (lcName.endsWith("." + extension)) {
-                            endsWithValidExtension = true;
-                            break;
-                        }
+                        if (endsWithValidExtension) break;
                     }
-                    if (endsWithValidExtension) break;
+                    if (!endsWithValidExtension && defExtension != null) {
+                        file = new File(file.toString() + "." + defExtension);
+                    }
                 }
-                if (!endsWithValidExtension && defExtension != null) {
-                    file = new File(file.toString() + "." + defExtension);
+                if (file.exists()) {
+                    int result = JOptionPane.showConfirmDialog(this.window,
+                            "The file already exists, do you want to overwrite it?", "File exists!",
+                            JOptionPane.YES_NO_CANCEL_OPTION);
+                    switch (result) {
+                        case JOptionPane.YES_OPTION:
+                            return file;
+                        case JOptionPane.NO_OPTION:
+                            break;
+                        default:
+                            return null;
+                    }
+                } else {
+                    return file;
                 }
+            } else {
+                return null;
             }
-            return file;
-        } else {
-            return null;
         }
     }
 

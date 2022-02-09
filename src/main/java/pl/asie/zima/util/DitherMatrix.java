@@ -48,14 +48,24 @@ public enum DitherMatrix {
 
 	private final String name;
 	private final float[] matrix;
+	private final int dimSize;
 
 	DitherMatrix(String name, float[] matrix) {
 		this.name = name;
 		this.matrix = matrix;
+		this.dimSize = (int) Math.sqrt(matrix.length);
 	}
 
 	public float[] getMatrix() {
 		return matrix;
+	}
+
+	public int getDimSize() {
+		return this.dimSize;
+	}
+
+	public int getDimOffset() {
+		return (this.dimSize - 1) / 2;
 	}
 
 	@Override

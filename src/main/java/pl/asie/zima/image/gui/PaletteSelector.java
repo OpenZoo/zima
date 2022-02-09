@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
 public class PaletteSelector extends JComponent implements MouseListener {
     private static final int BOX_SIZE = 14;
     @Getter private TextVisualData visual;
-    private boolean blinkingDisabled;
+    @Getter private boolean blinkingDisabled;
     private boolean selectBlinking;
     private final boolean[] allowedColors = new boolean[256];
     private final Runnable changeListener;
@@ -157,9 +157,9 @@ public class PaletteSelector extends JComponent implements MouseListener {
         changeListener.run();
     }
 
-    public void setBlinkingDisabled(boolean blinkingDisabled) {
+    public void setBlinkingDisabled(boolean blinkingDisabled, boolean reset) {
         this.blinkingDisabled = blinkingDisabled;
-        IntStream.range(0, 256).forEach(i -> setColorAllowed(i, allowedColors[i]));
+        IntStream.range(0, 256).forEach(i -> setColorAllowed(i, allowedColors[i] || reset));
         repaint();
         changeListener.run();
     }

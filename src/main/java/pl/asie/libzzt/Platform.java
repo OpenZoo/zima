@@ -53,6 +53,7 @@ public final class Platform {
 
     public static final Platform ZZT;
     public static final Platform SUPER_ZZT;
+    public static final Platform SUPER_CLASSICZOO;
     public static final Platform WEAVE_ZZT_25;
     public static final Platform MEGAZEUX;
 
@@ -75,10 +76,12 @@ public final class Platform {
     static {
         ZZT = Platform.builder().usesBoard(true).boardWidth(60).boardHeight(25).maxBoardSize(20000 + 2).maxStatCount(150).library(ElementLibraryZZT.INSTANCE).build();
         SUPER_ZZT = Platform.builder().usesBoard(true).boardWidth(96).boardHeight(80).maxBoardSize(20000 + 2).maxStatCount(128).library(ElementLibrarySuperZZT.INSTANCE).doubleWide(true).build();
+        SUPER_CLASSICZOO = Platform.builder().usesBoard(true).boardWidth(96).boardHeight(80).maxBoardSize(65500 + 2).maxStatCount(128).library(ElementLibrarySuperZZT.INSTANCE).doubleWide(true).build();
         MEGAZEUX = Platform.builder().usesBoard(false).boardWidth(65535).boardHeight(65535).defaultBoardWidth(80).defaultBoardHeight(25).supportsBlinking(false).library(ElementLibraryNull.INSTANCE).build();
 
         try {
-            WEAVE_ZZT_25 = Platform.builder().usesBoard(true).boardWidth(60).boardHeight(25).maxBoardSize(65500 + 2).maxStatCount(254).library(ElementLibraryWeaveZZT.create(ElementLibraryZZT.INSTANCE, null)).build();
+            WeaveZZTPlatformData platformData = WeaveZZTPlatformData.parse(ElementLibraryZZT.INSTANCE, null);
+            WEAVE_ZZT_25 = Platform.builder().usesBoard(true).boardWidth(60).boardHeight(25).maxBoardSize(65500 + 2).maxStatCount(150).library(platformData.getLibrary()).build();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

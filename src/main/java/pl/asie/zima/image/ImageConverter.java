@@ -113,17 +113,25 @@ public class ImageConverter {
 		ElementResult emptyResult = null;
 		BufferedImage preview = null;
 
+		int acceptedChars = 0;
 		for (int ich = 0; ich < 256; ich++) {
 			if (fast && (ich != 32 && ich != 176 && ich != 177 && ich != 178 && ich != 219)) continue;
 			if (charCheck != null && !charCheck.test(ich)) continue;
 			for (int ico = 0; ico < 256; ico++) {
 				if (colorCheck != null && !colorCheck.test(ico)) continue;
+
+				// if BG == FG, we only need one char
+				if (((ico >> 4) == (ico & 15)) && acceptedChars >= 1) {
+					continue;
+				}
+
 				ElementResult result = new ElementResult(null, false, false, ich, ico);
 				if (emptyResult == null) {
 					emptyResult = result;
 				}
 				rules.add(result);
 			}
+			acceptedChars++;
 		}
 
 		if (emptyResult == null) {

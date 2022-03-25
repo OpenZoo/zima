@@ -21,6 +21,7 @@ package pl.asie.libzzt.oop;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
+import pl.asie.libzzt.Platform;
 import pl.asie.libzzt.oop.commands.OopCommand;
 import pl.asie.libzzt.oop.commands.OopCommandBind;
 import pl.asie.libzzt.oop.commands.OopCommandChar;
@@ -65,18 +66,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+@Getter
 @EqualsAndHashCode
 @ToString
 public class OopProgram {
-	@Getter
 	String windowName;
-	@Getter
 	String name;
-	@Getter
 	List<OopCommand> commands = new ArrayList<>();
 
-	public OopProgram(String data) throws OopParseException {
-		OopProgramParser parser = new OopProgramParser();
+	public OopProgram(Platform platform, String data) throws OopParseException {
+		OopProgramParser parser = new OopProgramParser(platform);
 		parser.parse(this, data);
 	}
 }

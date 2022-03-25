@@ -56,12 +56,12 @@ public class Stat {
 		this.code = null;
 	}
 
-	public OopProgram getCode() {
+	public OopProgram getCode(Platform platform) {
 		if (this.boundStat != null) {
 			return this.boundStat.getCode();
 		}
 		if (this.code == null && this.data != null && !this.data.isEmpty()) {
-			this.code = new OopProgram(this.data);
+			this.code = new OopProgram(platform, this.data);
 		}
 		return this.code;
 	}

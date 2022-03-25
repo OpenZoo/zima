@@ -18,6 +18,8 @@
  */
 package pl.asie.libzzt;
 
+import lombok.Getter;
+
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,8 +27,39 @@ import java.nio.charset.StandardCharsets;
 
 public class ZInputStream extends FilterInputStream {
 
+	@Getter
+	private int position = 0;
+
 	public ZInputStream(InputStream in) {
 		super(in);
+	}
+
+	@Override
+	public int read() throws IOException {
+		int v = super.read();
+		this.position++;
+		return v;
+	}
+
+	@Override
+	public int read(byte[] b, int off, int len) throws IOException {
+		int l = super.read(b, off, len);
+		this.position += l;
+		return l;
+	}
+
+	@Override
+	public long skip(long n) throws IOException {
+		long l = super.skip(n);
+		position += (int) l;
+		return l;
+	}
+
+	public long skipTo(long position) throws IOException {
+		if (this.position > position) {
+			throw new IOException("Requested skipping to " + position + ", but cursor already at " + this.position);
+		}
+		return skip(position - this.position);
 	}
 
 	public int readPByte() throws IOException {

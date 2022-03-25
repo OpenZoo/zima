@@ -38,6 +38,8 @@ public class Board {
 	private String message = "";
 	private int startPlayerX;
 	private int startPlayerY;
+	private int drawOffsetX; // Super ZZT
+	private int drawOffsetY; // Super ZZT
 	private int timeLimitSec;
 
 	private final Platform platform;
@@ -183,8 +185,8 @@ public class Board {
 			this.startPlayerX = stream.readPByte();
 			this.startPlayerY = stream.readPByte();
 			if (platform.getZztWorldFormat().isSuperZZTLike()) {
-				stream.readPShort(); // DrawXOffset - TOOD
-				stream.readPShort(); // DrawYOffset - TOOD
+				this.drawOffsetX = stream.readPShort();
+				this.drawOffsetY = stream.readPShort();
 			}
 			this.timeLimitSec = stream.readPShort();
 			int skipCount = platform.getZztWorldFormat().isSuperZZTLike() ? 14 : 16;
@@ -247,8 +249,8 @@ public class Board {
 			stream.writePByte(this.startPlayerX);
 			stream.writePByte(this.startPlayerY);
 			if (platform.getZztWorldFormat().isSuperZZTLike()) {
-				stream.writePShort(0); // DrawXOffset - TODO
-				stream.writePShort(0); // DrawYOffset - TODO
+				stream.writePShort(this.drawOffsetX);
+				stream.writePShort(this.drawOffsetY);
 			}
 			stream.writePShort(this.timeLimitSec);
 			stream.pad(platform.getZztWorldFormat().isSuperZZTLike() ? 14 : 16);

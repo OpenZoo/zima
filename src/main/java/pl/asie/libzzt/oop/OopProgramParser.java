@@ -18,6 +18,7 @@
  */
 package pl.asie.libzzt.oop;
 
+import lombok.RequiredArgsConstructor;
 import pl.asie.libzzt.Platform;
 import pl.asie.libzzt.oop.commands.OopCommand;
 import pl.asie.libzzt.oop.commands.OopCommandBecome;
@@ -76,9 +77,11 @@ import pl.asie.libzzt.oop.directions.OopDirectionWest;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+@RequiredArgsConstructor
 public class OopProgramParser {
 
 	private static final Pattern WORD_PATTERN = Pattern.compile("^[0-9A-Za-z:_]+$");
+	private final Platform platform;
 
 	// For parsing.
 	private String data;
@@ -178,7 +181,7 @@ public class OopProgramParser {
 			readWord();
 		}
 
-		return new OopTile(Platform.ZZT.getLibrary().byInternalName(oopWord), color);
+		return new OopTile(platform.getLibrary().byInternalName(oopWord), color);
 	}
 
 	private OopCondition parseCondition() throws OopParseException {

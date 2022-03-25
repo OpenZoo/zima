@@ -26,9 +26,24 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 public class ZOutputStream extends FilterOutputStream {
+	@Getter
+	private int position = 0;
 
 	public ZOutputStream(OutputStream out) {
 		super(out);
+	}
+
+	@Override
+	public void write(int b) throws IOException {
+		super.write(b);
+		this.position++;
+	}
+
+	public void padTo(int position) throws IOException {
+		if (this.position > position) {
+			throw new IOException("Requested padding to " + position + ", but cursor already at " + this.position);
+		}
+		pad(position - this.position);
 	}
 
 	public void pad(int amount) throws IOException {

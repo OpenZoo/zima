@@ -971,9 +971,9 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos)) {
 				int[] colors = this.visual.getPalette();
 				for (int i = 0; i < 16; i++) {
-					zos.writePByte(((colors[i] >> 16) * 63 / 255) & 0xFF);
-					zos.writePByte(((colors[i] >> 8) * 63 / 255) & 0xFF);
-					zos.writePByte((colors[i] * 63 / 255) & 0xFF);
+					zos.writePByte((((colors[i] >> 16) & 0xFF) * 63 / 255) & 0xFF);
+					zos.writePByte((((colors[i] >> 8) & 0xFF) * 63 / 255) & 0xFF);
+					zos.writePByte(((colors[i] & 0xFF) * 63 / 255) & 0xFF);
 				}
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error saving file: " + e.getMessage());

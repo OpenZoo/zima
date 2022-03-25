@@ -1,0 +1,7 @@
+Improvements:
+
+* MegaZeux image conversion is now up to ~6% faster.
+
+Bugs fixed:
+
+* Fixed outputting Super ClassicZoo and WeaveZZT board files.

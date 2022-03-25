@@ -146,7 +146,7 @@ public class Board {
 		}
 
 		try (ByteArrayInputStream byteStream = new ByteArrayInputStream(data); ZInputStream stream = new ZInputStream(byteStream)) {
-			this.name = stream.readPString(platform == Platform.SUPER_ZZT ? 60 : 50);
+			this.name = stream.readPString(platform.getZztWorldFormat().isSuperZZTLike() ? 60 : 50);
 
 			int ix = 1;
 			int iy = 1;
@@ -171,23 +171,23 @@ public class Board {
 			} while (iy <= this.height);
 
 			this.maxShots = stream.readPByte();
-			if (platform == Platform.ZZT) {
+			if (platform.getZztWorldFormat().isZZTLike()) {
 				this.dark = stream.readPBoolean();
 			}
 			for (int i = 0; i < 4; i++)
 				this.neighborBoards[i] = stream.readPByte();
 			this.reenterWhenZapped = stream.readPBoolean();
-			if (platform == Platform.ZZT) {
+			if (platform.getZztWorldFormat().isZZTLike()) {
 				this.message = stream.readPString(58);
 			}
 			this.startPlayerX = stream.readPByte();
 			this.startPlayerY = stream.readPByte();
-			if (platform == Platform.SUPER_ZZT) {
+			if (platform.getZztWorldFormat().isSuperZZTLike()) {
 				stream.readPShort(); // DrawXOffset - TOOD
 				stream.readPShort(); // DrawYOffset - TOOD
 			}
 			this.timeLimitSec = stream.readPShort();
-			int skipCount = platform == Platform.SUPER_ZZT ? 14 : 16;
+			int skipCount = platform.getZztWorldFormat().isSuperZZTLike() ? 14 : 16;
 			if (stream.skip(skipCount) != skipCount) {
 				throw new IOException();
 			}
@@ -207,7 +207,7 @@ public class Board {
 
 	public void writeZ(ZOutputStream outStream) throws IOException {
 		try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream(); ZOutputStream stream = new ZOutputStream(byteStream)) {
-			stream.writePString(this.name, platform == Platform.SUPER_ZZT ? 60 : 50);
+			stream.writePString(this.name, platform.getZztWorldFormat().isSuperZZTLike() ? 60 : 50);
 
 			// fancy RLE logic
 			int ix = 1;
@@ -235,23 +235,23 @@ public class Board {
 			} while (iy <= this.height);
 
 			stream.writePByte(this.maxShots);
-			if (platform == Platform.ZZT) {
+			if (platform.getZztWorldFormat().isZZTLike()) {
 				stream.writePBoolean(this.dark);
 			}
 			for (int i = 0; i < 4; i++)
 				stream.writePByte(this.neighborBoards[i]);
 			stream.writePBoolean(this.reenterWhenZapped);
-			if (platform == Platform.ZZT) {
+			if (platform.getZztWorldFormat().isZZTLike()) {
 				stream.writePString(this.message, 58);
 			}
 			stream.writePByte(this.startPlayerX);
 			stream.writePByte(this.startPlayerY);
-			if (platform == Platform.SUPER_ZZT) {
+			if (platform.getZztWorldFormat().isSuperZZTLike()) {
 				stream.writePShort(0); // DrawXOffset - TODO
 				stream.writePShort(0); // DrawYOffset - TODO
 			}
 			stream.writePShort(this.timeLimitSec);
-			stream.pad(platform == Platform.SUPER_ZZT ? 14 : 16);
+			stream.pad(platform.getZztWorldFormat().isSuperZZTLike() ? 14 : 16);
 
 			stream.writePShort(stats.size() - 1);
 

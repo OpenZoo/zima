@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+// TODO: Super ZZT world (de)serialization
 @Data
 public class World {
 	private static final int VERSION = -1;

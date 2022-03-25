@@ -114,7 +114,7 @@ public class Stat {
 		}
 		this.dataPos = stream.readPShort();
 		int dataLen = stream.readPShort();
-		if (platform == Platform.ZZT) {
+		if (platform.getZztWorldFormat().isZZTLike()) {
 			if (stream.skip(8) != 8) {
 				throw new IOException("Could not skip unk!");
 			}
@@ -130,7 +130,7 @@ public class Stat {
 	}
 
 	public int lengthZ(Platform platform) {
-		int len = (platform == Platform.ZZT ? 33 : 25);
+		int len = (platform.getZztWorldFormat().isZZTLike() ? 33 : 25);
 		if (boundStatId == 0 && data != null) {
 			byte[] dataBytes = data.getBytes(StandardCharsets.ISO_8859_1);
 			len += dataBytes.length;
@@ -155,7 +155,7 @@ public class Stat {
 		stream.pad(4); // data^
 		stream.writePShort(this.dataPos);
 		stream.writePShort(boundStatId > 0 ? (-boundStatId) : ((dataBytes != null) ? dataBytes.length : 0));
-		if (platform == Platform.ZZT) {
+		if (platform.getZztWorldFormat().isZZTLike()) {
 			stream.pad(8); // unk
 		}
 		if (boundStatId == 0 && dataBytes != null) {

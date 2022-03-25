@@ -49,6 +49,8 @@ public final class Platform {
     private final boolean maxStatCountIsActual = false;
     @Builder.Default
     private final boolean supportsBlinking = true;
+    @Builder.Default
+    private final ZztWorldSerializationFormat zztWorldFormat = null;
     private final ElementLibrary library;
 
     public static final Platform ZZT;
@@ -74,14 +76,14 @@ public final class Platform {
     }
 
     static {
-        ZZT = Platform.builder().usesBoard(true).boardWidth(60).boardHeight(25).maxBoardSize(20000 + 2).maxStatCount(150).library(ElementLibraryZZT.INSTANCE).build();
-        SUPER_ZZT = Platform.builder().usesBoard(true).boardWidth(96).boardHeight(80).maxBoardSize(20000 + 2).maxStatCount(128).library(ElementLibrarySuperZZT.INSTANCE).doubleWide(true).build();
-        SUPER_CLASSICZOO = Platform.builder().usesBoard(true).boardWidth(96).boardHeight(80).maxBoardSize(65500 + 2).maxStatCount(128).library(ElementLibrarySuperZZT.INSTANCE).doubleWide(true).build();
+        ZZT = Platform.builder().usesBoard(true).boardWidth(60).boardHeight(25).maxBoardSize(20000 + 2).maxStatCount(150).library(ElementLibraryZZT.INSTANCE).zztWorldFormat(ZztWorldSerializationFormat.ZZT).build();
+        SUPER_ZZT = Platform.builder().usesBoard(true).boardWidth(96).boardHeight(80).maxBoardSize(20000 + 2).maxStatCount(128).library(ElementLibrarySuperZZT.INSTANCE).doubleWide(true).zztWorldFormat(ZztWorldSerializationFormat.SUPER_ZZT).build();
+        SUPER_CLASSICZOO = Platform.builder().usesBoard(true).boardWidth(96).boardHeight(80).maxBoardSize(65500 + 2).maxStatCount(128).library(ElementLibrarySuperZZT.INSTANCE).doubleWide(true).zztWorldFormat(ZztWorldSerializationFormat.SUPER_ZZT).build();
         MEGAZEUX = Platform.builder().usesBoard(false).boardWidth(65535).boardHeight(65535).defaultBoardWidth(80).defaultBoardHeight(25).supportsBlinking(false).library(ElementLibraryNull.INSTANCE).build();
 
         try {
             WeaveZZTPlatformData platformData = WeaveZZTPlatformData.parse(ElementLibraryZZT.INSTANCE, null);
-            WEAVE_ZZT_25 = Platform.builder().usesBoard(true).boardWidth(60).boardHeight(25).maxBoardSize(65500 + 2).maxStatCount(150).library(platformData.getLibrary()).build();
+            WEAVE_ZZT_25 = Platform.builder().usesBoard(true).boardWidth(60).boardHeight(25).maxBoardSize(65500 + 2).maxStatCount(150).library(platformData.getLibrary()).zztWorldFormat(ZztWorldSerializationFormat.ZZT).build();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

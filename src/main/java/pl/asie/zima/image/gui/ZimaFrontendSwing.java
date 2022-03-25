@@ -988,9 +988,9 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		int[] colors = this.visual.getPalette();
 		for (int i = 0; i < 16; i++) {
 			if (this.customColorSelector.isColorAllowed(i)) {
-				int cr = (((colors[i] >> 16) * 63 / 255) & 0xFF);
-				int cg = (((colors[i] >> 8) * 63 / 255) & 0xFF);
-				int cb = ((colors[i] * 63 / 255) & 0xFF);
+				int cr = ((((colors[i] >> 16) & 0xFF) * 63 / 255) & 0xFF);
+				int cg = ((((colors[i] >> 8) & 0xFF) * 63 / 255) & 0xFF);
+				int cb = (((colors[i] & 0xFF) * 63 / 255) & 0xFF);
 				if (cr == 0 && cg == 0 && cb == 0) {
 					cb = 1;
 				}

@@ -1,0 +1,3 @@
+Bugs fixed:
+
+* Fixed #PALETTE OOP code generation outputting incorrect values.

@@ -110,6 +110,9 @@ public class LinterCheck {
 		// Label/target checks
 		this.labels = new LinterCheckLabels(this.world);
 		this.labels.emitMessages(this::addMessage);
+
+		// Other checks
+		new LinterCheckBoardConnections(this.world).emitMessages(this::addMessage);
 	}
 
 	public List<LinterMessage> getMessages() {

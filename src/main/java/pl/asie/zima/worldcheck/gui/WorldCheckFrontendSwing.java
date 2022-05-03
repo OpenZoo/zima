@@ -151,6 +151,28 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 			this.uiTabListPane.addTab("Flags", this.uiFlagsTree.getPane());
 			this.uiTabListPane.addTab("Labels", this.uiLabelsTree.getPane());
 			this.uiTabListPane.addTab("Code", this.uiOopCodePane.getPane());
+
+			this.uiCanvas.addMouseListener(new MouseAdapter() {
+				@Override
+				public void mouseClicked(MouseEvent e) {
+					Board board = currentLocation.getBoard();
+					if (board != null) {
+						Point p = e.getPoint();
+						int x = (p.x / VISUAL_DATA.getCharWidth()) + 1;
+						int y = (p.y / VISUAL_DATA.getCharHeight()) + 1;
+						if (x >= 1 && y >= 1 && x <= board.getWidth() && y <= board.getHeight()) {
+							ElementLocation newLocation = ElementLocation.element(
+									currentLocation.getWorld(),
+									currentLocation.getBoardId(),
+									x, y
+							);
+							if (!newLocation.includes(currentLocation)) {
+								changeLocationTo(newLocation);
+							}
+						}
+					}
+				}
+			});
 		}
 
 		void openCodePane() {

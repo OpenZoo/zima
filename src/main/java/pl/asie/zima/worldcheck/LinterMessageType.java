@@ -40,10 +40,14 @@ public enum LinterMessageType {
 	LABEL_ZAPPED_ON_MISSING_TARGET(LinterMessage.Severity.WARNING),
 	LABEL_RESTORED_ON_MISSING_TARGET(LinterMessage.Severity.WARNING),
 	LABEL_PRESENT_BUT_NOT_SENT(LinterMessage.Severity.INFO),
-	LABEL_SENT_BUT_NOT_RECEIVED(LinterMessage.Severity.WARNING),
 	LABEL_ZAP_RESTORE_RESTART(LinterMessage.Severity.INFO),
 	PERFORMANCE_BUSYLOOP_FOUND(LinterMessage.Severity.WARNING),
-	PERFORMANCE_NOOP_FOUND(LinterMessage.Severity.WARNING);
+	PERFORMANCE_NOOP_FOUND(LinterMessage.Severity.WARNING),
+	BOARD_CONNECTION_INVALID_ID(LinterMessage.Severity.ERROR),
+	BOARD_CONNECTION_NOT_RECIPROCATED(LinterMessage.Severity.HINT),
+	BOARD_CONNECTION_BLOCKED_ONE_WAY(LinterMessage.Severity.HINT),
+	BOARD_PASSAGE_INVALID_ID(LinterMessage.Severity.ERROR),
+	BOARD_PASSAGE_NOT_RECIPROCATED(LinterMessage.Severity.HINT);
 
 	private final LinterMessage.Severity severity;
 }

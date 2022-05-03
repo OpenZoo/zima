@@ -65,6 +65,10 @@ public class ElementLibrary {
         return elementsByInternalNames.getOrDefault(name, empty);
     }
 
+    public Element byInternalNameOrNull(String name) {
+        return elementsByInternalNames.get(name);
+    }
+
     public Element byOopTokenName(String name) {
         for (Element element : elements) {
             if (Objects.equals(OopUtils.stripChars(name), element.getOopName())) {

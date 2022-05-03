@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.OptionalInt;
 
 @Getter
 @EqualsAndHashCode
@@ -176,7 +177,9 @@ public final class ElementLocation implements Comparable<ElementLocation> {
 	}
 
 	public static ElementLocation element(World world, int boardId, int x, int y) {
-		return new ElementLocation(world, boardId, x, y, null, null, null, null);
+		Board b = world.getBoards().get(boardId);
+		OptionalInt statId = b.getStatId(b.getStatAt(x, y));
+		return new ElementLocation(world, boardId, x, y, statId.isPresent() ? statId.orElse(0) : null, null, null, null);
 	}
 
 	public static ElementLocation stat(World world, int boardId, int statIdx) {

@@ -54,13 +54,13 @@ public class ElementLibraryZZT {
     private static final Element FAKE = Element.builder().character(178).name("Fake").walkable(true).id(27).build(); // TODO: not actually flagged as walkable
     private static final Element INVISIBLE = Element.builder().character(' ').name("Invisible").id(28).build();
     private static final Element BLINK_WALL = Element.builder().character(206).cycle(1).hasDrawProc(true).name("Blink wall").id(29).build();
-    private static final Element TRANSPORTER = Element.builder().character(197).hasDrawProc(true).cycle(2).name("Transporter").id(30).build();
-    private static final Element LINE = Element.builder().character(206).hasDrawProc(true).name("Line").id(31).build();
+    private static final Element TRANSPORTER = Element.builder().character(197).hasDrawProc(true).drawFunction(ElementDrawFunctionsZZT::drawTransporter).cycle(2).name("Transporter").id(30).build();
+    private static final Element LINE = Element.builder().character(206).hasDrawProc(true).drawFunction(ElementDrawFunctionConnected.LINE).name("Line").id(31).build();
     private static final Element RICOCHET = Element.builder().character('*').color(0x0A).name("Ricochet").id(32).build();
     private static final Element BLINK_RAY_EW = Element.builder().character(205).id(33).build();
     private static final Element BEAR = Element.builder().character(153).color(0x06).destructible(true).pushable(true).cycle(3).name("Bear").scoreValue(1).id(34).build();
     private static final Element RUFFIAN = Element.builder().character(5).color(0x0D).destructible(true).pushable(true).cycle(1).name("Ruffian").scoreValue(2).id(35).build();
-    private static final Element OBJECT = Element.builder().character(2).cycle(3).hasDrawProc(true).name("Object").id(36).build();
+    private static final Element OBJECT = Element.builder().character(2).cycle(3).hasDrawProc(true).drawFunction(ElementDrawFunctionsZZT::drawObject).name("Object").id(36).build();
     private static final Element SLIME = Element.builder().character('*').color(Element.COLOR_CHOICE_ON_BLACK).destructible(false).cycle(3).name("Slime").id(37).build();
     private static final Element SHARK = Element.builder().character('^').color(0x07).destructible(false).cycle(3).name("Shark").id(38).build();
     private static final Element SPINNING_GUN = Element.builder().character(24).cycle(2).hasDrawProc(true).name("Spinning gun").id(39).build();

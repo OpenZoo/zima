@@ -34,6 +34,8 @@ import pl.asie.zima.util.*;
 import pl.asie.zima.image.*;
 import pl.asie.zima.util.gui.SimpleCanvas;
 import pl.asie.zima.util.gui.TransferableImage;
+import pl.asie.zima.worldcheck.WorldCheckMain;
+import pl.asie.zima.zxtedit.ZxtEditMain;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -55,11 +57,11 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 
 public class ZimaFrontendSwing extends BaseFrontendSwing {
-	private final JMenu fileMenu, editMenu, profileMenu, helpMenu;
+	private final JMenu fileMenu, editMenu, profileMenu, toolsMenu;
 	private final JMenuItem openItem, saveBrdItem, saveMzmItem, savePngItem, closeItem;
 	private final JMenuItem copyItem ,pasteItem;
 	private final JMenuItem profileLoadItem, profileSaveItem;
-	private final JMenuItem changelogItem, aboutItem;
+	private final JMenuItem toolWorldCheckItem, toolZxtEditItem;
 	private final JTabbedPane optionsPane;
 	private final JPanel optionsBoardPanel;
 	private final JPanel optionsImagePanel;
@@ -207,9 +209,29 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		this.profileMenu.add(this.profileLoadItem = new JMenuItem("Load"));
 		this.profileMenu.add(this.profileSaveItem = new JMenuItem("Save"));
 
-		this.menuBar.add(this.helpMenu = new JMenu("Help"));
-		this.helpMenu.add(this.changelogItem = new JMenuItem("Changelog"));
-		this.helpMenu.add(this.aboutItem = new JMenuItem("About"));
+		// TODO: This should be in a separate menu?
+		this.menuBar.add(this.toolsMenu = new JMenu("Tools"));
+		this.toolWorldCheckItem = new JMenuItem("World Checker");
+		this.toolsMenu.add(this.toolWorldCheckItem);
+		this.toolZxtEditItem = new JMenuItem("ZXT/ZAX Editor");
+		this.toolsMenu.add(this.toolZxtEditItem);
+
+		this.toolWorldCheckItem.addActionListener(e -> {
+			try {
+				WorldCheckMain.main(new String[]{});
+			} catch (Exception ee) {
+				ee.printStackTrace();
+			}
+		});
+		this.toolZxtEditItem.addActionListener(e -> {
+			try {
+				ZxtEditMain.main(new String[]{});
+			} catch (Exception ee) {
+				ee.printStackTrace();
+			}
+		});
+
+		addHelpMenu();
 
 		{
 			GridBagConstraints gbc = new GridBagConstraints();
@@ -504,8 +526,6 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		this.pasteItem.addActionListener(this::onPaste);
 		this.profileLoadItem.addActionListener(this::onLoadSettings);
 		this.profileSaveItem.addActionListener(this::onSaveSettings);
-		this.changelogItem.addActionListener(this::onChangelog);
-		this.aboutItem.addActionListener(this::onAbout);
 
 		this.openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK));
 		this.saveBrdItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK));
@@ -532,10 +552,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		uiReady = true;
 		rerender();
 
-		this.window.add(this.mainPanel);
-		this.window.pack();
-		this.window.setMinimumSize(this.window.getSize());
-		this.window.setVisible(true);
+		finishWindowInit();
 	}
 
 	public void rebuildElementsPanel() {

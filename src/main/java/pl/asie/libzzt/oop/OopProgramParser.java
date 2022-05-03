@@ -87,6 +87,7 @@ public class OopProgramParser {
 	private final Platform platform;
 
 	// For parsing.
+	private OopProgram program;
 	private String data;
 	private int position;
 	private int oopChar;
@@ -259,7 +260,7 @@ public class OopProgramParser {
 			readWord();
 		}
 		if (oopWord.isEmpty()) {
-			return null;
+			return readInstruction();
 		} else if ("GO".equals(oopWord)) {
 			return new OopCommandGo(parseDirection());
 		} else if ("TRY".equals(oopWord)) {
@@ -359,72 +360,84 @@ public class OopProgramParser {
 		}
 	}
 
+	public OopCommand readInstruction() {
+		lineFinished = true;
+		lastPosition = position;
+
+		readChar();
+		if (oopChar == '@') {
+			if (position <= 1) {
+				readWord();
+				program.name = this.oopWord;
+				position = 1;
+				program.windowName = readLineToEnd();
+			}
+			return null;
+		} else if (oopChar == '\'' || oopChar == ':') {
+			boolean zapped = oopChar == '\'';
+			String s = readLineToEnd();
+			OopCommand cmd = null;
+			boolean restoreFindStringVisible = !s.endsWith(" ");
+			while (s.endsWith(" ")) {
+				s = s.substring(0, s.length() - 1);
+			}
+			if (WORD_PATTERN.matcher(s).find() && !s.startsWith(":")) {
+				int lastPosition = position;
+				readChar();
+				oopChar = upCase(oopChar);
+				restoreFindStringVisible &= !((oopChar >= 'A' && oopChar <= 'Z') || (oopChar == '_'));
+				position = lastPosition;
+				cmd = new OopCommandLabel(s, zapped, restoreFindStringVisible);
+			} else if (zapped) {
+				cmd = new OopCommandComment(s);
+			}
+			if (cmd != null) {
+				cmd.setPosition(lastPosition - 1); // Label jumps are off by one
+				return cmd;
+			} else {
+				return null;
+			}
+		} else if (oopChar == '/' || oopChar == '?') {
+			OopDirection direction = parseDirection();
+			OopCommand cmd = oopChar == '?' ? new OopCommandDirectionTry(direction) : new OopCommandDirection(direction);
+			cmd.setPosition(lastPosition);
+			return cmd;
+		} else if (oopChar == '#') {
+			OopCommand cmd = readCommand();
+			if (cmd != null) {
+				cmd.setPosition(lastPosition);
+				return cmd;
+			}
+
+			if (lineFinished) {
+				skipLine();
+			}
+			return null;
+		} else if (oopChar == 13) {
+			OopCommand cmd = parseTextLine("");
+			cmd.setPosition(lastPosition);
+			return cmd;
+		} else if (oopChar == 0) {
+			// TODO: Formally different from #END (doesn't change position), but does it matter?
+			OopCommand cmd = new OopCommandEnd();
+			cmd.setPosition(lastPosition);
+			return cmd;
+		} else {
+			OopCommand cmd = parseTextLine(Character.toString(oopChar) + readLineToEnd());
+			cmd.setPosition(lastPosition);
+			return cmd;
+		}
+	}
+
 	public void parse(OopProgram program, String data) throws OopParseException {
 		this.data = data;
 		this.position = 0;
+		this.program = program;
 
 		while (position < data.length()) {
-			lineFinished = true;
-			lastPosition = position;
-
-			readChar();
-			if (oopChar == '@') {
-				if (position <= 1) {
-					readWord();
-					program.name = this.oopWord;
-					position = 1;
-					program.windowName = readLineToEnd();
-				}
-			} else if (oopChar == '\'' || oopChar == ':') {
-				boolean zapped = oopChar == '\'';
-				String s = readLineToEnd();
-				OopCommand cmd = null;
-				boolean restoreFindStringVisible = !s.endsWith(" ");
-				while (s.endsWith(" ")) {
-					s = s.substring(0, s.length() - 1);
-				}
-				if (WORD_PATTERN.matcher(s).find() && !s.startsWith(":")) {
-					int lastPosition = position;
-					readChar();
-					oopChar = upCase(oopChar);
-					restoreFindStringVisible &= !((oopChar >= 'A' && oopChar <= 'Z') || (oopChar == '_'));
-					position = lastPosition;
-					cmd = new OopCommandLabel(s, zapped, restoreFindStringVisible);
-				} else if (zapped) {
-					cmd = new OopCommandComment(s);
-				}
-				if (cmd != null) {
-					cmd.setPosition(lastPosition - 1); // Label jumps are off by one
-					program.commands.add(cmd);
-				}
-			} else if (oopChar == '/' || oopChar == '?') {
-				OopDirection direction = parseDirection();
-				OopCommand cmd = oopChar == '?' ? new OopCommandDirectionTry(direction) : new OopCommandDirection(direction);
-				cmd.setPosition(lastPosition);
-				program.commands.add(cmd);
-			} else if (oopChar == '#') {
-				OopCommand cmd = readCommand();
-				if (cmd != null) {
-					cmd.setPosition(lastPosition);
-					program.commands.add(cmd);
-				}
-
-				if (lineFinished) {
-					skipLine();
-				}
-			} else if (oopChar == 13) {
-				OopCommand cmd = parseTextLine("");
-				cmd.setPosition(lastPosition);
-				program.commands.add(cmd);
-			} else if (oopChar == 0) {
-				// TODO: Formally different from #END (doesn't change position), but does it matter?
-				OopCommand cmd = new OopCommandEnd();
-				cmd.setPosition(lastPosition);
-				program.commands.add(cmd);
-			} else {
-				OopCommand cmd = parseTextLine(Character.toString(oopChar) + readLineToEnd());
-				cmd.setPosition(lastPosition);
-				program.commands.add(cmd);
+			OopCommand command = readInstruction();
+			if (command != null) {
+				program.commands.add(command);
 			}
 		}
 	}

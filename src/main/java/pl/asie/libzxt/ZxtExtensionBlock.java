@@ -39,7 +39,7 @@ public class ZxtExtensionBlock {
         this(flags, id, null);
     }
 
-    public short getFlags() {
+    public int getFlags() {
         return flags;
     }
 

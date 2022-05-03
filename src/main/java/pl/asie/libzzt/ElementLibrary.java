@@ -57,6 +57,10 @@ public class ElementLibrary {
         return elementsById.getOrDefault(id, empty);
     }
 
+    public boolean hasId(int elementId) {
+        return elementsById.containsKey(elementId);
+    }
+
     public Element byInternalName(String name) {
         return elementsByInternalNames.getOrDefault(name, empty);
     }

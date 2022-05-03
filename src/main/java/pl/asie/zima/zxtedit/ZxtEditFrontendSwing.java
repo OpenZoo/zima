@@ -36,9 +36,8 @@ import java.util.ArrayList;
 public class ZxtEditFrontendSwing extends BaseFrontendSwing {
 	private final ZxtExtensionParser zxtParser = new ZxtExtensionParser();
 
-	private final JMenu fileMenu, helpMenu;
+	private final JMenu fileMenu;
 	private final JMenuItem newItem, newSuperItem, openItem, saveWorldItem, saveHeaderItem;
-	private final JMenuItem changelogItem, aboutItem;
 
 	private ZxtHeaderTableModel headerTableModel;
 	private JTable headerTable;
@@ -52,7 +51,7 @@ public class ZxtEditFrontendSwing extends BaseFrontendSwing {
 	private boolean currentHeaderDirty = false;
 
 	public ZxtEditFrontendSwing() {
-		super("zxt editor");
+		super("zxt editor (wip)");
 
 		this.menuBar.add(this.fileMenu = new JMenu("File"));
 		this.fileMenu.add(this.newItem = new JMenuItem("New ZZT header"));
@@ -61,17 +60,13 @@ public class ZxtEditFrontendSwing extends BaseFrontendSwing {
 		this.fileMenu.add(this.saveWorldItem = new JMenuItem("Save world"));
 		this.fileMenu.add(this.saveHeaderItem = new JMenuItem("Save .ZAX header"));
 
-		this.menuBar.add(this.helpMenu = new JMenu("Help"));
-		this.helpMenu.add(this.changelogItem = new JMenuItem("Changelog"));
-		this.helpMenu.add(this.aboutItem = new JMenuItem("About"));
+		addHelpMenu();
 
 		this.newItem.addActionListener(ev -> onNew(ev, ZxtHeaderType.ZZT_WORLD));
 		this.newSuperItem.addActionListener(ev -> onNew(ev, ZxtHeaderType.SUPER_ZZT_WORLD));
 		this.openItem.addActionListener(this::onOpen);
 		this.saveWorldItem.addActionListener(this::onSaveWorld);
 		this.saveHeaderItem.addActionListener(this::onSaveHeader);
-		this.changelogItem.addActionListener(this::onChangelog);
-		this.aboutItem.addActionListener(this::onAbout);
 
 		this.openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK));
 		this.saveWorldItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK));
@@ -104,6 +99,7 @@ public class ZxtEditFrontendSwing extends BaseFrontendSwing {
 				this.headerTable.getColumnModel().getColumn(i).setMaxWidth(80);
 			}
 		}
+		this.headerTable.setVisible(false);
 
 		this.headerTableScrollPane = new JScrollPane(this.headerTable);
 		this.headerTable.setFillsViewportHeight(true);
@@ -118,10 +114,7 @@ public class ZxtEditFrontendSwing extends BaseFrontendSwing {
 
 		copyHeaderToUi();
 
-		this.window.add(this.mainPanel);
-		this.window.pack();
-		this.window.setMinimumSize(this.window.getSize());
-		this.window.setVisible(true);
+		finishWindowInit();
 	}
 
 	public void updateUiStatusBar() {
@@ -166,8 +159,8 @@ public class ZxtEditFrontendSwing extends BaseFrontendSwing {
 				new FileNameExtensionFilter("ZXT Header", "zax")
 		);
 		if (file != null) {
-			try (FileInputStream fis = new FileInputStream(file)) {
-				currentHeader = zxtParser.readHeader(fis);
+			try (FileInputStream fis = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(fis)) {
+				currentHeader = zxtParser.readHeader(bis);
 				if (currentHeader == null) {
 					fis.getChannel().position(0);
 					currentHeader = new ZxtExtensionHeader(FileUtils.getExtension(file).equalsIgnoreCase("szt")
@@ -175,7 +168,7 @@ public class ZxtEditFrontendSwing extends BaseFrontendSwing {
 				}
 				currentHeaderDirty = false;
 
-				remainingData = fis.readAllBytes();
+				remainingData = bis.readAllBytes();
 				if (remainingData != null && remainingData.length == 0) {
 					remainingData = null;
 				}
@@ -241,7 +234,7 @@ public class ZxtEditFrontendSwing extends BaseFrontendSwing {
 	}
 
 	public boolean verifySave() {
-		if (!currentHeaderDirty) return true;
+		if (!currentHeaderDirty || (currentHeader == null)) return true;
 
 		int result = JOptionPane.showConfirmDialog(this.window,
 				"You have unsaved changes! Would you like to save them first?",
@@ -265,6 +258,8 @@ public class ZxtEditFrontendSwing extends BaseFrontendSwing {
 			currentHeader = new ZxtExtensionHeader(headerType);
 			currentHeaderDirty = false;
 			copyHeaderToUi();
+			this.headerTable.setVisible(true);
+			this.headerTable.repaint();
 		}
 	}
 }

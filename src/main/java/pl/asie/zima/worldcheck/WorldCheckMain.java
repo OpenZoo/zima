@@ -16,18 +16,12 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.zima.util;
+package pl.asie.zima.worldcheck;
 
-import lombok.Data;
-import lombok.With;
+import pl.asie.zima.worldcheck.gui.WorldCheckFrontendSwing;
 
-@Data
-@With
-public final class Pair<A, B> {
-	private final A first;
-	private final B second;
-
-	public static <A, B> Pair<A, B> of(A first, B second) {
-		return new Pair<>(first, second);
+public class WorldCheckMain {
+	public static void main(String[] args) throws Exception {
+		WorldCheckFrontendSwing frontend = new WorldCheckFrontendSwing();
 	}
 }

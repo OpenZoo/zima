@@ -16,18 +16,34 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.zima.util;
+package pl.asie.libzzt;
 
+import lombok.AccessLevel;
 import lombok.Data;
-import lombok.With;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-@Data
-@With
-public final class Pair<A, B> {
-	private final A first;
-	private final B second;
+@FunctionalInterface
+public interface ElementDrawFunction {
+	@Getter
+	@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+	class Result {
+		public static final Result NONE = new Result(-1, -1);
 
-	public static <A, B> Pair<A, B> of(A first, B second) {
-		return new Pair<>(first, second);
+		private final int character, color;
+
+		public static Result character(int ch) {
+			return new Result(ch, -1);
+		}
+
+		public static Result color(int co) {
+			return new Result(-1, co);
+		}
+
+		public static Result create(int ch, int co) {
+			return new Result(ch, co);
+		}
 	}
+
+	Result draw(Board board, int x, int y);
 }

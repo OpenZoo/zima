@@ -44,7 +44,7 @@ public class Board {
 
 	private final Platform platform;
 	private final int width, height, outerWidth, outerHeight;
-	private final Element[] elements;
+	private final byte[] elements;
 	private final byte[] colors;
 
 	private List<Stat> stats = new ArrayList<>();
@@ -59,10 +59,10 @@ public class Board {
 		this.height = platform.getBoardHeight();
 		this.outerWidth = this.width + 2;
 		this.outerHeight = this.height + 2;
-		this.elements = new Element[this.outerWidth * this.outerHeight];
+		this.elements = new byte[this.outerWidth * this.outerHeight];
 		this.colors = new byte[this.outerWidth * this.outerHeight];
 
-		Arrays.fill(elements, platform.getLibrary().getEmpty());
+		Arrays.fill(elements, (byte) 0);
 		Element boardEdge = platform.getLibrary().byInternalName("BOARD_EDGE");
 		Element player = platform.getLibrary().byInternalName("PLAYER");
 
@@ -89,7 +89,15 @@ public class Board {
 	}
 
 	public Element getElement(int x, int y) {
-		return elements[y * this.outerWidth + x];
+		return this.platform.getLibrary().byId(getElementId(x, y));
+	}
+
+	public boolean isValidElement(int x, int y) {
+		return this.platform.getLibrary().hasId(getElementId(x, y));
+	}
+
+	public int getElementId(int x, int y) {
+		return (int) (elements[y * this.outerWidth + x]) & 0xFF;
 	}
 
 	public int getColor(int x, int y) {
@@ -97,7 +105,7 @@ public class Board {
 	}
 
 	public void setElement(int x, int y, Element element) {
-		elements[y * this.outerWidth + x] = element;
+		elements[y * this.outerWidth + x] = (byte) element.getId();
 	}
 
 	public void setColor(int x, int y, int color) {

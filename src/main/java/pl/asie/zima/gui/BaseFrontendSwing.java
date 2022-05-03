@@ -22,6 +22,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import pl.asie.libzzt.Element;
 import pl.asie.zima.Version;
+import pl.asie.zima.image.ImageConverterMain;
+import pl.asie.zima.image.gui.ZimaFrontendSwing;
 import pl.asie.zima.util.gui.ImageFileChooser;
 
 import javax.swing.*;
@@ -44,7 +46,8 @@ public class BaseFrontendSwing {
 
     protected BaseFrontendSwing(String name) {
         this.window = new JFrame(Version.getCurrentWindowName(name));
-        this.window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        // TODO: change if toolsMenu is removed
+        this.window.setDefaultCloseOperation((this instanceof ZimaFrontendSwing) ? JFrame.EXIT_ON_CLOSE : JFrame.DISPOSE_ON_CLOSE);
 
         this.mainPanel = new JPanel(new GridBagLayout());
 
@@ -161,6 +164,27 @@ public class BaseFrontendSwing {
                 return null;
             }
         }
+    }
+
+    protected JMenu addHelpMenu() {
+        JMenu helpMenu;
+        JMenuItem changelogItem, aboutItem;
+
+        this.menuBar.add(helpMenu = new JMenu("Help"));
+        helpMenu.add(changelogItem = new JMenuItem("Changelog"));
+        helpMenu.add(aboutItem = new JMenuItem("About"));
+
+        changelogItem.addActionListener(this::onChangelog);
+        aboutItem.addActionListener(this::onAbout);
+
+        return helpMenu;
+    }
+
+    protected void finishWindowInit() {
+        this.window.add(this.mainPanel);
+        this.window.pack();
+        this.window.setMinimumSize(this.window.getSize());
+        this.window.setVisible(true);
     }
 
     //

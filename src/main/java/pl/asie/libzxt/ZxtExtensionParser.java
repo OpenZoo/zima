@@ -25,11 +25,26 @@ import java.io.*;
 
 public class ZxtExtensionParser {
     public ZxtExtensionHeader readHeader(InputStream inputStream) throws IOException, ZxtCannotParseException {
+        return readHeader(inputStream, true);
+    }
+
+    public ZxtExtensionHeader readHeader(InputStream inputStream, boolean failOnMissingIfMarkNotSupported) throws IOException, ZxtCannotParseException {
+        if (inputStream.markSupported()) {
+            inputStream.mark(2);
+        }
+
         LittleEndianDataInputStream input = new LittleEndianDataInputStream(inputStream);
         int magicShort = input.readUnsignedShort();
         ZxtHeaderType type = ZxtHeaderType.byMagic(magicShort);
         if (type == null) {
-            return null;
+            if (inputStream.markSupported()) {
+                inputStream.reset();
+                return null;
+            } else if (failOnMissingIfMarkNotSupported) {
+                throw new ZxtCannotParseException("Invalid ZXT header magic: " + magicShort);
+            } else {
+                return null;
+            }
         }
 
         ZxtExtensionHeader header = new ZxtExtensionHeader(type);

@@ -43,8 +43,10 @@ public class Stat {
 	private Element underElement = null;
 	private int underColor = 0;
 	private String data;
+	@Getter(AccessLevel.PRIVATE)
 	@Setter(AccessLevel.PRIVATE)
 	private OopProgram code;
+	private Boolean codeFailure;
 	private int dataPos;
 	@Getter(AccessLevel.PACKAGE)
 	@Setter(AccessLevel.PACKAGE)
@@ -54,14 +56,23 @@ public class Stat {
 	public void setData(String data) {
 		this.data = data;
 		this.code = null;
+		this.codeFailure = null;
 	}
 
 	public OopProgram getCode(Platform platform) {
 		if (this.boundStat != null) {
 			return this.boundStat.getCode();
 		}
-		if (this.code == null && this.data != null && !this.data.isEmpty()) {
-			this.code = new OopProgram(platform, this.data);
+		if (this.codeFailure != null && this.codeFailure) {
+			return null;
+		}
+		try {
+			if (this.code == null && this.data != null && !this.data.isEmpty()) {
+				this.code = new OopProgram(platform, this.data);
+			}
+		} catch (RuntimeException e) {
+			this.codeFailure = true;
+			throw e;
 		}
 		return this.code;
 	}

@@ -28,9 +28,9 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class OopCommandIf extends OopCommand {
 	private final OopCondition condition;
-	private final OopCommand elseCommand;
+	private final OopCommand trueCommand;
 
 	public List<OopCommand> getChildren() {
-		return elseCommand != null ? List.of(elseCommand) : List.of();
+		return trueCommand != null ? List.of(trueCommand) : List.of();
 	}
 }

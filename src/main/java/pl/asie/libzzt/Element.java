@@ -56,6 +56,8 @@ public final class Element {
     private final String name = "";
     @Builder.Default
     private final int id = -1;
+    @Builder.Default
+    private final ElementDrawFunction drawFunction = null;
     private String oopName;
 
     public String getOopName() {

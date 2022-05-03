@@ -46,15 +46,20 @@ public class SimpleCanvas extends JComponent {
 		return this.image == null ? 0 : this.image.getHeight();
 	}
 
+	protected void paintOverlay(Graphics2D g2d, int xPos, int yPos, float xScale, float yScale) {
+
+	}
+
 	@Override
 	public void paintComponent(Graphics graphics) {
 		if (image != null) {
-			Dimension size = this.getParent().getSize();
+			Dimension size = allowScaling ? this.getParent().getSize() : this.getSize();
+			Graphics2D g2d = (Graphics2D) graphics.create();
+			g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 			if (image.getWidth() == size.width && image.getHeight() == size.height) {
-				graphics.drawImage(image, 0, 0, null);
+				g2d.drawImage(image, 0, 0, size.width, size.height, null);
+				paintOverlay(g2d, 0, 0, 1.0f, 1.0f);
 			} else {
-				Graphics2D g2d = (Graphics2D) graphics.create();
-				g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 				int xPos = (size.width - imageWidth()) / 2;
 				int yPos = (size.height - imageHeight()) / 2;
 				if (scrollable) {
@@ -64,18 +69,20 @@ public class SimpleCanvas extends JComponent {
 				if (!allowScaling || ((xPos >= 0) && (yPos >= 0))) {
 					// centered
 					g2d.drawImage(image, xPos, yPos, xPos + imageWidth(), yPos + imageHeight(), 0, 0, image.getWidth(), image.getHeight(), null);
+					paintOverlay(g2d, xPos, yPos, imageWidth() / (float)this.image.getWidth(), imageHeight() / (float)this.image.getHeight());
 				} else {
 					// scaled
 					// TODO: preserve aspect ratio
 					g2d.drawImage(image, 0, 0, size.width, size.height, 0, 0, image.getWidth(), image.getHeight(), null);
+					paintOverlay(g2d, 0, 0, size.width / (float)this.image.getWidth(), size.height / (float)this.image.getHeight());
 				}
-				g2d.dispose();
 			}
+			g2d.dispose();
 		}
 	}
 
 	public void updateDimensions() {
-		Dimension parentDim = this.getParent().getSize();
+		Dimension parentDim = allowScaling ? this.getParent().getSize() : this.getSize();
 		Dimension dimension = (this.image == null || allowScaling) ? parentDim : new Dimension(imageWidth(), imageHeight());
 		if (dimension.width < parentDim.width && dimension.height < parentDim.height) {
 			dimension = parentDim;

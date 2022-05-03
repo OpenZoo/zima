@@ -16,18 +16,21 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.zima.util;
+package pl.asie.zima.worldcheck;
 
-import lombok.Data;
-import lombok.With;
+import pl.asie.zima.util.Pair;
 
-@Data
-@With
-public final class Pair<A, B> {
-	private final A first;
-	private final B second;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.stream.Stream;
 
-	public static <A, B> Pair<A, B> of(A first, B second) {
-		return new Pair<>(first, second);
+public interface LinterTrackable {
+	List<Pair<String, SortedSet<ElementLocation>>> getTrackingLocations();
+
+	default Stream<ElementLocation> getAllLocations() {
+		return getTrackingLocations().stream()
+				.flatMap(p -> p.getSecond().stream())
+				.sorted().distinct();
 	}
 }

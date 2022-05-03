@@ -28,8 +28,12 @@ public final class OopUtils {
 
 	}
 
+	public static <T extends ChildrenIterable<T>> Stream<T> allChildren(T c) {
+		return Stream.concat(Stream.of(c), allChildren(c.getChildren().stream()));
+	}
+
 	public static <T extends ChildrenIterable<T>> Stream<T> allChildren(Stream<T> commandStream) {
-		return commandStream.flatMap(c -> Stream.concat(Stream.of(c), allChildren(c.getChildren().stream())));
+		return commandStream.flatMap(OopUtils::allChildren);
 	}
 
 	private static String stripChars(String value, boolean preserveUnderscores) {

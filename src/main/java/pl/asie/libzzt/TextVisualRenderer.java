@@ -48,22 +48,34 @@ public class TextVisualRenderer {
 
 	public BufferedImage render(Board board, boolean preview) {
 		return render(board.getWidth(), board.getHeight(), (x, y) -> {
-			Element element = board.getElement(x, y);
+			Element element = board.getElement(x + 1, y + 1);
+			if (element.getDrawFunction() != null) {
+				ElementDrawFunction.Result result = element.getDrawFunction().draw(board, x + 1, y + 1);
+				if (result != null && result.getCharacter() >= 0) {
+					return result.getCharacter();
+				}
+			}
 			if (element == board.getPlatform().getLibrary().getEmpty()) {
 				return 32;
 			} else if (element.isText()) {
-				return board.getColor(x, y);
+				return board.getColor(x + 1, y + 1);
 			} else {
 				return element.getCharacter();
 			}
 		}, applyPreviewToColor((x, y) -> {
-			Element element = board.getElement(x, y);
+			Element element = board.getElement(x + 1, y + 1);
+			if (element.getDrawFunction() != null) {
+				ElementDrawFunction.Result result = element.getDrawFunction().draw(board, x + 1, y + 1);
+				if (result != null && result.getColor() >= 0) {
+					return result.getColor();
+				}
+			}
 			if (element == board.getPlatform().getLibrary().getEmpty()) {
 				return 0x0F;
 			} else if (element.isText()) {
 				return element.getColor();
 			} else {
-				return board.getColor(x, y);
+				return board.getColor(x + 1, y + 1);
 			}
 		}, preview));
 	}

@@ -35,6 +35,7 @@ import pl.asie.zima.worldcheck.ElementLocation;
 import pl.asie.zima.worldcheck.LinterCheck;
 import pl.asie.zima.worldcheck.LinterLabel;
 import pl.asie.zima.worldcheck.LinterMessage;
+import pl.asie.zima.worldcheck.LinterWorldHolder;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -74,10 +75,7 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 		}
 	}
 
-	static class WorldHolder {
-		private ZxtExtensionHeader zxtHeader;
-		private World world;
-		private LinterCheck linterCheck;
+	static class WorldHolder extends LinterWorldHolder {
 		private final WorldCheckTreeCellRenderer worldTreeCellRenderer;
 		private final JTree uiLocationTree;
 		private final JScrollPane uiLocationTreePane;
@@ -325,13 +323,14 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 			if (root != null) {
 				for (int i = 0; i < this.uiLocationTree.getModel().getChildCount(root); i++) {
 					Object child = this.uiLocationTree.getModel().getChild(root, i);
-					if (i == this.world.getCurrentBoard()) {
+					/* if (i == this.world.getCurrentBoard()) {
 						this.uiLocationTree.expandPath(new TreePath(child));
-					} else {
+					} else { */
 						this.uiLocationTree.collapsePath(new TreePath(child));
-					}
+					// }
 				}
-				changeLocationTo(ElementLocation.board(this.world, this.world.getCurrentBoard()));
+				// changeLocationTo(ElementLocation.board(this.world, this.world.getCurrentBoard()));
+				changeLocationTo(ElementLocation.world(this.world));
 			} else {
 				changeLocationTo(null);
 			}
@@ -454,8 +453,8 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 	}
 
 	protected void reloadFields() {
-		this.compareWorldItem.setEnabled(this.world.world != null);
-		if (this.world2.world != null) {
+		this.compareWorldItem.setEnabled(this.world.getWorld() != null);
+		if (this.world2.getWorld() != null) {
 			appendCompareView();
 		}
 
@@ -475,22 +474,11 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 				new FileNameExtensionFilter("ZXT World", "zxt")
 		);
 		if (file != null) {
-			try (FileInputStream fis = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(fis)) {
-				world.zxtHeader = zxtParser.readHeader(bis);
-				if (world.zxtHeader != null) {
-					if (world.zxtHeader.getBlocks().stream().anyMatch(block -> (block.getFlags() & (ZxtFlag.PARSING_MUST | ZxtFlag.READING_MUST | ZxtFlag.WRITING_MUST | ZxtFlag.PLAYING_MUST)) != 0)) {
-						JOptionPane.showMessageDialog(this.window, "Could not open file - unsupported ZXT extensions!");
-						return;
-					} else if (world.zxtHeader.getBlocks().stream().anyMatch(block -> (block.getFlags() & (ZxtFlag.EDITING_SHOULD)) != 0)) {
-						JOptionPane.showMessageDialog(this.window, "Warning - unsupported ZXT extensions recommended in editor!");
-					}
+			try {
+				world.read(file);
+				if (world.isShowZxtWarning()) {
+					JOptionPane.showMessageDialog(this.window, "Warning - unsupported ZXT extensions recommended in editor!");
 				}
-
-				try (ZInputStream zis = new ZInputStream(bis, Platform.ZZT)) {
-					world.world = new World(Platform.ZZT);
-					world.world.readZ(zis);
-				}
-
 			} catch (Exception e) {
 				e.printStackTrace();
 				JOptionPane.showMessageDialog(this.window, "Error opening file: " + e.getMessage());
@@ -501,24 +489,23 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 	}
 
 	public void onOpenSecondWorld(ActionEvent event) {
-		if (world.zxtHeader != null) {
+		/* if (world.zxtHeader != null) {
 			JOptionPane.showMessageDialog(this.window, "Comparing ZXT worlds not supported!");
 			return;
-		}
+		} */
 		world2.clearWorld();
 
 		File file = showLoadDialog("world",
-				new FileNameExtensionFilter("ZZT World", "zzt")
+				new FileNameExtensionFilter("ZZT World", "zzt"),
 				/* new FileNameExtensionFilter("Super ZZT World", "szt"), TODO */
-				/* new FileNameExtensionFilter("ZXT World", "zxt") TODO */
+				new FileNameExtensionFilter("ZXT World", "zxt")
 		);
 		if (file != null) {
-			try (FileInputStream fis = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(fis)) {
-				try (ZInputStream zis = new ZInputStream(bis, Platform.ZZT)) {
-					world2.world = new World(Platform.ZZT);
-					world2.world.readZ(zis);
+			try {
+				world2.read(file);
+				if (world2.isShowZxtWarning()) {
+					JOptionPane.showMessageDialog(this.window, "Warning - unsupported ZXT extensions recommended in editor!");
 				}
-
 			} catch (Exception e) {
 				e.printStackTrace();
 				JOptionPane.showMessageDialog(this.window, "Error opening file: " + e.getMessage());

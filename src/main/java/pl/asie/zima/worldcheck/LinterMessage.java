@@ -71,11 +71,18 @@ public class LinterMessage implements Comparable<LinterMessage>, ElementLocation
 
 	@Override
 	public String toString() {
+		return toString(false);
+	}
+
+	public String toString(boolean showType) {
 		if (getSeverity() == Severity.NONE) {
 			return text;
 		}
 		StringBuilder sb = new StringBuilder();
 		sb.append(getSeverity().name());
+		if (showType) {
+			sb.append(" ").append(getType().name());
+		}
 		if (location != null) {
 			sb.append(" [");
 			if (location.getBoardId() != null) {

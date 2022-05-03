@@ -45,10 +45,11 @@ public class LinterMessageListRenderer extends DefaultListCellRenderer {
 	public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
 		LinterMessage message = (LinterMessage) value;
 		JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-		LinterMessage.Severity renderSeverity = (ignoreFrom >= 0 && index >= ignoreFrom) ? LinterMessage.Severity.NONE : message.getSeverity();
-		var style = SEVERITY_FONT_MAP.get(renderSeverity);
+		LinterMessage.Severity renderSeverity = message.getSeverity();
+		boolean renderIgnored = (ignoreFrom >= 0 && index >= ignoreFrom);
+				var style = SEVERITY_FONT_MAP.get(renderSeverity);
 		label.setFont(style.getFirst());
-		label.setForeground(style.getSecond());
+		label.setForeground(renderIgnored ? SEVERITY_FONT_MAP.get(LinterMessage.Severity.NONE).getSecond() : style.getSecond());
 		return label;
 	}
 }

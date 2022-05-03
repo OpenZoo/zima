@@ -20,6 +20,7 @@ package pl.asie.zima;
 
 import pl.asie.zima.image.ImageConverterMain;
 import pl.asie.zima.util.MiscUtils;
+import pl.asie.zima.worldcheck.cli.LinterCliPlugin;
 
 import java.util.List;
 
@@ -30,11 +31,10 @@ public class Main {
             // TODO: expose more than image converter
             ImageConverterMain.main(args);
         } else {
-            System.err.println("zima " + Version.getCurrent());
-            System.err.println();
-
             // CLI
-            List<CliPlugin> plugins = List.of();
+            List<CliPlugin> plugins = List.of(
+                    new LinterCliPlugin()
+            );
             for (CliPlugin plugin : plugins) {
                 if (args[0].equals(plugin.getName())) {
                     plugin.run(MiscUtils.shift(args, 1, String[]::new));
@@ -42,6 +42,8 @@ public class Main {
                 }
             }
             // no plugin
+            System.err.println("zima " + Version.getCurrent());
+            System.err.println();
             System.err.println("Usage: <.jar> <plugin-name> <arguments...>");
             System.err.println();
             System.err.println("Available plugins:");

@@ -35,7 +35,6 @@ import pl.asie.zima.worldcheck.ElementLocation;
 import pl.asie.zima.worldcheck.LinterCheck;
 import pl.asie.zima.worldcheck.LinterLabel;
 import pl.asie.zima.worldcheck.LinterMessage;
-import pl.asie.zima.worldcheck.LinterTrackable;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -45,7 +44,6 @@ import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -53,13 +51,10 @@ import java.awt.event.MouseEvent;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public class WorldCheckFrontendSwing extends BaseFrontendSwing {
@@ -91,8 +86,9 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 		private final JList<LinterMessage> uiLinterList;
 		private final LinterMessageListRenderer uiLinterListRenderer;
 		private final JScrollPane uiLinterListPane;
-		private final LinterTrackableTreeHolder flagsTree;
-		private final LinterTrackableTreeHolder labelsTree;
+		private final LinterTrackableTreeHolder uiFlagsTree;
+		private final LinterTrackableTreeHolder uiLabelsTree;
+		private final OopCodePane uiOopCodePane;
 		private final JTabbedPane uiTabListPane;
 		private final BoardCanvas uiCanvas;
 		private ElementLocation currentLocation;
@@ -120,6 +116,7 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 			this.uiTabListPane = new JTabbedPane();
 			this.uiTabListPane.setMinimumSize(new Dimension(480 + 240, 225));
 			this.uiTabListPane.setPreferredSize(new Dimension(480 + 240, 225));
+			this.uiOopCodePane = new OopCodePane();
 
 			this.uiLocationTree.addTreeSelectionListener(tse -> {
 				DefaultMutableTreeNode node = (DefaultMutableTreeNode) this.uiLocationTree.getLastSelectedPathComponent();
@@ -141,14 +138,15 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 				}
 			});
 
-			this.flagsTree = new LinterTrackableTreeHolder("Flags", this::changeLocationTo);
-			this.flagsTree.getTree().setCellRenderer(this.worldTreeCellRenderer);
-			this.labelsTree = new LinterTrackableTreeHolder("Labels", this::changeLocationTo);
-			this.labelsTree.getTree().setCellRenderer(this.worldTreeCellRenderer);
+			this.uiFlagsTree = new LinterTrackableTreeHolder("Flags", this::changeLocationTo);
+			this.uiFlagsTree.getTree().setCellRenderer(this.worldTreeCellRenderer);
+			this.uiLabelsTree = new LinterTrackableTreeHolder("Labels", this::changeLocationTo);
+			this.uiLabelsTree.getTree().setCellRenderer(this.worldTreeCellRenderer);
 
 			this.uiTabListPane.addTab("Linter", this.uiLinterListPane);
-			this.uiTabListPane.addTab("Flags", this.flagsTree.getPane());
-			this.uiTabListPane.addTab("Labels", this.labelsTree.getPane());
+			this.uiTabListPane.addTab("Flags", this.uiFlagsTree.getPane());
+			this.uiTabListPane.addTab("Labels", this.uiLabelsTree.getPane());
+			this.uiTabListPane.addTab("Code", this.uiOopCodePane.getPane());
 		}
 
 		void clearWorld() {
@@ -233,7 +231,7 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 					labelsMap.put(entry.getKey(), entry.getValue().values().stream());
 				}
 			}
-			this.labelsTree.updatePerBoard(this.currentLocation, labelsMap);
+			this.uiLabelsTree.updatePerBoard(this.currentLocation, labelsMap);
 		}
 
 		void onBoardLocationChange() {
@@ -241,7 +239,11 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 			this.uiLinterList.setModel(buildLinterMessageListModel());
 		}
 
-		void onLocationChange() {
+		void onLocationChange(ElementLocation fullLocation) {
+			this.uiOopCodePane.update(fullLocation);
+			if (fullLocation.getStatPosition() != null) {
+				this.uiTabListPane.setSelectedIndex(this.uiTabListPane.indexOfTab("Code"));
+			}
 		}
 
 		void changeLocationTo(ElementLocation location) {
@@ -257,6 +259,7 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 					}
 					onBoardLocationChange();
 				}
+				onLocationChange(location);
 				if (location.getXPos() != null && location.getYPos() != null) {
 					synchronized (uiCanvas) {
 						this.uiCanvas.setHighlights(List.of(location));
@@ -299,7 +302,7 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 			} else {
 				changeLocationTo(null);
 			}
-			this.flagsTree.update(this.linterCheck == null ? null : this.linterCheck.getFlags().getFlags().stream());
+			this.uiFlagsTree.update(this.linterCheck == null ? null : this.linterCheck.getFlags().getFlags().stream());
 		}
 
 		public boolean redraw() {

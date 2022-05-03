@@ -58,7 +58,7 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 
 public class WorldCheckFrontendSwing extends BaseFrontendSwing {
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 	private static final TextVisualData VISUAL_DATA;
 	private static final Toolkit TOOLKIT = Toolkit.getDefaultToolkit();
 
@@ -133,6 +133,10 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 						LinterMessage message = uiLinterList.getModel().getElementAt(index);
 						if (message.getLocation() != null) {
 							changeLocationTo(message.getLocation());
+							if (!message.getRelevantPositions().isEmpty()) {
+								message.getRelevantPositions().forEach(uiOopCodePane::highlight);
+								openCodePane();
+							}
 						}
 					}
 				}
@@ -147,6 +151,11 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 			this.uiTabListPane.addTab("Flags", this.uiFlagsTree.getPane());
 			this.uiTabListPane.addTab("Labels", this.uiLabelsTree.getPane());
 			this.uiTabListPane.addTab("Code", this.uiOopCodePane.getPane());
+		}
+
+		void openCodePane() {
+			uiTabListPane.setSelectedIndex(uiTabListPane.indexOfTab("Code"));
+			// uiOopCodePane.getPane().getVerticalScrollBar().setValue(0);
 		}
 
 		void clearWorld() {
@@ -237,12 +246,13 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 		void onBoardLocationChange() {
 			updateBoardPreview();
 			this.uiLinterList.setModel(buildLinterMessageListModel());
+			this.uiLinterListPane.getVerticalScrollBar().setValue(0);
 		}
 
 		void onLocationChange(ElementLocation fullLocation) {
 			this.uiOopCodePane.update(fullLocation);
 			if (fullLocation.getStatPosition() != null) {
-				this.uiTabListPane.setSelectedIndex(this.uiTabListPane.indexOfTab("Code"));
+				openCodePane();
 			}
 		}
 

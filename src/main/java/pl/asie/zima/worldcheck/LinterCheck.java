@@ -24,18 +24,21 @@ import pl.asie.libzzt.Stat;
 import pl.asie.libzzt.World;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 public class LinterCheck {
 	@Getter
 	private final World world;
 	private final List<LinterMessage> messages;
-	private final SortedSet<LinterMessage> messagesOnePerCommand;
+	private final Map<LinterMessage, LinterMessage> messagesOnePerCommand;
 	@Getter
 	private LinterCheckFlags flags;
 	@Getter
@@ -44,7 +47,7 @@ public class LinterCheck {
 	public LinterCheck(World world) {
 		this.world = world;
 		this.messages = new ArrayList<>();
-		this.messagesOnePerCommand = new TreeSet<>();
+		this.messagesOnePerCommand = new TreeMap<>();
 		generateResults();
 	}
 
@@ -53,7 +56,13 @@ public class LinterCheck {
 		if (lmKey.getLocation().getOopCommand() != null) {
 			lmKey = lmKey.withLocation(lmKey.getLocation().withCommand(null));
 		}
-		messagesOnePerCommand.add(lmKey);
+		messagesOnePerCommand.put(lmKey, lmKey);
+		if (lm.getLocation() != null && lm.getLocation().getStatPosition() != null) {
+			List<Integer> pos = messagesOnePerCommand.get(lmKey).getRelevantPositions();
+			if (!pos.contains(lm.getLocation().getStatPosition())) {
+				pos.add(lm.getLocation().getStatPosition());
+			}
+		}
 		messages.add(lm);
 	}
 
@@ -107,7 +116,7 @@ public class LinterCheck {
 		return Collections.unmodifiableList(messages);
 	}
 
-	public Set<LinterMessage> getMessagesOnePerCommand() {
-		return Collections.unmodifiableSet(messagesOnePerCommand);
+	public Collection<LinterMessage> getMessagesOnePerCommand() {
+		return messagesOnePerCommand.values();
 	}
 }

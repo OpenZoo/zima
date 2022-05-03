@@ -21,6 +21,9 @@ package pl.asie.zima.worldcheck;
 import lombok.Data;
 import lombok.With;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @With
 public class LinterMessage implements Comparable<LinterMessage>, ElementLocationHolder {
@@ -35,6 +38,16 @@ public class LinterMessage implements Comparable<LinterMessage>, ElementLocation
 	private final ElementLocation location;
 	private final LinterMessageType type;
 	private final String text;
+	private final List<Integer> relevantPositions = new ArrayList<>();
+
+	public LinterMessage(ElementLocation location, LinterMessageType type, String text) {
+		this.location = location;
+		this.type = type;
+		this.text = text;
+		if (this.location != null && this.location.getStatPosition() != null) {
+			this.relevantPositions.add(this.location.getStatPosition());
+		}
+	}
 
 	public Severity getSeverity() {
 		return type != null ? type.getSeverity() : Severity.NONE;

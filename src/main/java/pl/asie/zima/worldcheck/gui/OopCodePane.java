@@ -29,6 +29,8 @@ import javax.swing.text.Highlighter;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 public class OopCodePane {
 	@Data
@@ -40,6 +42,7 @@ public class OopCodePane {
 	private final JTextPane textPane;
 	@Getter
 	private final JScrollPane pane;
+	private final TreeMap<Integer, HighlightLocation> positionMapping = new TreeMap<>();
 
 	public OopCodePane() {
 		this.textPane = new JTextPane();
@@ -48,14 +51,35 @@ public class OopCodePane {
 		this.pane = new JScrollPane(this.textPane);
 	}
 
+	public void highlight(Integer codePosition) {
+		if (codePosition == null) {
+			return;
+		}
+
+		HighlightLocation hl = positionMapping.ceilingEntry(codePosition).getValue();
+		if (hl != null) {
+			DefaultHighlighter.DefaultHighlightPainter highlightPainter =
+					new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
+			try {
+				this.textPane.getHighlighter()
+						.addHighlight(hl.start, hl.end, highlightPainter);
+				if (hl.end < this.textPane.getCaretPosition()) {
+					this.textPane.setCaretPosition(hl.end);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
 	public void update(ElementLocation location) {
 		this.textPane.setText("");
 		this.textPane.getHighlighter().removeAllHighlights();
+		this.positionMapping.clear();
 		if (location.getStat() != null && location.getStat().getData() != null) {
 			Stat stat = location.getStat();
 			String[] lines = stat.getData().split("\r");
 			StringBuilder text = new StringBuilder();
-			List<HighlightLocation> highlightLocations = new ArrayList<>();
 
 			int posStart = 0;
 			int posEnd = -1;
@@ -77,27 +101,16 @@ public class OopCodePane {
 						}
 					}
 					textPosEnd = text.length();
-					if (location.getStatPosition() != null) {
-						if (location.getStatPosition() >= posStart && location.getStatPosition() <= posEnd) {
-							highlightLocations.add(new HighlightLocation(textPosStart, textPosEnd));
-						}
-					}
+					positionMapping.put(posEnd - 1, new HighlightLocation(textPosStart, textPosEnd));
 				}
 				text.append('\n');
 				lastLineWasEmpty = line.isEmpty();
 			}
 
 			this.textPane.setText(text.toString());
-			for (HighlightLocation hl : highlightLocations) {
-				DefaultHighlighter.DefaultHighlightPainter highlightPainter =
-						new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
-				try {
-					this.textPane.getHighlighter()
-							.addHighlight(hl.start, hl.end, highlightPainter);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
+			this.textPane.setCaretPosition(textPosEnd);
+
+			highlight(location.getStatPosition());
 		}
 	}
 }

@@ -31,7 +31,9 @@ import pl.asie.libzzt.World;
 import pl.asie.libzzt.oop.OopProgram;
 import pl.asie.libzzt.oop.commands.OopCommand;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
 @Getter

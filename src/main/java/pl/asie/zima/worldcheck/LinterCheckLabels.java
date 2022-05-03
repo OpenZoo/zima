@@ -213,9 +213,9 @@ public class LinterCheckLabels {
 				LinterMessageType.LABEL_ZAPPED_ON_MISSING_TARGET, "Label zapped but nobody received", false);
 		emitMessageForMissingTargets(consumer, LinterLabel::getRestoredAt,
 				LinterMessageType.LABEL_RESTORED_ON_MISSING_TARGET, "Label restored but nobody received", false);
-		emitMessageForEmptyButNotEmpty(consumer,  l -> l.getSentAt().getAt(),
+		/* emitMessageForEmptyButNotEmpty(consumer,  l -> l.getSentAt().getAt(),
 				f -> !f.getPresentAt().isEmpty() && f.getSentAt().getTo().isEmpty(),
-				LinterMessageType.LABEL_SENT_BUT_NOT_RECEIVED, "Label sent but not received", false);
+				LinterMessageType.LABEL_SENT_BUT_NOT_RECEIVED, "Label sent but not received", false); */
 		emitMessageForEmptyButNotEmpty(consumer, LinterLabel::getPresentAt,
 				f -> f.getSentAt().getAt().isEmpty(),
 				LinterMessageType.LABEL_PRESENT_BUT_NOT_SENT, "Label present but never sent", true);

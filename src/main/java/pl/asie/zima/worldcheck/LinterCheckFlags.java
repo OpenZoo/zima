@@ -56,23 +56,23 @@ public class LinterCheckFlags {
 		worldLoc = ElementLocation.world(world);
 		for (String s : world.getFlags()) {
 			addFlagAt(worldLoc, LinterFlag.ActionType.SET, s);
-			ElementLocationStream.commands(worldLoc, true).forEach(el -> {
-				OopCommand c = el.getOopCommand();
-				if (c instanceof OopCommandSet cmd) {
-					addFlagAt(el, LinterFlag.ActionType.SET, cmd.getFlag());
-				} else if (c instanceof OopCommandClear cmd) {
-					addFlagAt(el, LinterFlag.ActionType.CLEAR, cmd.getFlag());
-				} else if (c instanceof OopCommandIf ifCmd) {
-					OopUtils.allChildren(ifCmd.getCondition()).forEach(cond -> {
-						if (cond instanceof OopConditionFlag ifCond) {
-							addFlagAt(el, LinterFlag.ActionType.CHECK, ifCond.getFlag());
-						}
-					});
-				} else if (!c.getFlags().isEmpty()) {
-					new Exception("libzzt/worldcheck mismatch").printStackTrace();
-				}
-			});
 		}
+		ElementLocationStream.commands(worldLoc, true).forEach(el -> {
+			OopCommand c = el.getOopCommand();
+			if (c instanceof OopCommandSet cmd) {
+				addFlagAt(el, LinterFlag.ActionType.SET, cmd.getFlag());
+			} else if (c instanceof OopCommandClear cmd) {
+				addFlagAt(el, LinterFlag.ActionType.CLEAR, cmd.getFlag());
+			} else if (c instanceof OopCommandIf ifCmd) {
+				OopUtils.allChildren(ifCmd.getCondition()).forEach(cond -> {
+					if (cond instanceof OopConditionFlag ifCond) {
+						addFlagAt(el, LinterFlag.ActionType.CHECK, ifCond.getFlag());
+					}
+				});
+			} else if (!c.getFlags().isEmpty()) {
+				new Exception("libzzt/worldcheck mismatch").printStackTrace();
+			}
+		});
 	}
 
 	private void emitMessageForEmptyButNotEmpty(Consumer<LinterMessage> consumer, Consumer<LinterFlag> flagConsumer,

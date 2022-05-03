@@ -21,6 +21,7 @@ package pl.asie.zima.worldcheck.gui;
 import lombok.Getter;
 import lombok.Setter;
 import pl.asie.zima.util.Pair;
+import pl.asie.zima.worldcheck.ElementLocation;
 import pl.asie.zima.worldcheck.LinterMessage;
 
 import javax.swing.*;

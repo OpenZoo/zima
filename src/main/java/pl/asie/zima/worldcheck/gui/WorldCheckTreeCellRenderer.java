@@ -20,7 +20,9 @@ package pl.asie.zima.worldcheck.gui;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.TextVisualRenderer;
 import pl.asie.zima.worldcheck.ElementLocation;
@@ -41,6 +43,9 @@ public class WorldCheckTreeCellRenderer extends DefaultTreeCellRenderer {
 			.maximumSize(4096)
 			.weakValues()
 			.build();
+	@Getter
+	@Setter
+	private ElementLocation boardLocation;
 
 	public void clear() {
 		iconCache.invalidateAll();
@@ -63,22 +68,23 @@ public class WorldCheckTreeCellRenderer extends DefaultTreeCellRenderer {
 	public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
 		JLabel label = (JLabel) super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
 		Object userObject = ((DefaultMutableTreeNode) value).getUserObject();
+		ElementLocation location = null;
 		if (userObject instanceof ElementLocationHolder h) {
-			ElementLocation location = h.getLocation();
-			if (location != null) {
-				try {
-					Optional<ImageIcon> icon = iconCache.get(location, () -> create(location));
-					icon.ifPresent(label::setIcon);
-				} catch (Exception e) {
-					// pass
-				}
-			}
-		} else if (userObject instanceof ElementLocation location) {
+			location = h.getLocation();
+		} else if (userObject instanceof ElementLocation l) {
+			location = l;
+		}
+		label.setFont(label.getFont().deriveFont(Font.PLAIN));
+		if (location != null) {
 			try {
-				Optional<ImageIcon> icon = iconCache.get(location, () -> create(location));
+				final ElementLocation iconLocation = location;
+				Optional<ImageIcon> icon = iconCache.get(location, () -> create(iconLocation));
 				icon.ifPresent(label::setIcon);
 			} catch (Exception e) {
 				// pass
+			}
+			if (boardLocation != null && location.includes(boardLocation))  {
+				label.setFont(label.getFont().deriveFont(Font.BOLD));
 			}
 		}
 		return label;

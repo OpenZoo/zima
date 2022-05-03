@@ -247,6 +247,7 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 			updateBoardPreview();
 			this.uiLinterList.setModel(buildLinterMessageListModel());
 			this.uiLinterListPane.getVerticalScrollBar().setValue(0);
+			this.worldTreeCellRenderer.setBoardLocation(this.currentLocation);
 		}
 
 		void onLocationChange(ElementLocation fullLocation) {

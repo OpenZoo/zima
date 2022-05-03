@@ -33,7 +33,9 @@ import pl.asie.zima.image.ImageConverterMain;
 import pl.asie.zima.util.FileUtils;
 import pl.asie.zima.worldcheck.ElementLocation;
 import pl.asie.zima.worldcheck.LinterCheck;
+import pl.asie.zima.worldcheck.LinterLabel;
 import pl.asie.zima.worldcheck.LinterMessage;
+import pl.asie.zima.worldcheck.LinterTrackable;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -51,8 +53,14 @@ import java.awt.event.MouseEvent;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 	private static final boolean DEBUG = true;
@@ -75,6 +83,7 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 		private ZxtExtensionHeader zxtHeader;
 		private World world;
 		private LinterCheck linterCheck;
+		private final WorldCheckTreeCellRenderer worldTreeCellRenderer;
 		private final JTree uiLocationTree;
 		private final JScrollPane uiLocationTreePane;
 		private final JTree uiInformationTree;
@@ -82,18 +91,25 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 		private final JList<LinterMessage> uiLinterList;
 		private final LinterMessageListRenderer uiLinterListRenderer;
 		private final JScrollPane uiLinterListPane;
+		private final LinterTrackableTreeHolder flagsTree;
+		private final LinterTrackableTreeHolder labelsTree;
+		private final JTabbedPane uiTabListPane;
 		private final BoardCanvas uiCanvas;
 		private ElementLocation currentLocation;
 
 		WorldHolder() {
+			this.worldTreeCellRenderer = new WorldCheckTreeCellRenderer(VISUAL_DATA);
 			this.uiCanvas = new BoardCanvas(VISUAL_DATA);
+
 			this.uiCanvas.setMinimumSize(new Dimension(480, 350));
 			this.uiCanvas.setPreferredSize(new Dimension(480, 350));
 			this.uiLocationTree = new JTree();
+			this.uiLocationTree.setCellRenderer(this.worldTreeCellRenderer);
 			this.uiLocationTreePane = new JScrollPane(this.uiLocationTree);
 			this.uiLocationTreePane.setMinimumSize(new Dimension(240, 350));
 			this.uiLocationTreePane.setPreferredSize(new Dimension(240, 350));
 			this.uiInformationTree = new JTree();
+			this.uiInformationTree.setCellRenderer(this.worldTreeCellRenderer);
 			this.uiInformationTreePane = new JScrollPane(this.uiInformationTree);
 			this.uiInformationTreePane.setMinimumSize(new Dimension(240, 225));
 			this.uiInformationTreePane.setPreferredSize(new Dimension(240, 225));
@@ -101,8 +117,9 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 			this.uiLinterListRenderer = new LinterMessageListRenderer();
 			this.uiLinterList.setCellRenderer(this.uiLinterListRenderer);
 			this.uiLinterListPane = new JScrollPane(this.uiLinterList);
-			this.uiLinterListPane.setMinimumSize(new Dimension(480, 225));
-			this.uiLinterListPane.setPreferredSize(new Dimension(480, 225));
+			this.uiTabListPane = new JTabbedPane();
+			this.uiTabListPane.setMinimumSize(new Dimension(480 + 240, 225));
+			this.uiTabListPane.setPreferredSize(new Dimension(480 + 240, 225));
 
 			this.uiLocationTree.addTreeSelectionListener(tse -> {
 				DefaultMutableTreeNode node = (DefaultMutableTreeNode) this.uiLocationTree.getLastSelectedPathComponent();
@@ -119,11 +136,19 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 						LinterMessage message = uiLinterList.getModel().getElementAt(index);
 						if (message.getLocation() != null) {
 							changeLocationTo(message.getLocation());
-							onLocationChange();
 						}
 					}
 				}
 			});
+
+			this.flagsTree = new LinterTrackableTreeHolder("Flags", this::changeLocationTo);
+			this.flagsTree.getTree().setCellRenderer(this.worldTreeCellRenderer);
+			this.labelsTree = new LinterTrackableTreeHolder("Labels", this::changeLocationTo);
+			this.labelsTree.getTree().setCellRenderer(this.worldTreeCellRenderer);
+
+			this.uiTabListPane.addTab("Linter", this.uiLinterListPane);
+			this.uiTabListPane.addTab("Flags", this.flagsTree.getPane());
+			this.uiTabListPane.addTab("Labels", this.labelsTree.getPane());
 		}
 
 		void clearWorld() {
@@ -199,30 +224,54 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 			}
 		}
 
-		void onLocationChange() {
-			updateBoardPreview();
+		void onWorldLocationChange() {
 			this.uiInformationTree.setModel(buildInformationTreeModel());
+
+			SortedMap<Integer, Stream<LinterLabel>> labelsMap = new TreeMap<>();
+			if (this.linterCheck != null) {
+				for (var entry : this.linterCheck.getLabels().getLabels().entrySet()) {
+					labelsMap.put(entry.getKey(), entry.getValue().values().stream());
+				}
+			}
+			this.labelsTree.updatePerBoard(this.currentLocation, labelsMap);
+		}
+
+		void onBoardLocationChange() {
+			updateBoardPreview();
 			this.uiLinterList.setModel(buildLinterMessageListModel());
 		}
 
+		void onLocationChange() {
+		}
+
 		void changeLocationTo(ElementLocation location) {
-			ElementLocation boardLocation = location.getBoardId() != null
-					? ElementLocation.board(location.getWorld(), location.getBoardId())
-					: ElementLocation.world(location.getWorld());
-			if (!boardLocation.equals(this.currentLocation)) {
-				this.currentLocation = boardLocation;
-				onLocationChange();
-			}
-			if (location.getXPos() != null && location.getYPos() != null) {
-				synchronized (uiCanvas) {
-					this.uiCanvas.setHighlights(List.of(location));
-					this.uiCanvas.repaint();
+			if (location != null) {
+				ElementLocation boardLocation = location.getBoardId() != null
+						? ElementLocation.board(location.getWorld(), location.getBoardId())
+						: ElementLocation.world(location.getWorld());
+				if (!boardLocation.equals(this.currentLocation)) {
+					boolean worldChanged = this.currentLocation == null || !Objects.equals(boardLocation.getWorld(), this.currentLocation.getWorld());
+					this.currentLocation = boardLocation;
+					if (worldChanged) {
+						onWorldLocationChange();
+					}
+					onBoardLocationChange();
 				}
-			}
-			if (DEBUG) {
-				if (location.getProgram() != null) {
-					System.out.println(location.getProgram());
+				if (location.getXPos() != null && location.getYPos() != null) {
+					synchronized (uiCanvas) {
+						this.uiCanvas.setHighlights(List.of(location));
+						this.uiCanvas.repaint();
+					}
 				}
+				if (DEBUG) {
+					if (location.getProgram() != null) {
+						System.out.println(location.getProgram());
+					}
+				}
+			} else {
+				onWorldLocationChange();
+				onBoardLocationChange();
+				this.currentLocation = null;
 			}
 		}
 
@@ -246,11 +295,11 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 						this.uiLocationTree.collapsePath(new TreePath(child));
 					}
 				}
-				this.currentLocation = ElementLocation.board(this.world, this.world.getCurrentBoard());
+				changeLocationTo(ElementLocation.board(this.world, this.world.getCurrentBoard()));
 			} else {
-				this.currentLocation = null;
+				changeLocationTo(null);
 			}
-			onLocationChange();
+			this.flagsTree.update(this.linterCheck == null ? null : this.linterCheck.getFlags().getFlags().stream());
 		}
 
 		public boolean redraw() {
@@ -289,6 +338,7 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 		addHelpMenu();
 
 		{
+			world.uiTabListPane.setTabPlacement(JTabbedPane.LEFT);
 			GridBagConstraints gbc = new GridBagConstraints();
 
 			gbc.gridwidth = 1;
@@ -307,11 +357,13 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 			gbc.gridheight = GridBagConstraints.REMAINDER;
 			gbc.weighty = 1.0;
 			gbc.gridx = 0;
-			gbc.weightx = 0.4f;
+/*			gbc.weightx = 0.4f;
 			this.mainPanel.add(this.world.uiInformationTreePane, gbc);
 			gbc.gridx = 1;
-			gbc.weightx = 0.6f;
-			this.mainPanel.add(this.world.uiLinterListPane, gbc);
+			gbc.weightx = 0.6f; */
+			gbc.weightx = 1.0f;
+			gbc.gridwidth = 2;
+			this.mainPanel.add(this.world.uiTabListPane, gbc);
 		}
 
 		reloadFields();
@@ -329,6 +381,8 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 
 	protected void appendCompareView() {
 		if (!appendedCompareView) {
+			world.uiTabListPane.setTabPlacement(JTabbedPane.LEFT);
+			world2.uiTabListPane.setTabPlacement(JTabbedPane.RIGHT);
 			GridBagConstraints gbc = new GridBagConstraints();
 
 			gbc.gridwidth = 1;
@@ -346,12 +400,15 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 			gbc.gridy = 1;
 			gbc.gridheight = GridBagConstraints.REMAINDER;
 			gbc.weighty = 1.0;
-			gbc.gridx = 3;
+/* 			gbc.gridx = 3;
 			gbc.weightx = 0.4f;
 			this.mainPanel.add(this.world2.uiInformationTreePane, gbc);
 			gbc.gridx = 2;
-			gbc.weightx = 0.6f;
-			this.mainPanel.add(this.world2.uiLinterListPane, gbc);
+			gbc.weightx = 0.6f; */
+			gbc.weightx = 1.0f;
+			gbc.gridwidth = 2;
+			gbc.gridx = 2;
+			this.mainPanel.add(this.world2.uiTabListPane, gbc);
 
 			this.window.pack();
 			this.window.setMinimumSize(this.window.getSize());

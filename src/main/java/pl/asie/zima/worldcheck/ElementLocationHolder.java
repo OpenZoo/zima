@@ -18,21 +18,6 @@
  */
 package pl.asie.zima.worldcheck;
 
-import pl.asie.zima.util.Pair;
-
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.stream.Stream;
-
-public interface LinterTrackable {
-	String getName();
-
-	List<Pair<String, SortedSet<ElementLocation>>> getTrackingLocations();
-
-	default Stream<ElementLocation> getAllLocations() {
-		return getTrackingLocations().stream()
-				.flatMap(p -> p.getSecond().stream())
-				.sorted().distinct();
-	}
+public interface ElementLocationHolder {
+	ElementLocation getLocation();
 }

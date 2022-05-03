@@ -36,7 +36,9 @@ public class LinterCheck {
 	private final World world;
 	private final List<LinterMessage> messages;
 	private final SortedSet<LinterMessage> messagesOnePerCommand;
+	@Getter
 	private LinterCheckFlags flags;
+	@Getter
 	private LinterCheckLabels labels;
 
 	public LinterCheck(World world) {

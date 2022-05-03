@@ -60,7 +60,6 @@ public class LinterFlag implements LinterTrackable {
 		return List.of(
 				Pair.of("Set at", setAt),
 				Pair.of("Cleared at", clearedAt),
-				Pair.of("Changed at", changedAt),
 				Pair.of("Checked at", checkedAt)
 		);
 	}

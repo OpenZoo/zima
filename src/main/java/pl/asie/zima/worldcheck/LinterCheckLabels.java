@@ -18,6 +18,7 @@
  */
 package pl.asie.zima.worldcheck;
 
+import lombok.Getter;
 import pl.asie.libzzt.Board;
 import pl.asie.libzzt.World;
 import pl.asie.libzzt.oop.OopLabelTarget;
@@ -47,6 +48,7 @@ import java.util.stream.Stream;
 public class LinterCheckLabels {
 	private static final Set<String> PRESET_TARGETS = Set.of("", "SELF", "OTHERS", "ALL");
 	private static final Set<String> PRESET_LABELS = Set.of("RESTART", "SHOT", "ENERGIZE", "THUD", "TOUCH", "BOMBED");
+	@Getter
 	private final Map<Integer, SortedMap<String, LinterLabel>> labels = new HashMap<>();
 	private final ElementLocation worldLoc;
 

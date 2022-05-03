@@ -23,7 +23,7 @@ import lombok.With;
 
 @Data
 @With
-public class LinterMessage implements Comparable<LinterMessage> {
+public class LinterMessage implements Comparable<LinterMessage>, ElementLocationHolder {
 	public enum Severity {
 		ERROR, // fatal parsing/code errors
 		WARNING, // these are probably wrong

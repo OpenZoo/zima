@@ -47,10 +47,14 @@ public class TextVisualRenderer {
 	}
 
 	public BufferedImage render(Board board, boolean preview) {
-		return render(board.getWidth(), board.getHeight(), (x, y) -> {
-			Element element = board.getElement(x + 1, y + 1);
+		return render(board, preview, 1, 1, board.getWidth(), board.getHeight());
+	}
+
+	public BufferedImage render(Board board, boolean preview, int xOfs, int yOfs, int width, int height) {
+		return render(width, height, (x, y) -> {
+			Element element = board.getElement(x + xOfs, y + yOfs);
 			if (element.getDrawFunction() != null) {
-				ElementDrawFunction.Result result = element.getDrawFunction().draw(board, x + 1, y + 1);
+				ElementDrawFunction.Result result = element.getDrawFunction().draw(board, x + xOfs, y + yOfs);
 				if (result != null && result.getCharacter() >= 0) {
 					return result.getCharacter();
 				}
@@ -58,14 +62,14 @@ public class TextVisualRenderer {
 			if (element == board.getPlatform().getLibrary().getEmpty()) {
 				return 32;
 			} else if (element.isText()) {
-				return board.getColor(x + 1, y + 1);
+				return board.getColor(x + xOfs, y + yOfs);
 			} else {
 				return element.getCharacter();
 			}
 		}, applyPreviewToColor((x, y) -> {
-			Element element = board.getElement(x + 1, y + 1);
+			Element element = board.getElement(x + xOfs, y + yOfs);
 			if (element.getDrawFunction() != null) {
-				ElementDrawFunction.Result result = element.getDrawFunction().draw(board, x + 1, y + 1);
+				ElementDrawFunction.Result result = element.getDrawFunction().draw(board, x + xOfs, y + yOfs);
 				if (result != null && result.getColor() >= 0) {
 					return result.getColor();
 				}
@@ -75,7 +79,7 @@ public class TextVisualRenderer {
 			} else if (element.isText()) {
 				return element.getColor();
 			} else {
-				return board.getColor(x + 1, y + 1);
+				return board.getColor(x + xOfs, y + yOfs);
 			}
 		}, preview));
 	}

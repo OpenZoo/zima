@@ -31,8 +31,11 @@ public class OopCommandGive extends OopCommand {
 	private final OopCounterType counterType;
 	private final int amount;
 	private final OopCommand elseCommand;
-
 	public List<OopCommand> getChildren() {
 		return elseCommand != null ? List.of(elseCommand) : List.of();
+	}
+
+	public boolean isTake() {
+		return this.amount < 0;
 	}
 }

@@ -20,6 +20,7 @@ package pl.asie.libzzt.oop.commands;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import pl.asie.libzzt.oop.OopLabelTarget;
 
 import java.util.List;
 
@@ -34,6 +35,7 @@ public class OopCommandTextLine extends OopCommand {
 	}
 
 	private final Type type;
-	private final String destination;
+	private final OopLabelTarget destination;
+	private final String externalDestination;
 	private final String message;
 }

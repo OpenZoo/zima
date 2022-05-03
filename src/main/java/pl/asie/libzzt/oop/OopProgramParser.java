@@ -19,6 +19,7 @@
 package pl.asie.libzzt.oop;
 
 import lombok.RequiredArgsConstructor;
+import pl.asie.libzzt.Element;
 import pl.asie.libzzt.Platform;
 import pl.asie.libzzt.oop.commands.OopCommand;
 import pl.asie.libzzt.oop.commands.OopCommandBecome;
@@ -39,7 +40,6 @@ import pl.asie.libzzt.oop.commands.OopCommandIdle;
 import pl.asie.libzzt.oop.commands.OopCommandIf;
 import pl.asie.libzzt.oop.commands.OopCommandLabel;
 import pl.asie.libzzt.oop.commands.OopCommandLock;
-import pl.asie.libzzt.oop.commands.OopCommandNull;
 import pl.asie.libzzt.oop.commands.OopCommandPlay;
 import pl.asie.libzzt.oop.commands.OopCommandPut;
 import pl.asie.libzzt.oop.commands.OopCommandRestart;
@@ -69,6 +69,9 @@ import pl.asie.libzzt.oop.directions.OopDirectionFlow;
 import pl.asie.libzzt.oop.directions.OopDirectionIdle;
 import pl.asie.libzzt.oop.directions.OopDirectionNorth;
 import pl.asie.libzzt.oop.directions.OopDirectionOpp;
+import pl.asie.libzzt.oop.directions.OopDirectionRnd;
+import pl.asie.libzzt.oop.directions.OopDirectionRndne;
+import pl.asie.libzzt.oop.directions.OopDirectionRndns;
 import pl.asie.libzzt.oop.directions.OopDirectionRndp;
 import pl.asie.libzzt.oop.directions.OopDirectionSeek;
 import pl.asie.libzzt.oop.directions.OopDirectionSouth;
@@ -92,6 +95,14 @@ public class OopProgramParser {
 	private boolean lineFinished;
 	private int lastPosition;
 
+	private static int upCase(int c) {
+		if (c >= 'a' && c <= 'z') {
+			return c - 32;
+		} else {
+			return c;
+		}
+	}
+
 	private void readChar() {
 		if (position >= 0 && position < data.length()) {
 			oopChar = data.charAt(position++);
@@ -106,12 +117,12 @@ public class OopProgramParser {
 		while (oopChar == ' ') {
 			readChar();
 		}
-		oopChar = OopUtils.upCase(oopChar);
+		oopChar = upCase(oopChar);
 		if (oopChar < '0' || oopChar > '9') {
 			while ((oopChar >= 'A' && oopChar <= 'Z') || oopChar == ':' || (oopChar >= '0' && oopChar <= '9') || oopChar == '_') {
 				s.appendCodePoint(oopChar);
 				readChar();
-				oopChar = OopUtils.upCase(oopChar);
+				oopChar = upCase(oopChar);
 			}
 		}
 		oopWord = s.toString();
@@ -127,11 +138,11 @@ public class OopProgramParser {
 			readChar();
 		}
 
-		oopChar = OopUtils.upCase(oopChar);
+		oopChar = upCase(oopChar);
 		while (oopChar >= '0' && oopChar <= '9') {
 			s.appendCodePoint(oopChar);
 			readChar();
-			oopChar = OopUtils.upCase(oopChar);
+			oopChar = upCase(oopChar);
 		}
 
 		if (position > 0) {
@@ -181,7 +192,11 @@ public class OopProgramParser {
 			readWord();
 		}
 
-		return new OopTile(platform.getLibrary().byInternalName(oopWord), color);
+		Element element = Platform.ZZT.getLibrary().byOopTokenName(oopWord);
+		if (element == null) {
+			throw new OopParseException(this, "Bad object kind: " + oopWord);
+		}
+		return new OopTile(element, color);
 	}
 
 	private OopCondition parseCondition() throws OopParseException {
@@ -220,11 +235,11 @@ public class OopProgramParser {
 		} else if ("FLOW".equals(oopWord)) {
 			return new OopDirectionFlow();
 		} else if ("RND".equals(oopWord)) {
-			return new OopDirectionFlow();
+			return new OopDirectionRnd();
 		} else if ("RNDNS".equals(oopWord)) {
-			return new OopDirectionFlow();
+			return new OopDirectionRndns();
 		} else if ("RNDNE".equals(oopWord)) {
-			return new OopDirectionFlow();
+			return new OopDirectionRndne();
 		} else if ("CW".equals(oopWord)) {
 			return new OopDirectionCw(parseDirection());
 		} else if ("CCW".equals(oopWord)) {
@@ -240,7 +255,7 @@ public class OopProgramParser {
 
 	private OopCommand readCommand() throws OopParseException {
 		readWord();
-		if ("THEN".equals(oopWord)) {
+		while ("THEN".equals(oopWord)) {
 			readWord();
 		}
 		if (oopWord.isEmpty()) {
@@ -265,11 +280,12 @@ public class OopProgramParser {
 		} else if ("THROWSTAR".equals(oopWord)) {
 			return new OopCommandThrowstar(parseDirection());
 		} else if ("GIVE".equals(oopWord) || "TAKE".equals(oopWord)) {
+			String cmdName = oopWord;
 			readWord();
 			try {
 				OopCounterType type = OopCounterType.valueOf(oopWord);
 				readValue();
-				if ("TAKE".equals(oopWord)) {
+				if ("TAKE".equals(cmdName)) {
 					return new OopCommandGive(type, -oopValue, readCommand());
 				} else {
 					return new OopCommandGive(type, oopValue, readCommand());
@@ -330,16 +346,16 @@ public class OopProgramParser {
 
 	private OopCommandTextLine parseTextLine(String s) {
 		if (s.startsWith("$")) {
-			return new OopCommandTextLine(OopCommandTextLine.Type.CENTERED, null, s.substring(1));
+			return new OopCommandTextLine(OopCommandTextLine.Type.CENTERED, null, null, s.substring(1));
 		} else if (s.startsWith("!")) {
 			String[] split = s.substring(1).split(";", 2);
 			if (split[0].startsWith("-")) {
-				return new OopCommandTextLine(OopCommandTextLine.Type.EXTERNAL_HYPERLINK, split[0].substring(1), split[1]);
+				return new OopCommandTextLine(OopCommandTextLine.Type.EXTERNAL_HYPERLINK, null, split[0].substring(1), split[1]);
 			} else {
-				return new OopCommandTextLine(OopCommandTextLine.Type.HYPERLINK, split[0], split[1]);
+				return new OopCommandTextLine(OopCommandTextLine.Type.HYPERLINK, new OopLabelTarget(split[0]), null, split[1]);
 			}
 		} else {
-			return new OopCommandTextLine(OopCommandTextLine.Type.REGULAR, null, s);
+			return new OopCommandTextLine(OopCommandTextLine.Type.REGULAR, null, null, s);
 		}
 	}
 
@@ -363,12 +379,15 @@ public class OopProgramParser {
 				boolean zapped = oopChar == '\'';
 				String s = readLineToEnd();
 				OopCommand cmd = null;
+				boolean restoreFindStringVisible = !s.endsWith(" ");
+				while (s.endsWith(" ")) {
+					s = s.substring(0, s.length() - 1);
+				}
 				if (WORD_PATTERN.matcher(s).find() && !s.startsWith(":")) {
-					boolean restoreFindStringVisible = false;
 					int lastPosition = position;
 					readChar();
-					oopChar = OopUtils.upCase(oopChar);
-					restoreFindStringVisible = !((oopChar >= 'A' && oopChar <= 'Z') || (oopChar == '_'));
+					oopChar = upCase(oopChar);
+					restoreFindStringVisible &= !((oopChar >= 'A' && oopChar <= 'Z') || (oopChar == '_'));
 					position = lastPosition;
 					cmd = new OopCommandLabel(s, zapped, restoreFindStringVisible);
 				} else if (zapped) {
@@ -398,7 +417,8 @@ public class OopProgramParser {
 				cmd.setPosition(lastPosition);
 				program.commands.add(cmd);
 			} else if (oopChar == 0) {
-				OopCommand cmd = new OopCommandNull();
+				// TODO: Formally different from #END (doesn't change position), but does it matter?
+				OopCommand cmd = new OopCommandEnd();
 				cmd.setPosition(lastPosition);
 				program.commands.add(cmd);
 			} else {

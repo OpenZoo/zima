@@ -26,11 +26,15 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 public class ZOutputStream extends FilterOutputStream {
+
+	@Getter
+	private final Platform platform;
 	@Getter
 	private int position = 0;
 
-	public ZOutputStream(OutputStream out) {
+	public ZOutputStream(OutputStream out, Platform platform) {
 		super(out);
+		this.platform = platform;
 	}
 
 	@Override

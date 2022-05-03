@@ -66,12 +66,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-@Getter
 @EqualsAndHashCode
 @ToString
 public class OopProgram {
+	@Getter
 	String windowName;
+	@Getter
 	String name;
+	@Getter
 	List<OopCommand> commands = new ArrayList<>();
 
 	public OopProgram(Platform platform, String data) throws OopParseException {

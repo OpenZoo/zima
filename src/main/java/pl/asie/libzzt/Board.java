@@ -147,7 +147,7 @@ public class Board {
 			throw new IOException("Could not read all board bytes: read " + dataRead + " bytes, expected " + boardSize + " bytes");
 		}
 
-		try (ByteArrayInputStream byteStream = new ByteArrayInputStream(data); ZInputStream stream = new ZInputStream(byteStream)) {
+		try (ByteArrayInputStream byteStream = new ByteArrayInputStream(data); ZInputStream stream = new ZInputStream(byteStream, inStream.getPlatform())) {
 			this.name = stream.readPString(platform.getZztWorldFormat().isSuperZZTLike() ? 60 : 50);
 
 			int ix = 1;
@@ -198,7 +198,7 @@ public class Board {
 			stats = new ArrayList<>();
 			for (int i = 0; i <= statCount; i++) {
 				Stat stat = new Stat();
-				stat.readZ(stream, platform);
+				stat.readZ(stream);
 				stats.add(stat);
 			}
 			for (Stat stat : stats) {
@@ -208,7 +208,7 @@ public class Board {
 	}
 
 	public void writeZ(ZOutputStream outStream) throws IOException {
-		try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream(); ZOutputStream stream = new ZOutputStream(byteStream)) {
+		try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream(); ZOutputStream stream = new ZOutputStream(byteStream, outStream.getPlatform())) {
 			stream.writePString(this.name, platform.getZztWorldFormat().isSuperZZTLike() ? 60 : 50);
 
 			// fancy RLE logic
@@ -261,7 +261,7 @@ public class Board {
 				stat.copyStatToStatId(this);
 			}
 			for (Stat stat : stats) {
-				stat.writeZ(stream, platform);
+				stat.writeZ(stream);
 			}
 
 			byte[] result = byteStream.toByteArray();

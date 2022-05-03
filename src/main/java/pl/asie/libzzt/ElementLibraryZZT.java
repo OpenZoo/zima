@@ -51,7 +51,7 @@ public class ElementLibraryZZT {
     private static final Element BOULDER = Element.builder().character(254).pushable(true).name("Boulder").id(24).build();
     private static final Element SLIDER_NS = Element.builder().character(18).name("Slider (NS)").id(25).build();
     private static final Element SLIDER_EW = Element.builder().character(29).name("Slider (EW)").id(26).build();
-    private static final Element FAKE = Element.builder().character(178).walkable(true).name("Fake").id(27).build();
+    private static final Element FAKE = Element.builder().character(178).name("Fake").walkable(true).id(27).build(); // TODO: not actually flagged as walkable
     private static final Element INVISIBLE = Element.builder().character(' ').name("Invisible").id(28).build();
     private static final Element BLINK_WALL = Element.builder().character(206).cycle(1).hasDrawProc(true).name("Blink wall").id(29).build();
     private static final Element TRANSPORTER = Element.builder().character(197).hasDrawProc(true).cycle(2).name("Transporter").id(30).build();

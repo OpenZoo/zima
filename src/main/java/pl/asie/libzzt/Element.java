@@ -27,8 +27,8 @@ import java.util.Objects;
 
 @SuppressWarnings("ConstantConditions")
 @Getter
-@Builder
 @With
+@Builder
 public final class Element {
     @Builder.Default
     private final int character = ' ';
@@ -66,7 +66,7 @@ public final class Element {
     }
 
     public int getColor() {
-        return textColor >= 0 ? this.textColor : this.color;
+        return textColor >= 0 ? textColor : this.color;
     }
 
     public boolean isText() {

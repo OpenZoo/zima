@@ -32,7 +32,7 @@ public final class OopUtils {
 		return commandStream.flatMap(c -> Stream.concat(Stream.of(c), allChildren(c.getChildren().stream())));
 	}
 
-	public static String stripChars(String value) {
+	private static String stripChars(String value, boolean preserveUnderscores) {
 		StringBuilder newValue = new StringBuilder();
 		for (int i = 0; i < value.length(); i++) {
 			int codePoint = value.codePointAt(i);
@@ -42,16 +42,18 @@ public final class OopUtils {
 				newValue.appendCodePoint(codePoint);
 			} else if (codePoint >= 'a' && codePoint <= 'z') {
 				newValue.appendCodePoint(codePoint + 'A' - 'a');
+			} else if (codePoint == '_' && preserveUnderscores) {
+				newValue.appendCodePoint(codePoint);
 			}
 		}
 		return newValue.toString();
 	}
 
-	public static int upCase(int c) {
-		if (c >= 'a' && c <= 'z') {
-			return c - 32;
-		} else {
-			return c;
-		}
+	public static String stripChars(String value) {
+		return stripChars(value, false);
+	}
+
+	public static String asToken(String value) {
+		return stripChars(value, true);
 	}
 }

@@ -93,7 +93,7 @@ public class ImageFileChooser extends JFileChooser {
 	public static ImageFileChooser zztBoard(TextVisualData visualData) {
 		TextVisualRenderer renderer = new TextVisualRenderer(visualData, Platform.ZZT);
 		ImageFileChooser chooser = new ImageFileChooser(imageFile -> {
-			try (FileInputStream fis = new FileInputStream(imageFile); ZInputStream zis = new ZInputStream(fis)) {
+			try (FileInputStream fis = new FileInputStream(imageFile); ZInputStream zis = new ZInputStream(fis, Platform.ZZT)) {
 				// TODO: load only first board
 				World world = new World(Platform.ZZT);
 				world.readZ(zis);

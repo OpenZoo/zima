@@ -933,7 +933,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			try {
 				Board board = this.asyncRenderer.getOutputBoard();
 
-				try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos)) {
+				try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos, board.getPlatform())) {
 					String basename = file.getName();
 					int extIndex = basename.lastIndexOf('.');
 					if (extIndex > 0) {
@@ -968,7 +968,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 	private void onSavePal(ActionEvent actionEvent) {
 		File file = showSaveDialog("outputPalette", new FileNameExtensionFilter("MegaZeux palette file", "pal"));
 		if (file != null) {
-			try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos)) {
+			try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos, null)) {
 				int[] colors = this.visual.getPalette();
 				for (int i = 0; i < 16; i++) {
 					zos.writePByte((((colors[i] >> 16) & 0xFF) * 63 / 255) & 0xFF);

@@ -67,7 +67,7 @@ public class ImageConverter {
 	}
 
 	private int count(ZOutputStreamConsumer streamConsumer) {
-		try (CountOutputStream stream = new CountOutputStream(); ZOutputStream zStream = new ZOutputStream(stream)) {
+		try (CountOutputStream stream = new CountOutputStream(); ZOutputStream zStream = new ZOutputStream(stream, this.platform)) {
 			streamConsumer.accept(zStream);
 			return stream.getCount();
 		} catch (IOException e) {

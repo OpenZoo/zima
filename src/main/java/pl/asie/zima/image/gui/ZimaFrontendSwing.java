@@ -22,10 +22,11 @@ import lombok.Getter;
 import pl.asie.ctif.PaletteGeneratorKMeans;
 import pl.asie.libzzt.Board;
 import pl.asie.libzzt.Element;
+import pl.asie.libzzt.EngineDefinition;
 import pl.asie.libzzt.WeaveZZTPlatformData;
 import pl.asie.libzzt.ElementLibraryZZT;
 import pl.asie.libzzt.PaletteLoaderUtils;
-import pl.asie.libzzt.Platform;
+import pl.asie.zima.util.ZimaPlatform;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.ZOutputStream;
 import pl.asie.zima.gui.BaseFrontendSwing;
@@ -94,20 +95,20 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 	private JSpinner maxBoardSizeEdit;
 	private JCheckBox blinkingDisabledEdit;
 	private JComboBox<String> platformEdit;
-	private final List<Pair<String, Platform>> platforms = List.of(
-			new Pair<>("ZZT", Platform.ZZT),
-			new Pair<>("Super ZZT", Platform.SUPER_ZZT),
-			new Pair<>("WeaveZZT 2.5", Platform.WEAVE_ZZT_25),
-			new Pair<>("Super ClassicZoo", Platform.SUPER_CLASSICZOO),
-			new Pair<>("MegaZeux", Platform.MEGAZEUX)
+	private final List<Pair<String, ZimaPlatform>> platforms = List.of(
+			new Pair<>("ZZT", ZimaPlatform.ZZT),
+			new Pair<>("Super ZZT", ZimaPlatform.SUPER_ZZT),
+			new Pair<>("WeaveZZT 2.5", ZimaPlatform.WEAVE_ZZT_25),
+			new Pair<>("Super ClassicZoo", ZimaPlatform.SUPER_CLASSICZOO),
+			new Pair<>("MegaZeux", ZimaPlatform.MEGAZEUX)
 	);
 	private JComboBox<String> rulesetEdit;
-	private final Map<Platform, ImageConverterRules> rulesByPlatform = Map.of(
-			Platform.ZZT, new ImageConverterRules(Platform.ZZT, false),
-			Platform.SUPER_ZZT, new ImageConverterRules(Platform.SUPER_ZZT, true),
-			Platform.WEAVE_ZZT_25, new ImageConverterRules(Platform.WEAVE_ZZT_25, false),
-			Platform.SUPER_CLASSICZOO, new ImageConverterRules(Platform.SUPER_ZZT, true),
-			Platform.MEGAZEUX, new ImageConverterRules()
+	private final Map<ZimaPlatform, ImageConverterRules> rulesByPlatform = Map.of(
+			ZimaPlatform.ZZT, new ImageConverterRules(ZimaPlatform.ZZT, false),
+			ZimaPlatform.SUPER_ZZT, new ImageConverterRules(ZimaPlatform.SUPER_ZZT, true),
+			ZimaPlatform.WEAVE_ZZT_25, new ImageConverterRules(ZimaPlatform.WEAVE_ZZT_25, false),
+			ZimaPlatform.SUPER_CLASSICZOO, new ImageConverterRules(ZimaPlatform.SUPER_ZZT, true),
+			ZimaPlatform.MEGAZEUX, new ImageConverterRules()
 	);
 	private Map<ElementRule, JCheckBox> rulesetBoxEdit = new HashMap<>();
 	private ImageConverterRuleset customRuleset;
@@ -168,8 +169,8 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		this.profileFast = new ZimaConversionProfile();
 		this.profile.getProperties().addGlobalChangeListener((k, v) -> rerender());
 		// TODO: move both
-		this.profile.getProperties().set(ZimaConversionProfile.PLATFORM, Platform.ZZT);
-		this.profile.getProperties().set(ZimaConversionProfile.FAST_RULESET, new ImageConverterRules(Platform.ZZT, false).getRuleset("Blocks"));
+		this.profile.getProperties().set(ZimaConversionProfile.PLATFORM, ZimaPlatform.ZZT);
+		this.profile.getProperties().set(ZimaConversionProfile.FAST_RULESET, new ImageConverterRules(ZimaPlatform.ZZT, false).getRuleset("Blocks"));
 
 		this.previewCanvas = new SimpleCanvas();
 		this.previewCanvas.setScrollable(true);
@@ -241,16 +242,14 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			appendTabRow(this.optionsBoardPanel, gbc, "Platform",
 					this.platformEdit = new JComboBox<>(this.platforms.stream().map(Pair::getFirst).toArray(String[]::new)));
 			this.platformEdit.addActionListener((e) -> {
-				Pair<String, Platform> newEntry = this.platforms.get(this.platformEdit.getSelectedIndex());
-				Platform newPlatform = newEntry.getSecond();
+				Pair<String, ZimaPlatform> newEntry = this.platforms.get(this.platformEdit.getSelectedIndex());
+				ZimaPlatform newPlatform = newEntry.getSecond();
 				Boolean blinkingDisabled = null;
 
 				if ("WeaveZZT 2.5".equals(newEntry.getFirst())) {
 					WeaveZZTPlatformData platformData = loadWeaveCfg();
 					if (platformData != null) {
-						newPlatform = newPlatform
-								.withLibrary(platformData.getLibrary())
-								.withMaxStatCount(platformData.getMaxStatCount());
+						newPlatform = newPlatform.withZztEngineDefinition(platformData.createEngineDefinition());
 						blinkingDisabled = platformData.isBlinkingDisabled();
 						if (platformData.getPalette() != null) {
 							this.palette = platformData.getPalette();
@@ -274,10 +273,16 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				this.playerXEdit.setEnabled(newPlatform.isUsesBoard());
 				this.playerYEdit.setEnabled(newPlatform.isUsesBoard());
 				this.saveBrdItem.setEnabled(newPlatform.isUsesBoard());
-				this.maxBoardSizeEdit.setEnabled(newPlatform.getMaxBoardSize() > 0);
-				this.maxStatCountEdit.setEnabled(newPlatform.getMaxStatCount() > 0);
-				this.maxStatCountEdit.setValue(newPlatform.getMaxStatCount());
-				this.statCycleEdit.setEnabled(newPlatform.getMaxStatCount() > 0);
+				if (newPlatform.getZztEngineDefinition() != null) {
+					this.maxBoardSizeEdit.setEnabled(true);
+					this.maxStatCountEdit.setEnabled(true);
+					this.maxStatCountEdit.setValue(newPlatform.getZztEngineDefinition().getMaxStatCount());
+					this.statCycleEdit.setEnabled(true);
+				} else {
+					this.maxBoardSizeEdit.setEnabled(false);
+					this.maxStatCountEdit.setEnabled(false);
+					this.statCycleEdit.setEnabled(false);
+				}
 			});
 
 			appendTabRow(this.optionsBoardPanel, gbc, "Board X", this.boardXEdit = new JSpinner(boardCoordsModel(1, false)));
@@ -310,11 +315,11 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.PLAYER_Y, this.playerYEdit);
 			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.playerYEdit.setModel(boardCoordsModel(((Number) this.playerYEdit.getValue()).intValue(), true)));
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Max. stats", this.maxStatCountEdit = new JSpinner(statCountModel(Platform.ZZT.getMaxStatCount())));
+			appendTabRow(this.optionsBoardPanel, gbc, "Max. stats", this.maxStatCountEdit = new JSpinner(statCountModel(EngineDefinition.ZZT.getMaxStatCount())));
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.MAX_STAT_COUNT, this.maxStatCountEdit);
 			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.maxStatCountEdit.setModel(statCountModel(((Number) this.maxStatCountEdit.getValue()).intValue())));
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Max. board size", this.maxBoardSizeEdit = new JSpinner(boardSizeModel(Platform.ZZT.getMaxBoardSize())));
+			appendTabRow(this.optionsBoardPanel, gbc, "Max. board size", this.maxBoardSizeEdit = new JSpinner(boardSizeModel(EngineDefinition.ZZT.getMaxBoardSize())));
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.MAX_BOARD_SIZE, this.maxBoardSizeEdit);
 			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.maxBoardSizeEdit.setModel(boardSizeModel(((Number) this.maxBoardSizeEdit.getValue()).intValue())));
 
@@ -557,7 +562,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 
 	public void rebuildElementsPanel() {
 		optionsElementsPanel.removeAll();
-		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+		ZimaPlatform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 		List<JCheckBox> checkBoxes = new ArrayList<>();
 
 		GridBagConstraints gbc = new GridBagConstraints();
@@ -610,7 +615,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 	}
 
 	public void onChangeRulesetCheckbox() {
-		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+		ZimaPlatform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 
 		int index = this.rulesetEdit.getSelectedIndex();
 		ImageConverterRuleset ruleset = getRulesByPlatform(platform).getRulesetPresets().get(index).getSecond();
@@ -620,7 +625,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 	}
 
 	public void setRuleset(int index) {
-		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+		ZimaPlatform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 
 		if (index >= getRulesByPlatform(platform).getRulesetPresets().size()) {
 			index = 0;
@@ -650,7 +655,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 	}
 
 	private void updateCharRatioLabel() {
-		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+		ZimaPlatform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 		int width = this.profile.getProperties().get(ZimaConversionProfile.CHARS_WIDTH) * this.visual.getCharWidth() * (platform.isDoubleWide(this.visual) ? 2 : 1);
 		int height = this.profile.getProperties().get(ZimaConversionProfile.CHARS_HEIGHT) * this.visual.getCharHeight();
 		if (width > 0 && height > 0) {
@@ -691,7 +696,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 
 	public void updateCanvas() {
 		if (isShowInputImage()) {
-			Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+			ZimaPlatform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 			this.profile.updateImage(inputImage);
 			this.previewCanvas.setAllowScaling(true);
 			this.previewCanvas.setDoubleWide(platform.isDoubleWide(this.visual));
@@ -807,7 +812,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 					if (this.paletteSelector.isTwoColorAllowed(color2)) {
 						weights[j] += 0.5f;
 					}
-					Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+					ZimaPlatform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 					if (platform != null) {
 						boolean foundTextC1 = false;
 						boolean foundTextC2 = false;
@@ -950,7 +955,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			try {
 				Board board = this.asyncRenderer.getOutputBoard();
 
-				try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos, board.getPlatform())) {
+				try (FileOutputStream fos = new FileOutputStream(file); ZOutputStream zos = new ZOutputStream(fos, board.getEngineDefinition())) {
 					String basename = file.getName();
 					int extIndex = basename.lastIndexOf('.');
 					if (extIndex > 0) {
@@ -1086,7 +1091,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		}
 
 		if (settings.getAllowedElements() != null) {
-			Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+			ZimaPlatform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 			boolean found = false;
 			int emptyIndex = -1;
 			Set<ElementRule> settingsElementSet = new HashSet<>(settings.getAllowedElements());
@@ -1136,7 +1141,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		rerender();
 	}
 
-	private ImageConverterRules getRulesByPlatform(Platform platform) {
+	private ImageConverterRules getRulesByPlatform(ZimaPlatform platform) {
 		ImageConverterRules rules = rulesByPlatform.get(platform);
 		if (rules == null) {
 			rules = new ImageConverterRules(platform, false);
@@ -1220,23 +1225,23 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 	}
 
 	private SpinnerNumberModel boardCoordsModel(int cval, boolean height) {
-		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+		ZimaPlatform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
 		int cmax = height ? platform.getBoardHeight() : platform.getBoardWidth();
 		if (cval > cmax) cval = cmax;
 		return new SpinnerNumberModel(cval, 1, cmax, 1);
 	}
 
 	private SpinnerNumberModel statCountModel(int cval) {
-		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
-		if (platform.getMaxStatCount() < 0) return new SpinnerNumberModel(0, 0, 0, 1);
-		if (cval > platform.getActualMaxStatCount()) cval = platform.getActualMaxStatCount();
-		return new SpinnerNumberModel(cval, 0, platform.getActualMaxStatCount(), 1);
+		ZimaPlatform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+		if (platform.getZztEngineDefinition() == null) return new SpinnerNumberModel(0, 0, 0, 1);
+		if (cval > platform.getZztEngineDefinition().getMaxStatCount()) cval = platform.getZztEngineDefinition().getMaxStatCount();
+		return new SpinnerNumberModel(cval, 0, platform.getZztEngineDefinition().getMaxStatCount(), 1);
 	}
 
 	private SpinnerNumberModel boardSizeModel(int cval) {
-		Platform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
-		if (platform.getMaxBoardSize() < 0) return new SpinnerNumberModel(0, 0, 0, 1);
-		if (cval > platform.getMaxBoardSize()) cval = platform.getMaxBoardSize();
-		return new SpinnerNumberModel(cval, 0, platform.getMaxBoardSize(), 1);
+		ZimaPlatform platform = this.profile.getProperties().get(ZimaConversionProfile.PLATFORM);
+		if (platform.getZztEngineDefinition() == null) return new SpinnerNumberModel(0, 0, 0, 1);
+		if (cval > platform.getZztEngineDefinition().getMaxBoardSize()) cval = platform.getZztEngineDefinition().getMaxBoardSize();
+		return new SpinnerNumberModel(cval, 0, platform.getZztEngineDefinition().getMaxBoardSize(), 1);
 	}
 }

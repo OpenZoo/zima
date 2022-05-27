@@ -23,12 +23,12 @@ import lombok.Getter;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class CountOutputStream extends OutputStream {
+public class LengthMeasuringOutputStream extends OutputStream {
     @Getter
-    private int count = 0;
+    private int dataLength = 0;
 
     @Override
     public void write(int b) throws IOException {
-        count++;
+        dataLength++;
     }
 }

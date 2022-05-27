@@ -20,6 +20,7 @@ package pl.asie.libzzt;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -29,6 +30,6 @@ public class ElementLibraryNull {
     public static final ElementLibrary INSTANCE;
 
     static {
-        INSTANCE = new ElementLibrary(List.of("EMPTY"), List.of(EMPTY));
+        INSTANCE = new ElementLibrary(List.of(EMPTY), Map.of(EMPTY, "EMPTY"));
     }
 }

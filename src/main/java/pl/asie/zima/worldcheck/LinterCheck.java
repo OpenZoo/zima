@@ -75,7 +75,7 @@ public class LinterCheck {
 				.forEach(el -> {
 					Stat s = el.getStat();
 					try {
-						s.getCode(el.getWorld().getPlatform());
+						s.getCode(el.getWorld().getEngineDefinition());
 					} catch (Exception e) {
 						e.printStackTrace();
 						addMessage(new LinterMessage(

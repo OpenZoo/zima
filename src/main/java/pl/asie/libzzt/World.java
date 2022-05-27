@@ -45,11 +45,11 @@ public class World {
 	private int stonesOfPower; // Super ZZT
 	private List<Board> boards = new ArrayList<>();
 
-	private final Platform platform;
+	private final EngineDefinition engineDefinition;
 
-	public World(Platform platform) {
-		this.platform = platform;
-		Board titleBoard = new Board(platform);
+	public World(EngineDefinition engineDefinition) {
+		this.engineDefinition = engineDefinition;
+		Board titleBoard = new Board(engineDefinition);
 		titleBoard.setName("Title screen");
 		boards.add(titleBoard);
 	}
@@ -69,7 +69,7 @@ public class World {
 			this.keys[i] = stream.readPBoolean();
 		this.health = stream.readPShort();
 		this.currentBoard = stream.readPShort();
-		if (platform.getZztWorldFormat().isSuperZZTLike()) {
+		if (engineDefinition.getBaseKind().isSuperZZTLike()) {
 			stream.readPShort(); // unk1
 		} else {
 			this.torches = stream.readPShort();
@@ -80,7 +80,7 @@ public class World {
 		this.score = stream.readPShort();
 		this.name = stream.readPString(20);
 		this.flags.clear();
-		for (int i = 0; i < (platform.getZztWorldFormat().isSuperZZTLike() ? 16 : 10); i++) {
+		for (int i = 0; i < (engineDefinition.getBaseKind().isSuperZZTLike() ? 16 : 10); i++) {
 			String flag = stream.readPString(20);
 			if (!flag.isBlank()) {
 				this.flags.add(flag);
@@ -89,7 +89,7 @@ public class World {
 		this.boardTimeSec = stream.readPShort();
 		this.boardTimeHsec = stream.readPShort();
 		this.isSave = stream.readPBoolean();
-		if (platform.getZztWorldFormat().isSuperZZTLike()) {
+		if (engineDefinition.getBaseKind().isSuperZZTLike()) {
 			this.stonesOfPower = stream.readPShort();
 			if (stream.skip(12) != 12) {
 				throw new IOException("World info error!");
@@ -99,7 +99,7 @@ public class World {
 				throw new IOException("World info error!");
 			}
 		}
-		int newPosition = position + (platform.getZztWorldFormat().isSuperZZTLike() ? 1024 : 512);
+		int newPosition = position + (engineDefinition.getBaseKind().isSuperZZTLike() ? 1024 : 512);
 		stream.skipTo(newPosition);
 		if (stream.getPosition() != newPosition) {
 			throw new IOException("World padding error!");
@@ -108,7 +108,7 @@ public class World {
 		// boards
 		boards.clear();
 		for (int i = 0; i <= boardCount; i++) {
-			Board board = new Board(platform);
+			Board board = new Board(engineDefinition);
 			board.readZ(stream);
 			boards.add(board);
 		}
@@ -126,7 +126,7 @@ public class World {
 			stream.writePBoolean(keys[i]);
 		stream.writePShort(health);
 		stream.writePShort(currentBoard);
-		if (platform.getZztWorldFormat().isSuperZZTLike()) {
+		if (engineDefinition.getBaseKind().isSuperZZTLike()) {
 			stream.writePShort(0); // unk1
 		} else {
 			stream.writePShort(torches);
@@ -136,18 +136,18 @@ public class World {
 		stream.writePShort(0); // unk2
 		stream.writePShort(score);
 		stream.writePString(name, 20);
-		for (int i = 0; i < (platform.getZztWorldFormat().isSuperZZTLike() ? 16 : 10); i++)
+		for (int i = 0; i < (engineDefinition.getBaseKind().isSuperZZTLike() ? 16 : 10); i++)
 			stream.writePString(flags.size() > i ? flags.get(i) : "", 20);
 		stream.writePShort(boardTimeSec);
 		stream.writePShort(boardTimeHsec);
 		stream.writePBoolean(isSave);
-		if (platform.getZztWorldFormat().isSuperZZTLike()) {
+		if (engineDefinition.getBaseKind().isSuperZZTLike()) {
 			stream.writePShort(stonesOfPower);
 			stream.pad(12); // world info
 		} else {
 			stream.pad(14); // world info
 		}
-		stream.padTo(pos + (platform.getZztWorldFormat().isSuperZZTLike() ? 1024 : 512)); // world padding
+		stream.padTo(pos + (engineDefinition.getBaseKind().isSuperZZTLike() ? 1024 : 512)); // world padding
 
 		// boards
 		for (Board board : boards) {

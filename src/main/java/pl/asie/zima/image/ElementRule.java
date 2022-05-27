@@ -20,7 +20,7 @@ package pl.asie.zima.image;
 
 import lombok.*;
 import pl.asie.libzzt.Element;
-import pl.asie.libzzt.Platform;
+import pl.asie.zima.util.ZimaPlatform;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Data
@@ -47,7 +47,7 @@ public class ElementRule {
 	private final int chr;
 	private final int color;
 
-	public static ElementRule element(Platform platform, String name) {
+	public static ElementRule element(ZimaPlatform platform, String name) {
 		Element element = platform.getLibrary().byInternalName(name);
 		if (element == null) {
 			throw new RuntimeException();
@@ -55,7 +55,7 @@ public class ElementRule {
 		return element(platform, name, element.getCharacter());
 	}
 
-	public static ElementRule element(Platform platform, String name, int chr) {
+	public static ElementRule element(ZimaPlatform platform, String name, int chr) {
 		Element element = platform.getLibrary().byInternalName(name);
 		if (element == null) {
 			throw new RuntimeException();
@@ -63,7 +63,7 @@ public class ElementRule {
 		return new ElementRule(element, element.getId() == 0 ? Strategy.EMPTY : Strategy.ELEMENT, chr, -1);
 	}
 
-	public static ElementRule text(Platform platform, String name) {
+	public static ElementRule text(ZimaPlatform platform, String name) {
 		Element element = platform.getLibrary().byInternalName(name);
 		if (element == null) {
 			throw new RuntimeException();
@@ -71,7 +71,7 @@ public class ElementRule {
 		return new ElementRule(element, Strategy.TEXT, -1, element.getTextColor());
 	}
 
-	public static ElementRule statP1(Platform platform, String name) {
+	public static ElementRule statP1(ZimaPlatform platform, String name) {
 		Element element = platform.getLibrary().byInternalName(name);
 		if (element == null) {
 			throw new RuntimeException();

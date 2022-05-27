@@ -18,8 +18,8 @@
  */
 package pl.asie.libzzt;
 
+
 import java.awt.image.BufferedImage;
-import java.util.function.IntFunction;
 
 public class TextVisualRenderer {
 	@FunctionalInterface
@@ -28,11 +28,11 @@ public class TextVisualRenderer {
 	}
 
 	private final TextVisualData visual;
-	private final Platform platform;
+	private final boolean doubleWide;
 
-	public TextVisualRenderer(TextVisualData visual, Platform platform) {
+	public TextVisualRenderer(TextVisualData visual, boolean doubleWide) {
 		this.visual = visual;
-		this.platform = platform;
+		this.doubleWide = doubleWide;
 	}
 
 	private ByteGetter applyPreviewToColor(ByteGetter getter, boolean preview) {
@@ -59,9 +59,7 @@ public class TextVisualRenderer {
 					return result.getCharacter();
 				}
 			}
-			if (element == board.getPlatform().getLibrary().getEmpty()) {
-				return 32;
-			} else if (element.isText()) {
+			if (element.isText()) {
 				return board.getColor(x + xOfs, y + yOfs);
 			} else {
 				return element.getCharacter();
@@ -74,9 +72,7 @@ public class TextVisualRenderer {
 					return result.getColor();
 				}
 			}
-			if (element == board.getPlatform().getLibrary().getEmpty()) {
-				return 0x0F;
-			} else if (element.isText()) {
+			if (element.isText()) {
 				return element.getColor();
 			} else {
 				return board.getColor(x + xOfs, y + yOfs);
@@ -93,7 +89,7 @@ public class TextVisualRenderer {
 	} */
 
 	public BufferedImage render(int width, int height, ByteGetter charGetter, ByteGetter colorGetter) {
-		int charXInc = (platform.isDoubleWide(visual) ? 2 : 1);
+		int charXInc = (isDoubleWide() ? 2 : 1);
 		int charWidth = visual.getCharWidth() * charXInc;
 		int charHeight = visual.getCharHeight();
 		BufferedImage image = new BufferedImage(width * charWidth, height * charHeight, BufferedImage.TYPE_INT_RGB);
@@ -120,5 +116,9 @@ public class TextVisualRenderer {
 			}
 		}
 		return image;
+	}
+
+	private boolean isDoubleWide() {
+		return this.doubleWide && visual.getCharHeight() >= (visual.getCharWidth() * 3 / 2);
 	}
 }

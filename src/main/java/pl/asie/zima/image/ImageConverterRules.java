@@ -20,7 +20,7 @@ package pl.asie.zima.image;
 
 import lombok.Getter;
 import pl.asie.libzzt.Element;
-import pl.asie.libzzt.Platform;
+import pl.asie.zima.util.ZimaPlatform;
 import pl.asie.zima.util.Pair;
 
 import java.util.ArrayList;
@@ -90,7 +90,7 @@ public class ImageConverterRules {
 		return rulesetPresets.stream().filter(p -> p.getFirst().equalsIgnoreCase(name)).findFirst().map(Pair::getSecond).orElse(null);
 	}
 
-	public ImageConverterRules(Platform platform, boolean isSuperZztBased) {
+	public ImageConverterRules(ZimaPlatform platform, boolean isSuperZztBased) {
 		List<ElementRule> alwaysRules = new ArrayList<>();
 		alwaysRules.add(ElementRule.element(platform, "EMPTY"));
 
@@ -107,10 +107,10 @@ public class ImageConverterRules {
 		List<ElementRule> statlessRules = new ArrayList<>();
 
 		if (isSuperZztBased) {
-			rules.add(ElementRule.element(Platform.SUPER_ZZT, "LAVA"));
-			statlessRules.add(ElementRule.element(Platform.SUPER_ZZT, "ROTON"));
-			statlessRules.add(ElementRule.element(Platform.SUPER_ZZT, "SPIDER"));
-			statlessRules.add(ElementRule.element(Platform.SUPER_ZZT, "PAIRER"));
+			rules.add(ElementRule.element(ZimaPlatform.SUPER_ZZT, "LAVA"));
+			statlessRules.add(ElementRule.element(ZimaPlatform.SUPER_ZZT, "ROTON"));
+			statlessRules.add(ElementRule.element(ZimaPlatform.SUPER_ZZT, "SPIDER"));
+			statlessRules.add(ElementRule.element(ZimaPlatform.SUPER_ZZT, "PAIRER"));
 		}
 		statlessRules.add(ElementRule.element(platform, "LION"));
 		statlessRules.add(ElementRule.element(platform, "TIGER"));
@@ -139,10 +139,10 @@ public class ImageConverterRules {
 		rules.add(ElementRule.element(platform, "SLIDER_EW"));
 		rules.add(ElementRule.element(platform, "ENERGIZER"));
 		if (isSuperZztBased) {
-			rules.add(ElementRule.element(Platform.SUPER_ZZT, "WATER_N"));
-			rules.add(ElementRule.element(Platform.SUPER_ZZT, "WATER_S"));
-			rules.add(ElementRule.element(Platform.SUPER_ZZT, "WATER_W"));
-			rules.add(ElementRule.element(Platform.SUPER_ZZT, "WATER_E"));
+			rules.add(ElementRule.element(ZimaPlatform.SUPER_ZZT, "WATER_N"));
+			rules.add(ElementRule.element(ZimaPlatform.SUPER_ZZT, "WATER_S"));
+			rules.add(ElementRule.element(ZimaPlatform.SUPER_ZZT, "WATER_W"));
+			rules.add(ElementRule.element(ZimaPlatform.SUPER_ZZT, "WATER_E"));
 		}
 		rules.add(ElementRule.text(platform, "TEXT_BLUE"));
 		rules.add(ElementRule.text(platform, "TEXT_GREEN"));

@@ -19,6 +19,11 @@
 package pl.asie.libzzt;
 
 public class ElementDrawFunctionsZZT {
+	private static final ElementDrawFunction.Result EMPTY_RESULT = ElementDrawFunction.Result.create(32, 0x0F);
+	protected static ElementDrawFunction.Result drawEmpty(Board board, int x, int y) {
+		return EMPTY_RESULT;
+	}
+
 	protected static ElementDrawFunction.Result drawObject(Board board, int x, int y) {
 		Stat stat = board.getStatAt(x, y);
 		if (stat != null) {

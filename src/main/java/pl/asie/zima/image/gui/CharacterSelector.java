@@ -19,7 +19,7 @@
 package pl.asie.zima.image.gui;
 
 import lombok.Getter;
-import pl.asie.libzzt.Platform;
+import pl.asie.zima.util.ZimaPlatform;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.TextVisualRenderer;
 
@@ -61,7 +61,7 @@ public class CharacterSelector extends JComponent implements MouseListener, Mous
 
     public void setVisual(TextVisualData visual) {
         this.visual = visual;
-        this.renderer = new TextVisualRenderer(visual, Platform.ZZT);
+        this.renderer = new TextVisualRenderer(visual, false);
         Dimension dims = new Dimension(32 * visual.getCharWidth(), 8 * visual.getCharHeight());
         setMinimumSize(dims);
         setMaximumSize(dims);

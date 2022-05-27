@@ -65,7 +65,7 @@ public final class ElementLocation implements Comparable<ElementLocation> {
 
 	public OopProgram getProgram() {
 		Stat stat = getStat();
-		return stat != null ? stat.getCode(world.getPlatform()) : null;
+		return stat != null ? stat.getCode(world.getEngineDefinition()) : null;
 	}
 
 	private int compare(Integer a, Integer b) {
@@ -127,7 +127,7 @@ public final class ElementLocation implements Comparable<ElementLocation> {
 				if (stat.getX() >= 0 && stat.getY() >= 0 && stat.getX() <= board.getWidth() && stat.getY() <= board.getHeight()) {
 					element = board.getElement(stat.getX(), stat.getY());
 				}
-				OopProgram program = stat.getCode(board.getPlatform());
+				OopProgram program = stat.getCode(board.getEngineDefinition());
 				StringBuilder sb = new StringBuilder();
 				sb.append(getStatId()).append(" (").append(stat.getX()).append(", ").append(stat.getY()).append(") ");
 				if (element != null) {

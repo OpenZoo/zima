@@ -22,7 +22,6 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-import pl.asie.libzzt.oop.OopParseException;
 import pl.asie.libzzt.oop.OopProgram;
 
 import java.io.IOException;
@@ -59,7 +58,7 @@ public class Stat {
 		this.codeFailure = null;
 	}
 
-	public OopProgram getCode(Platform platform) {
+	public OopProgram getCode(EngineDefinition engineDefinition) {
 		if (this.boundStat != null) {
 			return this.boundStat.getCode();
 		}
@@ -68,7 +67,7 @@ public class Stat {
 		}
 		try {
 			if (this.code == null && this.data != null && !this.data.isEmpty()) {
-				this.code = new OopProgram(platform, this.data);
+				this.code = new OopProgram(engineDefinition, this.data);
 			}
 		} catch (RuntimeException e) {
 			this.codeFailure = true;
@@ -118,14 +117,14 @@ public class Stat {
 		this.p3 = stream.readPByte();
 		this.follower = stream.readPShort();
 		this.leader = stream.readPShort();
-		this.underElement = stream.getPlatform().getLibrary().byId(stream.readPByte());
+		this.underElement = stream.getEngineDefinition().getElements().byId(stream.readPByte());
 		this.underColor = stream.readPByte();
 		if (stream.skip(4) != 4) {
 			throw new IOException("Could not skip data^!");
 		}
 		this.dataPos = stream.readPShort();
 		int dataLen = stream.readPShort();
-		if (stream.getPlatform().getZztWorldFormat().isZZTLike()) {
+		if (stream.getEngineDefinition().getBaseKind().isZZTLike()) {
 			if (stream.skip(8) != 8) {
 				throw new IOException("Could not skip unk!");
 			}
@@ -140,8 +139,8 @@ public class Stat {
 		boundStatId = (dataLen < 0) ? -dataLen : 0;
 	}
 
-	public int lengthZ(Platform platform) {
-		int len = (platform.getZztWorldFormat().isZZTLike() ? 33 : 25);
+	public int lengthZ(EngineDefinition platform) {
+		int len = (platform.getBaseKind().isZZTLike() ? 33 : 25);
 		if (boundStatId == 0 && data != null) {
 			byte[] dataBytes = data.getBytes(StandardCharsets.ISO_8859_1);
 			len += dataBytes.length;
@@ -166,7 +165,7 @@ public class Stat {
 		stream.pad(4); // data^
 		stream.writePShort(this.dataPos);
 		stream.writePShort(boundStatId > 0 ? (-boundStatId) : ((dataBytes != null) ? dataBytes.length : 0));
-		if (stream.getPlatform().getZztWorldFormat().isZZTLike()) {
+		if (stream.getEngineDefinition().getBaseKind().isZZTLike()) {
 			stream.pad(8); // unk
 		}
 		if (boundStatId == 0 && dataBytes != null) {

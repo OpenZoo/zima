@@ -21,7 +21,7 @@ package pl.asie.zima.image.gui;
 import lombok.Getter;
 import lombok.Setter;
 import pl.asie.zima.image.ImageConverter;
-import pl.asie.zima.util.CountOutputStream;
+import pl.asie.zima.util.LengthMeasuringOutputStream;
 import pl.asie.zima.util.Pair;
 import pl.asie.libzzt.Board;
 import pl.asie.libzzt.ZOutputStream;
@@ -84,9 +84,9 @@ public class ZimaAsynchronousRenderer {
 					int statCount = output.getFirst().getBoard().getStats().size() - 1;
 					int boardSize = -1;
 
-					try (CountOutputStream cos = new CountOutputStream(); ZOutputStream stream = new ZOutputStream(cos, output.getFirst().getBoard().getPlatform())) {
+					try (LengthMeasuringOutputStream cos = new LengthMeasuringOutputStream(); ZOutputStream stream = new ZOutputStream(cos, output.getFirst().getBoard().getEngineDefinition())) {
 						output.getFirst().getBoard().writeZ(stream);
-						boardSize = cos.getCount();
+						boardSize = cos.getDataLength();
 					} catch (IOException e) {
 						// pass
 					}

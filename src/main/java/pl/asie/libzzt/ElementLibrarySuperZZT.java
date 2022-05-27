@@ -20,11 +20,12 @@ package pl.asie.libzzt;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-class ElementLibrarySuperZZT {
-    private static final Element EMPTY = Element.builder().character(' ').color(0x70).pushable(true).walkable(true).name("Empty").id(0).build();
+public class ElementLibrarySuperZZT {
+    private static final Element EMPTY = Element.builder().character(' ').color(0x70).drawFunction(ElementDrawFunctionsZZT::drawEmpty).pushable(true).walkable(true).name("Empty").id(0).build();
     private static final Element BOARD_EDGE = Element.builder().id(1).build();
     private static final Element MESSAGE_TIMER = Element.builder().id(2).build();
     private static final Element MONITOR = Element.builder().character(2).color(0x1F).cycle(1).pushable(true).name("Monitor").id(3).build();
@@ -95,19 +96,24 @@ class ElementLibrarySuperZZT {
     private static final Element TEXT_WHITE = Element.builder().id(79).textColor(0x0F).build();
     
     public static final ElementLibrary INSTANCE;
-    
+
+    private static Element getElement(Field f) {
+        try {
+            f.setAccessible(true);
+            return (Element) f.get(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     static {
         List<Field> fields = Stream.of(ElementLibrarySuperZZT.class.getDeclaredFields())
-                .filter(f -> f.getType() == Element.class).collect(Collectors.toList());
-        List<String> names = fields.stream().map(Field::getName).collect(Collectors.toList());
-        List<Element> elements = fields.stream().map(f -> {
-            try {
-                f.setAccessible(true);
-                return (Element) f.get(null);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }).collect(Collectors.toList());
-        INSTANCE = new ElementLibrary(names, elements);
+                .filter(f -> f.getType() == Element.class).toList();
+        Map<Element, String> names = fields.stream().collect(Collectors.toMap(
+                ElementLibrarySuperZZT::getElement,
+                Field::getName
+        ));
+        List<Element> elements = fields.stream().map(ElementLibrarySuperZZT::getElement).toList();
+        INSTANCE = new ElementLibrary(elements, names);
     }
 }

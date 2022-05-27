@@ -20,7 +20,7 @@ package pl.asie.libzzt.oop;
 
 import lombok.RequiredArgsConstructor;
 import pl.asie.libzzt.Element;
-import pl.asie.libzzt.Platform;
+import pl.asie.libzzt.EngineDefinition;
 import pl.asie.libzzt.oop.commands.OopCommand;
 import pl.asie.libzzt.oop.commands.OopCommandBecome;
 import pl.asie.libzzt.oop.commands.OopCommandBind;
@@ -84,7 +84,7 @@ import java.util.regex.Pattern;
 public class OopProgramParser {
 
 	private static final Pattern WORD_PATTERN = Pattern.compile("^[0-9A-Za-z:_]+$");
-	private final Platform platform;
+	private final EngineDefinition engineDefinition;
 
 	// For parsing.
 	private OopProgram program;
@@ -193,7 +193,7 @@ public class OopProgramParser {
 			readWord();
 		}
 
-		Element element = Platform.ZZT.getLibrary().byOopTokenName(oopWord);
+		Element element = this.engineDefinition.getElements().byOopTokenName(oopWord);
 		if (element == null) {
 			throw new OopParseException(this, "Bad object kind: " + oopWord);
 		}

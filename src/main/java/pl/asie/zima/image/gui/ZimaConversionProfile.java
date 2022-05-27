@@ -19,7 +19,7 @@
 package pl.asie.zima.image.gui;
 
 import lombok.Getter;
-import pl.asie.libzzt.Platform;
+import pl.asie.zima.util.ZimaPlatform;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.TextVisualRenderer;
 import pl.asie.zima.util.*;
@@ -37,7 +37,7 @@ public class ZimaConversionProfile {
     private static final PropertyAffect IMAGE_CONVERTER = new PropertyAffect();
 
     public static final Property<TextVisualData> VISUAL_DATA = Property.createTransient(SCALED_IMAGE, MSE_CALCULATOR, TEXT_VISUAL_RENDERER, IMAGE_CONVERTER);
-    public static final Property<Platform> PLATFORM = Property.createTransient(SCALED_IMAGE, TEXT_VISUAL_RENDERER, IMAGE_CONVERTER);
+    public static final Property<ZimaPlatform> PLATFORM = Property.createTransient(SCALED_IMAGE, TEXT_VISUAL_RENDERER, IMAGE_CONVERTER);
 
     public static final Property<Integer> CHARS_WIDTH = Property.create("output.widthChars", 60, SCALED_IMAGE);
     public static final Property<Integer> CHARS_HEIGHT = Property.create("output.heightChars", 25, SCALED_IMAGE);
@@ -187,7 +187,7 @@ public class ZimaConversionProfile {
         PropertyHolder localHolder = this.properties.clone(TEXT_VISUAL_RENDERER, MSE_CALCULATOR, IMAGE_CONVERTER);
 
         if (localHolder.isAffected(TEXT_VISUAL_RENDERER) || this.renderer == null) {
-            this.renderer = new TextVisualRenderer(properties.get(VISUAL_DATA), properties.get(PLATFORM));
+            this.renderer = new TextVisualRenderer(properties.get(VISUAL_DATA), properties.get(PLATFORM).isDoubleWide());
         }
         if (localHolder.isAffected(MSE_CALCULATOR) || this.mseCalculator == null) {
             switch (properties.get(IMAGE_CONVERTER_TYPE)) {

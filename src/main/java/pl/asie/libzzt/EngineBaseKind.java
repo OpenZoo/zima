@@ -18,7 +18,7 @@
  */
 package pl.asie.libzzt;
 
-public enum ZztWorldSerializationFormat {
+public enum EngineBaseKind {
 	ZZT,
 	SUPER_ZZT;
 

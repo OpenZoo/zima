@@ -23,14 +23,14 @@ import lombok.Data;
 import lombok.Getter;
 import pl.asie.libzzt.Board;
 import pl.asie.libzzt.Element;
-import pl.asie.libzzt.Platform;
+import pl.asie.zima.util.ZimaPlatform;
 import pl.asie.libzzt.Stat;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.TextVisualRenderer;
 import pl.asie.libzzt.ZOutputStream;
 import pl.asie.zima.util.ColorUtils;
 import pl.asie.zima.util.Coord2D;
-import pl.asie.zima.util.CountOutputStream;
+import pl.asie.zima.util.LengthMeasuringOutputStream;
 import pl.asie.zima.util.DitherMatrix;
 import pl.asie.zima.util.ImageUtils;
 import pl.asie.zima.util.Pair;
@@ -50,11 +50,11 @@ import java.util.stream.Stream;
 
 public class ImageConverter {
 	private final TextVisualData visual;
-	private final Platform platform;
+	private final ZimaPlatform platform;
 	private final ElementResult emptyResult;
 	private final ImageMseCalculator mseCalculator;
 
-	public ImageConverter(TextVisualData visual, Platform platform, ImageMseCalculator mseCalculator) {
+	public ImageConverter(TextVisualData visual, ZimaPlatform platform, ImageMseCalculator mseCalculator) {
 		this.visual = visual;
 		this.platform = platform;
 		this.emptyResult = new ElementResult(platform.getLibrary().getEmpty(), false, false, 0, 0x0F);
@@ -67,9 +67,9 @@ public class ImageConverter {
 	}
 
 	private int count(ZOutputStreamConsumer streamConsumer) {
-		try (CountOutputStream stream = new CountOutputStream(); ZOutputStream zStream = new ZOutputStream(stream, this.platform)) {
+		try (LengthMeasuringOutputStream stream = new LengthMeasuringOutputStream(); ZOutputStream zStream = new ZOutputStream(stream, this.platform.getZztEngineDefinition())) {
 			streamConsumer.accept(zStream);
-			return stream.getCount();
+			return stream.getDataLength();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -226,7 +226,7 @@ public class ImageConverter {
 			return convertBoardless(inputImage, width, height, blinkingDisabled, charCheck, colorCheck, coarseDitherStrength, coarseDitherMatrixEnum, previewRenderer, progressCallback, fast);
 		}
 
-		Board board = new Board(platform, playerX, playerY);
+		Board board = new Board(platform.getZztEngineDefinition(), playerX, playerY);
 		BufferedImage preview = null;
 
 		int pixelWidth = width * visual.getCharWidth();
@@ -393,8 +393,8 @@ public class ImageConverter {
 			return proposedMse - pastMse;
 		}));
 
-		int realMaxStatCount = Math.min(maxStatCount, platform.getActualMaxStatCount());
-		int realMaxBoardSize = Math.min(maxBoardSize, platform.getMaxBoardSize());
+		int realMaxStatCount = Math.min(maxStatCount, platform.getZztEngineDefinition().getMaxStatCount());
+		int realMaxBoardSize = Math.min(maxBoardSize, platform.getZztEngineDefinition().getMaxBoardSize());
 		int boardSerializationSize = count(board::writeZ);
 		int addedStats = 0;
 
@@ -420,9 +420,9 @@ public class ImageConverter {
 
 			if (boardSerializationSize < (realMaxBoardSize - 128)) {
 				// optimization: don't recalc full board size if only RLE could be impacted
-				boardSerializationSize += stat.lengthZ(platform);
+				boardSerializationSize += stat.lengthZ(platform.getZztEngineDefinition());
 			} else {
-				boardSerializationSize = count(board::writeZ) + stat.lengthZ(platform);
+				boardSerializationSize = count(board::writeZ) + stat.lengthZ(platform.getZztEngineDefinition());
 			}
 			if (boardSerializationSize > realMaxBoardSize) {
 				previewResults[coords.getY() * width + coords.getX()] = prevResult;

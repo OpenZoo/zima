@@ -84,7 +84,7 @@ public class LinterCheckBoardConnections {
 
 		// check passage reciprocation
 
-		Element passageElement = world.getPlatform().getLibrary().byInternalName("PASSAGE");
+		Element passageElement = world.getEngineDefinition().getElements().byInternalName("PASSAGE");
 		ElementLocationStream.stats(worldLoc).forEach(el -> {
 			Board b = el.getBoard();
 			Stat st = el.getStat();

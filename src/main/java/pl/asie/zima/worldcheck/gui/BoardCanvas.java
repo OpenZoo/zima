@@ -23,6 +23,7 @@ import lombok.Setter;
 import pl.asie.libzzt.Board;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.TextVisualRenderer;
+import pl.asie.zima.util.ZimaPlatform;
 import pl.asie.zima.util.gui.SimpleCanvas;
 import pl.asie.zima.worldcheck.ElementLocation;
 
@@ -32,14 +33,16 @@ import java.util.List;
 public class BoardCanvas extends SimpleCanvas {
 	@Getter
 	private TextVisualData visualData;
+	private final ZimaPlatform platform;
 	@Getter
 	private Board board;
 	@Getter
 	@Setter
 	private List<ElementLocation> highlights;
 
-	public BoardCanvas(TextVisualData visualData) {
+	public BoardCanvas(TextVisualData visualData, ZimaPlatform platform) {
 		this.visualData = visualData;
+		this.platform = platform;
 	}
 
 	@Override
@@ -62,7 +65,7 @@ public class BoardCanvas extends SimpleCanvas {
 		if (board == null) {
 			setImage(null);
 		} else {
-			TextVisualRenderer renderer = new TextVisualRenderer(visualData, board.getPlatform());
+			TextVisualRenderer renderer = new TextVisualRenderer(visualData, platform.isDoubleWide());
 			setImage(renderer.render(board, false));
 		}
 	}

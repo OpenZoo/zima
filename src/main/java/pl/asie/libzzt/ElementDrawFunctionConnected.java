@@ -30,8 +30,8 @@ public class ElementDrawFunctionConnected implements ElementDrawFunction {
 	private final int[] chars;
 
 	private boolean matches(Board board, int x, int y) {
-		Element LINE = board.getPlatform().getLibrary().byInternalName("LINE");
-		Element BOARD_EDGE = board.getPlatform().getLibrary().byInternalName("BOARD_EDGE");
+		Element LINE = board.getEngineDefinition().getElements().byInternalName("LINE");
+		Element BOARD_EDGE = board.getEngineDefinition().getElements().byInternalName("BOARD_EDGE");
 		Element element = board.getElement(x, y);
 		if (element == LINE || element == BOARD_EDGE) {
 			return true;

@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.TextVisualRenderer;
+import pl.asie.zima.util.ZimaPlatform;
 import pl.asie.zima.worldcheck.ElementLocation;
 import pl.asie.zima.worldcheck.ElementLocationHolder;
 
@@ -39,6 +40,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class WorldCheckTreeCellRenderer extends DefaultTreeCellRenderer {
 	private final TextVisualData visualData;
+	private final ZimaPlatform platform;
 	private final Cache<ElementLocation, Optional<ImageIcon>> iconCache = CacheBuilder.newBuilder()
 			.maximumSize(4096)
 			.weakValues()
@@ -52,7 +54,7 @@ public class WorldCheckTreeCellRenderer extends DefaultTreeCellRenderer {
 	}
 
 	private Optional<ImageIcon> create(ElementLocation location) {
-		TextVisualRenderer renderer = new TextVisualRenderer(visualData, location.getWorld().getPlatform());
+		TextVisualRenderer renderer = new TextVisualRenderer(visualData, platform.isDoubleWide());
 		if (location.getXPos() != null) {
 			return Optional.of(new ImageIcon(renderer.render(location.getBoard(), false, location.getXPos(), location.getYPos(), 1, 1)));
 		} else if (location.getBoardId() != null) {

@@ -18,19 +18,15 @@
  */
 package pl.asie.zima.worldcheck.gui;
 
-import pl.asie.libzxt.ZxtExtensionHeader;
 import pl.asie.libzxt.ZxtExtensionParser;
-import pl.asie.libzxt.ZxtFlag;
 import pl.asie.libzzt.Board;
-import pl.asie.libzzt.Platform;
 import pl.asie.libzzt.Stat;
 import pl.asie.libzzt.TextVisualData;
-import pl.asie.libzzt.World;
-import pl.asie.libzzt.ZInputStream;
 import pl.asie.zima.Constants;
 import pl.asie.zima.gui.BaseFrontendSwing;
 import pl.asie.zima.image.ImageConverterMain;
 import pl.asie.zima.util.FileUtils;
+import pl.asie.zima.util.ZimaPlatform;
 import pl.asie.zima.worldcheck.ElementLocation;
 import pl.asie.zima.worldcheck.LinterCheck;
 import pl.asie.zima.worldcheck.LinterLabel;
@@ -49,9 +45,7 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.util.List;
 import java.util.Objects;
 import java.util.SortedMap;
@@ -92,8 +86,8 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 		private ElementLocation currentLocation;
 
 		WorldHolder() {
-			this.worldTreeCellRenderer = new WorldCheckTreeCellRenderer(VISUAL_DATA);
-			this.uiCanvas = new BoardCanvas(VISUAL_DATA);
+			this.worldTreeCellRenderer = new WorldCheckTreeCellRenderer(VISUAL_DATA, ZimaPlatform.ZZT);
+			this.uiCanvas = new BoardCanvas(VISUAL_DATA, ZimaPlatform.ZZT);
 
 			this.uiCanvas.setMinimumSize(new Dimension(480, 350));
 			this.uiCanvas.setPreferredSize(new Dimension(480, 350));

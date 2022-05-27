@@ -23,11 +23,10 @@ import pl.asie.libzxt.ZxtCannotParseException;
 import pl.asie.libzxt.ZxtExtensionHeader;
 import pl.asie.libzxt.ZxtExtensionParser;
 import pl.asie.libzxt.ZxtFlag;
-import pl.asie.libzzt.Platform;
+import pl.asie.zima.util.ZimaPlatform;
 import pl.asie.libzzt.World;
 import pl.asie.libzzt.ZInputStream;
 
-import javax.swing.*;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -64,8 +63,8 @@ public class LinterWorldHolder {
 				}
 			}
 
-			try (ZInputStream zis = new ZInputStream(bis, Platform.ZZT)) {
-				world = new World(Platform.ZZT);
+			try (ZInputStream zis = new ZInputStream(bis, ZimaPlatform.ZZT.getZztEngineDefinition())) {
+				world = new World(ZimaPlatform.ZZT.getZztEngineDefinition());
 				world.readZ(zis);
 			}
 

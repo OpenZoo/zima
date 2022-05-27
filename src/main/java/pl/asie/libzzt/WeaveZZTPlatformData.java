@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Getter
 @AllArgsConstructor
@@ -79,10 +80,19 @@ public class WeaveZZTPlatformData {
     private final boolean blinkingDisabled;
     private final ElementLibrary library;
 
+    public EngineDefinition createEngineDefinition() {
+        // TODO: Incorporate blinkingDisabled, palette
+        return EngineDefinition.ZZT.toBuilder()
+                .maxBoardSize(65500)
+                .maxStatCount(maxStatCount + 1)
+                .elements(library)
+                .build();
+    }
+
     public static WeaveZZTPlatformData parse(ElementLibrary base, InputStream is) throws IOException {
         List<Element> elements = new ArrayList<>(base.getElements());
-        List<String> names = elements.stream().map(base::getInternalName).collect(Collectors.toList());
-        List<String> weaveNames = names.stream().map(e -> INTERNAL_TO_WEAVE.getOrDefault(e, e)).collect(Collectors.toList());
+        List<String> names = elements.stream().map(base::getInternalName).toList();
+        List<String> weaveNames = names.stream().map(e -> INTERNAL_TO_WEAVE.getOrDefault(e, e)).toList();
         int[] palette = Arrays.copyOf(Constants.EGA_PALETTE, 16);
         boolean blinkingDisabled = false;
         boolean paletteModified = false;
@@ -189,6 +199,10 @@ public class WeaveZZTPlatformData {
             }
         }
 
-        return new WeaveZZTPlatformData(paletteModified ? palette : null, maxStatCount, blinkingDisabled, new ElementLibrary(names, elements));
+        return new WeaveZZTPlatformData(paletteModified ? palette : null, maxStatCount, blinkingDisabled, new ElementLibrary(elements,
+                IntStream.range(0, elements.size()).boxed().collect(Collectors.toMap(
+                        elements::get, names::get
+                ))
+        ));
     }
 }

@@ -20,7 +20,7 @@ package pl.asie.zima.gui;
 
 import com.google.gson.*;
 import pl.asie.libzzt.Element;
-import pl.asie.libzzt.Platform;
+import pl.asie.zima.util.ZimaPlatform;
 
 import java.lang.reflect.Type;
 
@@ -36,12 +36,12 @@ public final class ElementJsonSerdes implements JsonSerializer<Element>, JsonDes
         if (json.isJsonPrimitive()) {
             JsonPrimitive jp = json.getAsJsonPrimitive();
             if (jp.isNumber()) {
-                return Platform.ZZT.getLibrary().byId(jp.getAsInt());
+                return ZimaPlatform.ZZT.getLibrary().byId(jp.getAsInt());
             } else if (jp.isString()) {
-                return Platform.ZZT.getLibrary().byInternalName(jp.getAsString());
+                return ZimaPlatform.ZZT.getLibrary().byInternalName(jp.getAsString());
             }
         }
-        return Platform.ZZT.getLibrary().getEmpty();
+        return ZimaPlatform.ZZT.getLibrary().getEmpty();
     }
 
     @Override

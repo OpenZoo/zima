@@ -42,29 +42,29 @@ public class Board {
 	private int drawOffsetY; // Super ZZT
 	private int timeLimitSec;
 
-	private final Platform platform;
+	private final EngineDefinition engineDefinition;
 	private final int width, height, outerWidth, outerHeight;
 	private final byte[] elements;
 	private final byte[] colors;
 
 	private List<Stat> stats = new ArrayList<>();
 
-	public Board(Platform platform) {
-		this(platform, platform.getBoardWidth() >> 1, platform.getBoardHeight() >> 1);
+	public Board(EngineDefinition engineDefinition) {
+		this(engineDefinition, engineDefinition.getBoardWidth() >> 1, engineDefinition.getBoardHeight() >> 1);
 	}
 
-	public Board(Platform platform, int playerX, int playerY) {
-		this.platform = platform;
-		this.width = platform.getBoardWidth();
-		this.height = platform.getBoardHeight();
+	public Board(EngineDefinition engineDefinition, int playerX, int playerY) {
+		this.engineDefinition = engineDefinition;
+		this.width = engineDefinition.getBoardWidth();
+		this.height = engineDefinition.getBoardHeight();
 		this.outerWidth = this.width + 2;
 		this.outerHeight = this.height + 2;
 		this.elements = new byte[this.outerWidth * this.outerHeight];
 		this.colors = new byte[this.outerWidth * this.outerHeight];
 
 		Arrays.fill(elements, (byte) 0);
-		Element boardEdge = platform.getLibrary().byInternalName("BOARD_EDGE");
-		Element player = platform.getLibrary().byInternalName("PLAYER");
+		Element boardEdge = engineDefinition.getElements().byInternalName("BOARD_EDGE");
+		Element player = engineDefinition.getElements().byInternalName("PLAYER");
 
 		// set board edges
 		for (int i = 0; i < this.outerWidth; i++) {
@@ -89,11 +89,11 @@ public class Board {
 	}
 
 	public Element getElement(int x, int y) {
-		return this.platform.getLibrary().byId(getElementId(x, y));
+		return this.engineDefinition.getElements().byId(getElementId(x, y));
 	}
 
 	public boolean isValidElement(int x, int y) {
-		return this.platform.getLibrary().hasId(getElementId(x, y));
+		return this.engineDefinition.getElements().isIdValid(getElementId(x, y));
 	}
 
 	public int getElementId(int x, int y) {
@@ -155,19 +155,19 @@ public class Board {
 			throw new IOException("Could not read all board bytes: read " + dataRead + " bytes, expected " + boardSize + " bytes");
 		}
 
-		try (ByteArrayInputStream byteStream = new ByteArrayInputStream(data); ZInputStream stream = new ZInputStream(byteStream, inStream.getPlatform())) {
-			this.name = stream.readPString(platform.getZztWorldFormat().isSuperZZTLike() ? 60 : 50);
+		try (ByteArrayInputStream byteStream = new ByteArrayInputStream(data); ZInputStream stream = new ZInputStream(byteStream, inStream.getEngineDefinition())) {
+			this.name = stream.readPString(engineDefinition.getBaseKind().isSuperZZTLike() ? 60 : 50);
 
 			int ix = 1;
 			int iy = 1;
 			int rleCount = 0;
-			Element rleElement = platform.getLibrary().getEmpty();
+			Element rleElement = engineDefinition.getElements().getEmpty();
 			int rleColor = 0;
 			do {
 				if (rleCount <= 0) {
 					rleCount = stream.readPByte();
 					if (rleCount == 0) rleCount = 256;
-					rleElement = platform.getLibrary().byId(stream.readPByte());
+					rleElement = engineDefinition.getElements().byId(stream.readPByte());
 					rleColor = stream.readPByte();
 				}
 				setElement(ix, iy, rleElement);
@@ -181,23 +181,23 @@ public class Board {
 			} while (iy <= this.height);
 
 			this.maxShots = stream.readPByte();
-			if (platform.getZztWorldFormat().isZZTLike()) {
+			if (engineDefinition.getBaseKind().isZZTLike()) {
 				this.dark = stream.readPBoolean();
 			}
 			for (int i = 0; i < 4; i++)
 				this.neighborBoards[i] = stream.readPByte();
 			this.reenterWhenZapped = stream.readPBoolean();
-			if (platform.getZztWorldFormat().isZZTLike()) {
+			if (engineDefinition.getBaseKind().isZZTLike()) {
 				this.message = stream.readPString(58);
 			}
 			this.startPlayerX = stream.readPByte();
 			this.startPlayerY = stream.readPByte();
-			if (platform.getZztWorldFormat().isSuperZZTLike()) {
+			if (engineDefinition.getBaseKind().isSuperZZTLike()) {
 				this.drawOffsetX = stream.readPShort();
 				this.drawOffsetY = stream.readPShort();
 			}
 			this.timeLimitSec = stream.readPShort();
-			int skipCount = platform.getZztWorldFormat().isSuperZZTLike() ? 14 : 16;
+			int skipCount = engineDefinition.getBaseKind().isSuperZZTLike() ? 14 : 16;
 			if (stream.skip(skipCount) != skipCount) {
 				throw new IOException();
 			}
@@ -216,8 +216,8 @@ public class Board {
 	}
 
 	public void writeZ(ZOutputStream outStream) throws IOException {
-		try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream(); ZOutputStream stream = new ZOutputStream(byteStream, outStream.getPlatform())) {
-			stream.writePString(this.name, platform.getZztWorldFormat().isSuperZZTLike() ? 60 : 50);
+		try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream(); ZOutputStream stream = new ZOutputStream(byteStream, outStream.getEngineDefinition())) {
+			stream.writePString(this.name, engineDefinition.getBaseKind().isSuperZZTLike() ? 60 : 50);
 
 			// fancy RLE logic
 			int ix = 1;
@@ -245,23 +245,23 @@ public class Board {
 			} while (iy <= this.height);
 
 			stream.writePByte(this.maxShots);
-			if (platform.getZztWorldFormat().isZZTLike()) {
+			if (engineDefinition.getBaseKind().isZZTLike()) {
 				stream.writePBoolean(this.dark);
 			}
 			for (int i = 0; i < 4; i++)
 				stream.writePByte(this.neighborBoards[i]);
 			stream.writePBoolean(this.reenterWhenZapped);
-			if (platform.getZztWorldFormat().isZZTLike()) {
+			if (engineDefinition.getBaseKind().isZZTLike()) {
 				stream.writePString(this.message, 58);
 			}
 			stream.writePByte(this.startPlayerX);
 			stream.writePByte(this.startPlayerY);
-			if (platform.getZztWorldFormat().isSuperZZTLike()) {
+			if (engineDefinition.getBaseKind().isSuperZZTLike()) {
 				stream.writePShort(this.drawOffsetX);
 				stream.writePShort(this.drawOffsetY);
 			}
 			stream.writePShort(this.timeLimitSec);
-			stream.pad(platform.getZztWorldFormat().isSuperZZTLike() ? 14 : 16);
+			stream.pad(engineDefinition.getBaseKind().isSuperZZTLike() ? 14 : 16);
 
 			stream.writePShort(stats.size() - 1);
 

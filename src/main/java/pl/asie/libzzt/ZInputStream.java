@@ -28,13 +28,13 @@ import java.nio.charset.StandardCharsets;
 public class ZInputStream extends FilterInputStream {
 
 	@Getter
-	private final Platform platform;
+	private final EngineDefinition engineDefinition;
 	@Getter
 	private int position = 0;
 
-	public ZInputStream(InputStream in, Platform platform) {
+	public ZInputStream(InputStream in, EngineDefinition engineDefinition) {
 		super(in);
-		this.platform = platform;
+		this.engineDefinition = engineDefinition;
 	}
 
 	@Override

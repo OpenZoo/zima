@@ -34,7 +34,7 @@ public final class OopSound {
 
 	private final List<Note> notes;
 
-	public OopSound(String noteString) {
+	public OopSound(OopParserContext context, String noteString) {
 		this.notes = new ArrayList<>();
 		noteString = noteString.toUpperCase(Locale.ROOT);
 

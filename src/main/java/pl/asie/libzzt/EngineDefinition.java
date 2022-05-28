@@ -2,6 +2,7 @@ package pl.asie.libzzt;
 
 import lombok.Builder;
 import lombok.Getter;
+import pl.asie.libzzt.oop.OopParserConfiguration;
 
 @Getter
 @Builder(toBuilder = true)
@@ -12,6 +13,7 @@ public class EngineDefinition {
 			.maxBoardSize(20000)
 			.maxStatCount(150 + 1)
 			.elements(ElementLibraryZZT.INSTANCE)
+			.oopParserConfiguration(OopParserConfiguration.ZZT)
 			.build();
 	public static final EngineDefinition SUPER_ZZT = EngineDefinition.builder()
 			.baseKind(EngineBaseKind.SUPER_ZZT)
@@ -19,7 +21,9 @@ public class EngineDefinition {
 			.maxBoardSize(20000)
 			.maxStatCount(128 + 1)
 			.elements(ElementLibrarySuperZZT.INSTANCE)
+			.oopParserConfiguration(OopParserConfiguration.ZZT)
 			.build();
+
 	public static final EngineDefinition CLASSICZOO = ZZT.toBuilder()
 			.maxBoardSize(65500)
 			.build();
@@ -37,4 +41,5 @@ public class EngineDefinition {
 	 */
 	private final int maxStatCount;
 	private final ElementLibrary elements;
+	private final OopParserConfiguration oopParserConfiguration;
 }

@@ -28,6 +28,14 @@ public final class OopUtils {
 
 	}
 
+	public static int upCase(int c) {
+		if (c >= 'a' && c <= 'z') {
+			return c - 32;
+		} else {
+			return c;
+		}
+	}
+
 	public static <T extends ChildrenIterable<T>> Stream<T> allChildren(T c) {
 		return Stream.concat(Stream.of(c), allChildren(c.getChildren().stream()));
 	}

@@ -16,31 +16,23 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.libzzt.oop;
+package pl.asie.gbzooconv2;
 
-import lombok.Builder;
-import lombok.Singular;
+import pl.asie.gbzooconv2.exceptions.BinarySerializerException;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
-@Builder(toBuilder = true)
-public class OopTokenWordDiscriminator<T> implements OopTokenParser<T> {
-	@Builder.Default
-	private final OopTokenParser<T> defaultParser = context -> {
-		throw new RuntimeException("Invalid token: " + context.getWord());
-	};
-	@Singular
-	private final Map<String, OopTokenParser<T>> words;
+public interface BinarySerializerOutput {
+	void writeByte(int v) throws IOException;
 
-	@Override
-	public T parse(OopParserContext context) {
-		context.readWord();
-		OopTokenParser<T> parser = words.get(context.getWord());
-		if (parser != null) {
-			return parser.parse(context);
-		} else {
-			return defaultParser.parse(context);
-		}
-	}
+	void writeShort(int v) throws IOException;
+
+	int getNearPointerSize();
+
+	void writeNearPointerTo(BinarySerializable object) throws IOException, BinarySerializerException;
+
+	int getFarPointerSize();
+	void writeFarPointerTo(BinarySerializable object) throws IOException, BinarySerializerException;
 }

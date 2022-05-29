@@ -16,31 +16,12 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.libzzt.oop;
+package pl.asie.gbzooconv2.exceptions;
 
-import lombok.Builder;
-import lombok.Singular;
+import java.util.Collection;
 
-import java.util.HashMap;
-import java.util.Map;
-
-@Builder(toBuilder = true)
-public class OopTokenWordDiscriminator<T> implements OopTokenParser<T> {
-	@Builder.Default
-	private final OopTokenParser<T> defaultParser = context -> {
-		throw new RuntimeException("Invalid token: " + context.getWord());
-	};
-	@Singular
-	private final Map<String, OopTokenParser<T>> words;
-
-	@Override
-	public T parse(OopParserContext context) {
-		context.readWord();
-		OopTokenParser<T> parser = words.get(context.getWord());
-		if (parser != null) {
-			return parser.parse(context);
-		} else {
-			return defaultParser.parse(context);
-		}
+public class IdNotFoundException extends BinarySerializerException {
+	public <T> IdNotFoundException(String type, T token, Collection<T> tokens) {
+		super(type + " " + token + " not found in " + tokens);
 	}
 }

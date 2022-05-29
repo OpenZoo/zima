@@ -28,9 +28,10 @@ import java.util.List;
 public class ZimaLicenseWindow {
     private static final List<Triplet<String, String, String>> LICENSE_TEXTS = List.of(
             new Triplet<>("zima", "licenses/COPYING", "licenses/COPYING.GPL"),
-            new Triplet<>("Gson", "licenses/3rdparty/LICENSE-GSON", "licenses/3rdparty/LICENSE-GSON.long"),
-            new Triplet<>("Guava", "licenses/3rdparty/LICENSE-GUAVA", "licenses/3rdparty/LICENSE-GUAVA.long"),
-            new Triplet<>("Reconstruction of ZZT", "licenses/3rdparty/LICENSE-ROZ", "licenses/3rdparty/LICENSE-ROZ")
+            new Triplet<>("Gson", "licenses/3rdparty/LICENSE-GSON", "licenses/3rdparty/apache20.txt"),
+            new Triplet<>("Guava", "licenses/3rdparty/LICENSE-GUAVA", "licenses/3rdparty/apache20.txt"),
+            new Triplet<>("Reconstruction of ZZT", "licenses/3rdparty/LICENSE-ROZ", "licenses/3rdparty/LICENSE-ROZ"),
+            new Triplet<>("word-wrap", "licenses/3rdparty/LICENSE-WORDWRAP", "licenses/3rdparty/apache20.txt")
     );
 
     public ZimaLicenseWindow(JFrame parent, String zimaVersion) throws IOException {

@@ -247,12 +247,12 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				Boolean blinkingDisabled = null;
 
 				if ("WeaveZZT 2.5".equals(newEntry.getFirst())) {
-					WeaveZZTPlatformData platformData = loadWeaveCfg();
+					EngineDefinition platformData = loadWeaveCfgEngineDef();
 					if (platformData != null) {
-						newPlatform = newPlatform.withZztEngineDefinition(platformData.createEngineDefinition());
+						newPlatform = newPlatform.withZztEngineDefinition(platformData);
 						blinkingDisabled = platformData.isBlinkingDisabled();
-						if (platformData.getPalette() != null) {
-							this.palette = platformData.getPalette();
+						if (platformData.getCustomPalette() != null) {
+							this.palette = platformData.getCustomPalette();
 							updateVisual();
 						}
 					}
@@ -775,11 +775,11 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		}
 	}
 
-	private WeaveZZTPlatformData loadWeaveCfg() {
+	private EngineDefinition loadWeaveCfgEngineDef() {
 		File file = showLoadDialog("worlds", new FileNameExtensionFilter("WeaveZZT 2.5 configuration file", "cfg"));
 		if (file != null) {
 			try (FileInputStream fis = new FileInputStream(file)) {
-				WeaveZZTPlatformData platformData = WeaveZZTPlatformData.parse(ElementLibraryZZT.INSTANCE, fis);
+				EngineDefinition platformData = WeaveZZTPlatformData.parse(ElementLibraryZZT.INSTANCE, fis);
 				return platformData;
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);

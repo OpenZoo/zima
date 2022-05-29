@@ -39,7 +39,6 @@ import java.util.OptionalInt;
 
 @Getter
 @EqualsAndHashCode
-@ToString
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ElementLocation implements Comparable<ElementLocation> {
 	private final World world;

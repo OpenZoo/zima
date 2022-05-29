@@ -92,8 +92,7 @@ public final class ZimaPlatform {
         MEGAZEUX = ZimaPlatform.builder().defaultBoardWidth(80).defaultBoardHeight(25).supportsBlinking(false).build();
 
         try {
-            WeaveZZTPlatformData platformData = WeaveZZTPlatformData.parse(ElementLibraryZZT.INSTANCE, null);
-            WEAVE_ZZT_25 = ZimaPlatform.builder().zztEngineDefinition(EngineDefinition.ZZT).build();
+            WEAVE_ZZT_25 = ZimaPlatform.builder().zztEngineDefinition(WeaveZZTPlatformData.parse(ElementLibraryZZT.INSTANCE, null)).build();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

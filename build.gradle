@@ -6,7 +6,11 @@ plugins {
 }
 
 group 'pl.asie.zima'
-version '0.9.0-beta4'
+
+version = '0.9.0'
+ext.revision = 'git rev-list --count HEAD'.execute().text.trim()
+ext.hash = 'git rev-parse --short HEAD'.execute().text.trim()
+version = "${version}-r${revision}.${hash}"
 
 repositories {
     mavenCentral()

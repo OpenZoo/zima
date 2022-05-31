@@ -16,16 +16,14 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.gbzooconv2;
+package pl.asie.tinyzooconv;
 
 import lombok.Builder;
-import pl.asie.gbzooconv2.exceptions.BinarySerializerException;
+import pl.asie.tinyzooconv.exceptions.BinarySerializerException;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -33,7 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 
 @Builder
-public class BankingBinarySerializer {
+public class BankingBinarySerializer implements BinarySerializer {
 	private static class Collector extends BaseBinarySerializerOutput {
 		private final Map<Integer, BinarySerializable> farPointerLocations = new HashMap<>();
 
@@ -158,13 +156,7 @@ public class BankingBinarySerializer {
 	}
 
 	public void writeBankData(OutputStream stream) throws IOException, BinarySerializerException {
-		int maximumBank = this.objectsPerBank.keySet().stream().mapToInt(a -> a).max().orElse(this.firstBankIndex - 1);
-		if (padToPowerOfTwo) {
-			maximumBank |= (maximumBank >> 1);
-			maximumBank |= (maximumBank >> 2);
-			maximumBank |= (maximumBank >> 4);
-			maximumBank |= (maximumBank >> 8);
-		}
+		int maximumBank = getBanksUsed() - 1;
 		for (int i = firstBankIndex; i <= maximumBank; i++) {
 			List<BinarySerializable> list = this.objectsPerBank.get(i);
 			int pos = 0;
@@ -180,5 +172,17 @@ public class BankingBinarySerializer {
 				pos++;
 			}
 		}
+	}
+
+	@Override
+	public int getBanksUsed() {
+		int maximumBank = this.objectsPerBank.keySet().stream().mapToInt(a -> a).max().orElse(this.firstBankIndex - 1);
+		if (padToPowerOfTwo) {
+			maximumBank |= (maximumBank >> 1);
+			maximumBank |= (maximumBank >> 2);
+			maximumBank |= (maximumBank >> 4);
+			maximumBank |= (maximumBank >> 8);
+		}
+		return maximumBank + 1;
 	}
 }

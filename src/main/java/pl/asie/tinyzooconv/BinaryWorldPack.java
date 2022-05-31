@@ -16,9 +16,9 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.gbzooconv2;
+package pl.asie.tinyzooconv;
 
-import pl.asie.gbzooconv2.exceptions.BinarySerializerException;
+import pl.asie.tinyzooconv.exceptions.BinarySerializerException;
 import pl.asie.libzzt.World;
 
 import java.io.IOException;

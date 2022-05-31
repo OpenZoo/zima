@@ -16,12 +16,14 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.gbzooconv2;
+package pl.asie.tinyzooconv.exceptions;
 
-import pl.asie.gbzooconv2.exceptions.BinarySerializerException;
+public class BinarySerializerException extends Exception {
+	public BinarySerializerException(String s) {
+		super(s);
+	}
 
-import java.io.IOException;
-
-public interface BinarySerializable {
-	void serialize(BinarySerializerOutput output) throws IOException, BinarySerializerException;
+	public BinarySerializerException(String s, Exception e) {
+		super(s + ": " + e.getMessage(), e);
+	}
 }

@@ -18,9 +18,12 @@
  */
 package pl.asie.libzxt.zzt;
 
+import lombok.Builder;
+import lombok.Singular;
 import pl.asie.libzxt.ZxtCannotParseException;
 import pl.asie.libzxt.ZxtExtensionBlock;
 import pl.asie.libzxt.ZxtExtensionHeader;
+import pl.asie.libzxt.ZxtExtensionId;
 import pl.asie.libzxt.ZxtExtensionParser;
 import pl.asie.libzxt.ZxtFlag;
 import pl.asie.libzzt.EngineDefinition;
@@ -34,11 +37,16 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
+@Builder
 public final class ZxtReader {
-	private ZxtReader() {
-
-	}
+	@Builder.Default
+	private final Set<ZxtExtensionId> supportedIds = null;
+	@Builder.Default
+	private final Set<ZxtExtensionId> unsupportedIds = null;
 
 	/**
 	 * Apply the given ZXT extensions to a given engine definition.
@@ -49,13 +57,16 @@ public final class ZxtReader {
 	 * @return A mask of unsatisfied optional flags.
 	 * @throws ZxtCannotApplyException An extension block with a required flag could not be applied.
 	 */
-	public static int applyExtensions(EngineDefinition src, ZxtExtensionHeader zxt, int requiredFlags) throws ZxtCannotApplyException {
+	@SuppressWarnings("ConstantConditions")
+	public int applyExtensions(EngineDefinition src, ZxtExtensionHeader zxt, int requiredFlags) throws ZxtCannotApplyException {
 		int unsatisfiedFlags = 0;
 
 		for (ZxtExtensionBlock zxtBlock : zxt.getBlocks()) {
 			ZxtEngineDefinitionApplier applier = ZxtAppliers.APPLIER_MAP.get(zxtBlock.getId());
+			boolean isSupported = supportedIds == null || supportedIds.contains(zxtBlock.getId());
+			boolean isUnsupported = unsupportedIds != null && unsupportedIds.contains(zxtBlock.getId());
 			//noinspection StatementWithEmptyBody
-			if (applier != null && applier.apply(src, zxtBlock)) {
+			if (isSupported && !isUnsupported && applier != null && applier.apply(src, zxtBlock)) {
 				// success!
 			} else {
 				if ((zxtBlock.getFlags() & requiredFlags) != 0) {
@@ -69,7 +80,7 @@ public final class ZxtReader {
 		return unsatisfiedFlags;
 	}
 
-	public static ZxtWorld loadWorldWithExtensions(EngineDefinition base, File file, int requiredFlags) throws IOException, ZxtCannotParseException, ZxtCannotApplyException {
+	public ZxtWorld loadWorldWithExtensions(EngineDefinition base, File file, int requiredFlags) throws IOException, ZxtCannotParseException, ZxtCannotApplyException {
 		File zaxFile = FileUtils.firstExists(
 				FileUtils.withExtension(file, "zax"),
 				FileUtils.withExtension(file, "ZAX")

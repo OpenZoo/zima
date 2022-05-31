@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.gbzooconv2;
+package pl.asie.tinyzooconv;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -27,17 +27,16 @@ import pl.asie.libzzt.oop.commands.OopCommandTextLine;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class OopCommandGBZWrappedTextLines extends OopCommand {
+public class OopCommandTZWrappedTextLines extends OopCommand {
 	private List<OopCommandTextLine> lines;
 	private int lineCount;
 
-	public OopCommandGBZWrappedTextLines(List<OopCommandTextLine> originalLines, int wordWrapWidth) {
+	public OopCommandTZWrappedTextLines(List<OopCommandTextLine> originalLines, int wordWrapWidth) {
 		this.lines = new ArrayList<>();
 		this.lineCount = originalLines.size();
 		if (originalLines.size() == 1 && originalLines.get(0).getMessage().isEmpty() && originalLines.get(0).getType() == OopCommandTextLine.Type.REGULAR) {

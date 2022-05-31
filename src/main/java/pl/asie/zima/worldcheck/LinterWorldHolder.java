@@ -63,7 +63,7 @@ public class LinterWorldHolder {
 	public void read(File file) throws IOException, ZxtCannotApplyException, ZxtCannotParseException {
 		world = null;
 
-		zxtWorld = ZxtReader.loadWorldWithExtensions(
+		zxtWorld = ZxtReader.builder().build().loadWorldWithExtensions(
 				EngineDefinition.zzt(), file,
 				ZxtFlag.PARSING_MUST | ZxtFlag.READING_MUST | ZxtFlag.WRITING_MUST | ZxtFlag.PLAYING_MUST
 		);

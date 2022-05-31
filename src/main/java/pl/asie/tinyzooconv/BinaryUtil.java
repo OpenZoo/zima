@@ -16,10 +16,10 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.gbzooconv2;
+package pl.asie.tinyzooconv;
 
-import pl.asie.gbzooconv2.exceptions.IdNotFoundException;
-import pl.asie.gbzooconv2.exceptions.TooManyIdsException;
+import pl.asie.tinyzooconv.exceptions.IdNotFoundException;
+import pl.asie.tinyzooconv.exceptions.TooManyIdsException;
 
 import java.util.List;
 import java.util.Map;

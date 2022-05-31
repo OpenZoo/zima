@@ -16,12 +16,21 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.gbzooconv2.exceptions;
+package pl.asie.tinyzooconv;
 
-import java.util.Collection;
+import pl.asie.tinyzooconv.exceptions.BinarySerializerException;
 
-public class IdNotFoundException extends BinarySerializerException {
-	public <T> IdNotFoundException(String type, T token, Collection<T> tokens) {
-		super(type + " " + token + " not found in " + tokens);
-	}
+import java.io.IOException;
+
+public interface BinarySerializerOutput {
+	void writeByte(int v) throws IOException;
+
+	void writeShort(int v) throws IOException;
+
+	int getNearPointerSize();
+
+	void writeNearPointerTo(BinarySerializable object) throws IOException, BinarySerializerException;
+
+	int getFarPointerSize();
+	void writeFarPointerTo(BinarySerializable object) throws IOException, BinarySerializerException;
 }

@@ -16,12 +16,15 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.gbzooconv2;
+package pl.asie.tinyzooconv;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import pl.asie.gbzooconv2.exceptions.BinarySerializerException;
-import pl.asie.gbzooconv2.exceptions.IdNotFoundException;
+import pl.asie.libzxt.zzt.oop.commands.OopCommandZxtDieItem;
+import pl.asie.libzxt.zzt.oop.commands.OopCommandZxtViewport;
+import pl.asie.libzxt.zzt.oop.conditions.OopConditionZxtRnd;
+import pl.asie.tinyzooconv.exceptions.BinarySerializerException;
+import pl.asie.tinyzooconv.exceptions.IdNotFoundException;
 import pl.asie.libzzt.oop.OopLabelTarget;
 import pl.asie.libzzt.oop.OopProgram;
 import pl.asie.libzzt.oop.OopSound;
@@ -83,7 +86,6 @@ import pl.asie.libzzt.oop.directions.OopDirectionSouth;
 import pl.asie.libzzt.oop.directions.OopDirectionWest;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -168,6 +170,8 @@ public class BinaryProgram implements BinarySerializable {
 				// TODO: Emit warning
 				code.add(255);
 			}
+		} else if (condition instanceof OopConditionZxtRnd cond) {
+			code.add(0x07);
 		} else {
 			throw new RuntimeException("Unsupported condition: " + condition);
 		}
@@ -231,6 +235,10 @@ public class BinaryProgram implements BinarySerializable {
 	}
 
 	private void serializeCommand(BinarySerializerOutput output, OopCommand command, List<Integer> code, List<Integer> labels, Map<Integer, BinarySerializable> ptrRequests) throws BinarySerializerException {
+		if (command instanceof OopCommandTextLine cmd) {
+			command = new OopCommandTZWrappedTextLines(List.of(cmd), WORD_WRAP_WIDTH);
+		}
+
 		boolean isInner = labels == null;
 		if (command instanceof OopCommandLabel label) {
 			if (isInner) throw new RuntimeException("Not allowed inside a command!");
@@ -359,7 +367,7 @@ public class BinaryProgram implements BinarySerializable {
 			} catch (IdNotFoundException e) {
 				warnOrError("#BIND: " + e.getMessage());
 			}
-		} else if (command instanceof OopCommandGBZWrappedTextLines cmd) {
+		} else if (command instanceof OopCommandTZWrappedTextLines cmd) {
 			code.add(0x1D);
 			code.add(cmd.getLineCount());
 			code.add(cmd.getLines().size());
@@ -379,7 +387,28 @@ public class BinaryProgram implements BinarySerializable {
 						warnOrError("text line: " + e.getMessage());
 					}
 				}
-				addPtrRequest(output,ptrRequests, code, new BinaryTextLine(line, targetId, labelId));
+				addPtrRequest(output, ptrRequests, code, new BinaryTextLine(line, targetId, labelId));
+			}
+		} else if (command instanceof OopCommandZxtDieItem cmd) {
+			code.add(0x1B);
+			code.add(0x02);
+		} else if (command instanceof OopCommandZxtViewport cmd) {
+			code.add(0x1F);
+			switch (cmd.getType()) {
+				case LOCK -> code.add(0x00);
+				case UNLOCK -> code.add(0x01);
+				case FOCUS -> {
+					code.add(0x02);
+					if ("PLAYER".equals(cmd.getTarget())) {
+						code.add(251);
+					} else {
+						code.add(context.getNameId(cmd.getTarget()));
+					}
+				}
+				case MOVE -> {
+					code.add(0x03);
+					serializeDirection(cmd.getDirection(), code);
+				}
 			}
 		} else {
 			throw new RuntimeException("Unsupported command: " + command);
@@ -449,7 +478,7 @@ public class BinaryProgram implements BinarySerializable {
 				if (!textLines.isEmpty()) {
 					OopCommandTextLine prev = textLines.get(0);
 					if (!isMergeableWith(tl, prev)) {
-						commands.add(new OopCommandGBZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
+						commands.add(new OopCommandTZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
 						if (prev.getType() == OopCommandTextLine.Type.HYPERLINK) {
 							System.out.println(textLines);
 						}
@@ -463,18 +492,18 @@ public class BinaryProgram implements BinarySerializable {
 				}
 			} else {
 				if (!textLines.isEmpty()) {
-					commands.add(new OopCommandGBZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
+					commands.add(new OopCommandTZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
 					textLines.clear();
 				}
 				if (cmd instanceof OopCommandTextLine tl) {
-					commands.add(new OopCommandGBZWrappedTextLines(List.of(tl), WORD_WRAP_WIDTH));
+					commands.add(new OopCommandTZWrappedTextLines(List.of(tl), WORD_WRAP_WIDTH));
 				} else {
 					commands.add(cmd);
 				}
 			}
 		}
 		if (!textLines.isEmpty()) {
-			commands.add(new OopCommandGBZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
+			commands.add(new OopCommandTZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
 			textLines.clear();
 		}
 
@@ -518,7 +547,7 @@ public class BinaryProgram implements BinarySerializable {
 				if (!textLines.isEmpty()) {
 					OopCommandTextLine prev = textLines.get(0);
 					if (!isMergeableWith(tl, prev)) {
-						commands.add(new OopCommandGBZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
+						commands.add(new OopCommandTZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
 						if (prev.getType() == OopCommandTextLine.Type.HYPERLINK) {
 							System.out.println(textLines);
 						}
@@ -532,18 +561,18 @@ public class BinaryProgram implements BinarySerializable {
 				}
 			} else {
 				if (!textLines.isEmpty()) {
-					commands.add(new OopCommandGBZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
+					commands.add(new OopCommandTZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
 					textLines.clear();
 				}
 				if (cmd instanceof OopCommandTextLine tl) {
-					commands.add(new OopCommandGBZWrappedTextLines(List.of(tl), WORD_WRAP_WIDTH));
+					commands.add(new OopCommandTZWrappedTextLines(List.of(tl), WORD_WRAP_WIDTH));
 				} else {
 					commands.add(cmd);
 				}
 			}
 		}
 		if (!textLines.isEmpty()) {
-			commands.add(new OopCommandGBZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
+			commands.add(new OopCommandTZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
 			textLines.clear();
 		}
 

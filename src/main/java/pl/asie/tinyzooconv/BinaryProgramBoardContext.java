@@ -16,11 +16,11 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.gbzooconv2;
+package pl.asie.tinyzooconv;
 
 import lombok.Getter;
-import pl.asie.gbzooconv2.exceptions.IdNotFoundException;
-import pl.asie.gbzooconv2.exceptions.TooManyIdsException;
+import pl.asie.tinyzooconv.exceptions.IdNotFoundException;
+import pl.asie.tinyzooconv.exceptions.TooManyIdsException;
 import pl.asie.libzzt.Stat;
 import pl.asie.libzzt.oop.OopProgram;
 import pl.asie.libzzt.oop.OopUtils;

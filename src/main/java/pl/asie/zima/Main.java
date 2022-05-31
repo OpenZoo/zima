@@ -18,6 +18,7 @@
  */
 package pl.asie.zima;
 
+import pl.asie.zima.binconv.cli.BinconvCliPlugin;
 import pl.asie.zima.image.ImageConverterMain;
 import pl.asie.zima.util.MiscUtils;
 import pl.asie.zima.worldcheck.cli.LinterCliPlugin;
@@ -28,11 +29,11 @@ public class Main {
     public static void main(String[] args) throws Exception {
         if (args.length <= 0) {
             // GUI
-            // TODO: expose more than image converter
             ImageConverterMain.main(args);
         } else {
             // CLI
             List<CliPlugin> plugins = List.of(
+                    new BinconvCliPlugin(),
                     new LinterCliPlugin()
             );
             for (CliPlugin plugin : plugins) {

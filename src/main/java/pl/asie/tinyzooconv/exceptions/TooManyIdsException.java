@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.gbzooconv2.exceptions;
+package pl.asie.tinyzooconv.exceptions;
 
 public class TooManyIdsException extends BinarySerializerException {
 	public TooManyIdsException(String type, int expected, int actual) {

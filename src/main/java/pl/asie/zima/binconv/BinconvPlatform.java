@@ -16,15 +16,17 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.gbzooconv2;
+package pl.asie.zima.binconv;
 
-import java.io.ByteArrayOutputStream;
+import pl.asie.libzxt.zzt.ZxtReader;
+import pl.asie.tinyzooconv.BinarySerializer;
+import pl.asie.tinyzooconv.exceptions.BinarySerializerException;
 
-public class SeekableByteArrayOutputStream extends ByteArrayOutputStream {
-	public void writeAt(int index, int value) {
-		if (index >= buf.length) {
-			throw new ArrayIndexOutOfBoundsException(index + " > " + (buf.length - 1));
-		}
-		buf[index] = (byte) value;
-	}
+import java.io.IOException;
+import java.io.OutputStream;
+
+public interface BinconvPlatform {
+	ZxtReader createZxtReader();
+	BinarySerializer createBinarySerializer();
+	void write(OutputStream stream, BinarySerializer serializer) throws IOException, BinarySerializerException;
 }

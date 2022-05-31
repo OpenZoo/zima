@@ -18,6 +18,8 @@
  */
 package pl.asie.tinyzooconv;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import lombok.Builder;
 import pl.asie.tinyzooconv.exceptions.BinarySerializerException;
 import pl.asie.zima.binconv.BinconvGlobalConfig;
@@ -77,6 +79,7 @@ public class BankingBinarySerializer implements BinarySerializer {
 	private final int bankSizeBytes;
 	private final boolean padToPowerOfTwo;
 	private final Map<BinarySerializable, Collector> collectorMap = new HashMap<>();
+	private final Multimap<BinarySerializable, Collector> collectorListeners = HashMultimap.create();
 	private BinarySerializable firstObject;
 	private final Map<Integer, List<BinarySerializable>> objectsPerBank = new HashMap<>();
 
@@ -102,9 +105,10 @@ public class BankingBinarySerializer implements BinarySerializer {
 		}
 		int location = getUsedSpace(bank);
 		objectsPerBank.computeIfAbsent(bank, k -> new ArrayList<>()).add(object);
-		for (Collector c : collectorMap.values()) {
+		for (Collector c : collectorListeners.get(object)) {
 			c.commitFarPointer(object, bank, this.bankRegionOffset + location);
 		}
+		// System.err.printf("addToBank: %02X:%04X <- %s%n", bank, this.bankRegionOffset + location, object.toString());
 		return location;
 	}
 
@@ -123,6 +127,7 @@ public class BankingBinarySerializer implements BinarySerializer {
 			collectorMap.put(object, collector);
 			for (BinarySerializable child : collector.farPointerLocations.values()) {
 				serialize(child);
+				collectorListeners.put(child, collector);
 			}
 		}
 	}
@@ -132,28 +137,23 @@ public class BankingBinarySerializer implements BinarySerializer {
 			return;
 		}
 
-		List<BinarySerializable> objectsToAdd = new ArrayList<>();
-		for (BinarySerializable object : this.collectorMap.keySet()) {
-			if (!Objects.equals(object, this.firstObject)) {
-				objectsToAdd.add(object);
-			}
-		}
-		objectsToAdd.sort(Comparator.comparingInt(a -> -getObjectSize(a)));
-
 		// serialize first object
 		addToBank(this.firstBankIndex, this.firstObject);
 
 		// serialize remaining objects
-		for (BinarySerializable object : objectsToAdd) {
-			int objectSize = getObjectSize(object);
+		this.collectorMap.keySet().stream()
+				.filter(o -> o != this.firstObject)
+				.sorted(Comparator.comparingInt(a -> -getObjectSize(a)))
+				.forEach(object -> {
+					int objectSize = getObjectSize(object);
 
-			for (int i = this.firstBankIndex; i < maxBanks; i++) {
-				if (getFreeSpace(i) >= objectSize) {
-					addToBank(i, object);
-					break;
-				}
-			}
-		}
+					for (int i = this.firstBankIndex; i < maxBanks; i++) {
+						if (getFreeSpace(i) >= objectSize) {
+							addToBank(i, object);
+							break;
+						}
+					}
+				});
 	}
 
 	public void writeBankData(OutputStream stream) throws IOException, BinarySerializerException {

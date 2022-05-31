@@ -59,6 +59,8 @@ public class BinconvCliPlugin extends CliPlugin {
 
 			BinconvGlobalConfig.apply(args);
 
+			long timeStart = System.currentTimeMillis();
+
 			ZxtReader reader = platform.createZxtReader();
 			BinaryWorldPack worlds = new BinaryWorldPack();
 			for (String fn : args.getFiles()) {
@@ -71,12 +73,18 @@ public class BinconvCliPlugin extends CliPlugin {
 				worlds.addWorld(zw.getWorld());
 			}
 
+			long timeRead = System.currentTimeMillis();
+			System.err.println("Worlds added successfully! [" + (timeRead - timeStart) + " ms]");
+
 			BinarySerializer serializer = platform.createBinarySerializer();
 			serializer.serialize(worlds);
 			serializer.pack();
 			try (FileOutputStream fos = new FileOutputStream(args.getOutput())) {
 				platform.write(fos, serializer);
 			}
+
+			long timeWrite = System.currentTimeMillis();
+			System.err.println("File saved successfully! [" + (timeWrite - timeRead) + " ms]");
 		} catch (Exception e) {
 			throw new RuntimeException("Conversion error: " + e.getMessage(), e);
 		}

@@ -215,26 +215,26 @@ public class BinaryProgram implements BinarySerializable {
 		}
 	}
 
-	private void serializeSkippableCommand(BinarySerializerOutput output, OopCommand command, List<Integer> code, Map<Integer, BinarySerializable> ptrRequests) throws BinarySerializerException {
+	private void serializeSkippableCommand(BinarySerializerOutput output, OopCommand command, List<Integer> code, int codeOffset, Map<Integer, BinarySerializable> ptrRequests) throws BinarySerializerException {
 		if (command == null) {
 			code.add(0);
 			return;
 		}
 
 		List<Integer> cmdCode = new ArrayList<>();
-		serializeCommand(output, command, cmdCode, null, ptrRequests);
+		serializeCommand(output, command, cmdCode, codeOffset + code.size() + 1, null, ptrRequests);
 		code.add(cmdCode.size());
 		code.addAll(cmdCode);
 	}
 
-	private void addPtrRequest(BinarySerializerOutput output, Map<Integer, BinarySerializable> ptrRequests, List<Integer> code, BinarySerializable target) {
-		ptrRequests.put(code.size(), target);
+	private void addPtrRequest(BinarySerializerOutput output, Map<Integer, BinarySerializable> ptrRequests, List<Integer> code, int codeOffset, BinarySerializable target) {
+		ptrRequests.put(code.size() + codeOffset, target);
 		for (int i = 0; i < output.getFarPointerSize(); i++) {
 			code.add(0);
 		}
 	}
 
-	private void serializeCommand(BinarySerializerOutput output, OopCommand command, List<Integer> code, List<Integer> labels, Map<Integer, BinarySerializable> ptrRequests) throws BinarySerializerException {
+	private void serializeCommand(BinarySerializerOutput output, OopCommand command, List<Integer> code, int codeOffset, List<Integer> labels, Map<Integer, BinarySerializable> ptrRequests) throws BinarySerializerException {
 		if (command instanceof OopCommandTextLine cmd) {
 			command = new OopCommandTZWrappedTextLines(List.of(cmd), WORD_WRAP_WIDTH);
 		}
@@ -260,7 +260,7 @@ public class BinaryProgram implements BinarySerializable {
 		} else if (command instanceof OopCommandTry cmd) {
 			code.add(0x04);
 			serializeDirection(cmd.getDirection(), code);
-			serializeSkippableCommand(output, cmd.getElseCommand(), code, ptrRequests);
+			serializeSkippableCommand(output, cmd.getElseCommand(), code, codeOffset, ptrRequests);
 		} else if (command instanceof OopCommandWalk cmd) {
 			code.add(0x05);
 			serializeDirection(cmd.getDirection(), code);
@@ -273,7 +273,7 @@ public class BinaryProgram implements BinarySerializable {
 		} else if (command instanceof OopCommandIf cmd) {
 			code.add(0x08);
 			serializeCondition(cmd.getCondition(), code);
-			serializeSkippableCommand(output, cmd.getTrueCommand(), code, ptrRequests);
+			serializeSkippableCommand(output, cmd.getTrueCommand(), code, codeOffset, ptrRequests);
 		} else if (command instanceof OopCommandShoot cmd) {
 			code.add(0x09);
 			serializeDirection(cmd.getDirection(), code);
@@ -293,7 +293,7 @@ public class BinaryProgram implements BinarySerializable {
 			}
 			code.add(cmd.getAmount() & 0xFF);
 			code.add((cmd.getAmount() >> 8) & 0xFF);
-			serializeSkippableCommand(output, cmd.getElseCommand(), code, ptrRequests);
+			serializeSkippableCommand(output, cmd.getElseCommand(), code, codeOffset, ptrRequests);
 		} else if (command instanceof OopCommandEndgame) {
 			code.add(0x0D);
 		} else if (command instanceof OopCommandIdle) {
@@ -387,7 +387,7 @@ public class BinaryProgram implements BinarySerializable {
 						warnOrError("text line: " + e.getMessage());
 					}
 				}
-				addPtrRequest(output, ptrRequests, code, new BinaryTextLine(line, targetId, labelId));
+				addPtrRequest(output, ptrRequests, code, codeOffset, new BinaryTextLine(line, targetId, labelId));
 			}
 		} else if (command instanceof OopCommandZxtDieItem cmd) {
 			code.add(0x1B);
@@ -513,7 +513,7 @@ public class BinaryProgram implements BinarySerializable {
 			if (cmd.getPosition() != null) {
 				positionMap.put(cmd.getPosition(), code.size());
 			}
-			serializeCommand(output, cmd, code, labels, ptrRequests);
+			serializeCommand(output, cmd, code, 0, labels, ptrRequests);
 		}
 	}
 
@@ -582,11 +582,11 @@ public class BinaryProgram implements BinarySerializable {
 			if (cmd.getPosition() != null) {
 				positionMap.put(cmd.getPosition(), code.size());
 			}
-			serializeCommand(output, cmd, code, labels, ptrRequests);
+			serializeCommand(output, cmd, code, 0, labels, ptrRequests);
 			lastCmd = cmd;
 		}
 		if (!(lastCmd instanceof OopCommandEnd)) {
-			serializeCommand(output, new OopCommandEnd(), code, labels, ptrRequests);
+			serializeCommand(output, new OopCommandEnd(), code, 0, labels, ptrRequests);
 		}
 
 		// Statistics

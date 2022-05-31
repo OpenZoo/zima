@@ -16,32 +16,20 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.libzxt;
+package pl.asie.libzxt.zzt;
 
-import lombok.Getter;
-import lombok.With;
+import pl.asie.libzxt.ZxtExtensionId;
 
-@Getter
-@With
-public class ZxtExtensionBlock {
-    private final short flags;
-    private final ZxtExtensionId id;
-    private final byte reserved0;
-    private final byte[] data;
-
-    public ZxtExtensionBlock(short flags, ZxtExtensionId id, byte reserved0, byte[] data) {
-        this.flags = flags;
-        this.id = id;
-        this.reserved0 = reserved0;
-        this.data = data;
+public class ZxtCannotApplyException extends Exception {
+    public ZxtCannotApplyException() {
+        super();
     }
 
-    public ZxtExtensionBlock(short flags, ZxtExtensionId id, byte[] data) {
-        this(flags, id, (byte) 0, data);
+    public ZxtCannotApplyException(String s) {
+        super();
     }
 
-    public ZxtExtensionBlock(short flags, ZxtExtensionId id) {
-        this(flags, id, null);
+    public ZxtCannotApplyException(ZxtExtensionId id) {
+        super("Cannot apply extension: " + id);
     }
-
 }

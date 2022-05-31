@@ -18,37 +18,16 @@
  */
 package pl.asie.libzxt;
 
-import java.util.Objects;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
+@Getter
+@EqualsAndHashCode
+@RequiredArgsConstructor
 public class ZxtExtensionId {
     private final int owner; /* 0x00000000 - 0xFFFFFFFF */
     private final short selector; /* 0x0000 - 0xFFFF */
-
-    public ZxtExtensionId(int owner, short selector) {
-        this.owner = owner;
-        this.selector = selector;
-    }
-
-    public int getOwner() {
-        return owner;
-    }
-
-    public short getSelector() {
-        return selector;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ZxtExtensionId that = (ZxtExtensionId) o;
-        return owner == that.owner && selector == that.selector;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(owner, selector);
-    }
 
     @Override
     public String toString() {

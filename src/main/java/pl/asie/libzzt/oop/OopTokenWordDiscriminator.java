@@ -19,19 +19,31 @@
 package pl.asie.libzzt.oop;
 
 import lombok.Builder;
+import lombok.Setter;
 import lombok.Singular;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@Builder(toBuilder = true)
+@SuppressWarnings("unchecked")
 public class OopTokenWordDiscriminator<T> implements OopTokenParser<T> {
-	@Builder.Default
-	private final OopTokenParser<T> defaultParser = context -> {
+	private final Map<String, OopTokenParser<T>> words = new HashMap<>();
+	private OopTokenParser<T> defaultParser = context -> {
 		throw new RuntimeException("Invalid token: " + context.getWord());
 	};
-	@Singular
-	private final Map<String, OopTokenParser<T>> words;
+
+	public OopTokenWordDiscriminator<T> setDefaultParser(OopTokenParser<T> parser) {
+		this.defaultParser = parser;
+		return this;
+	}
+
+	public OopTokenWordDiscriminator<T> addWord(String word, OopTokenParser<T> parser) {
+		if (this.words.containsKey(word)) {
+			this.words.put(word, OopTokenParser.and(parser, this.words.get(word)));
+		}
+		this.words.put(word, parser);
+		return this;
+	}
 
 	@Override
 	public T parse(OopParserContext context) {

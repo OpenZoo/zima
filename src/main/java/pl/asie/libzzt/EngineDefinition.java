@@ -20,47 +20,75 @@ package pl.asie.libzzt;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import pl.asie.libzzt.oop.OopParserConfiguration;
 import pl.asie.zima.Constants;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 @Getter
-@Builder(toBuilder = true)
+@Setter
+@RequiredArgsConstructor
 public class EngineDefinition {
-	public static final EngineDefinition ZZT = EngineDefinition.builder()
-			.baseKind(EngineBaseKind.ZZT)
-			.boardWidth(60).boardHeight(25)
-			.maxBoardSize(20000)
-			.maxStatCount(150 + 1)
-			.elements(ElementLibraryZZT.INSTANCE)
-			.oopParserConfiguration(OopParserConfiguration.ZZT)
-			.build();
-	public static final EngineDefinition SUPER_ZZT = EngineDefinition.builder()
-			.baseKind(EngineBaseKind.SUPER_ZZT)
-			.boardWidth(96).boardHeight(80)
-			.maxBoardSize(20000)
-			.maxStatCount(128 + 1)
-			.elements(ElementLibrarySuperZZT.INSTANCE)
-			.oopParserConfiguration(OopParserConfiguration.ZZT)
-			.build();
-
-	public static final EngineDefinition CLASSICZOO = ZZT.toBuilder()
-			.maxBoardSize(65500)
-			.build();
-	public static final EngineDefinition SUPER_CLASSICZOO = SUPER_ZZT.toBuilder()
-			.maxBoardSize(65500)
-			.build();
-
 	private final EngineBaseKind baseKind;
-	private final int boardWidth;
-	private final int boardHeight;
-	private final int maxBoardSize;
+	private int boardWidth;
+	private int boardHeight;
+	private int maxBoardSize;
 	/**
 	 * This is the "actual" maximum stat count - for a ZZT fork codebase,
 	 * this would be MAX_STAT + 1.
 	 */
-	private final int maxStatCount;
-	private final ElementLibrary elements;
-	private final OopParserConfiguration oopParserConfiguration;
-	private final boolean blinkingDisabled;
-	private final int[] customPalette;
+	private int maxStatCount;
+	private ElementLibrary elements;
+	private OopParserConfiguration oopParserConfiguration;
+	private boolean blinkingDisabled;
+	private int[] customPalette;
+	private final Set<String> quirks = new HashSet<>();
+
+	public void addQuirk(String name) {
+		quirks.add(name);
+	}
+
+	public Set<String> getQuirks() {
+		return Collections.unmodifiableSet(quirks);
+	}
+
+	public static EngineDefinition zzt() {
+		EngineDefinition def = new EngineDefinition(EngineBaseKind.ZZT);
+		def.setBoardWidth(60);
+		def.setBoardHeight(25);
+		def.setMaxBoardSize(20000);
+		def.setMaxStatCount(150 + 1);
+		def.setElements(ElementLibraryZZT.INSTANCE);
+		def.setOopParserConfiguration(OopParserConfiguration.buildZztParser());
+		return def;
+	}
+
+	public static EngineDefinition superZzt() {
+		EngineDefinition def = new EngineDefinition(EngineBaseKind.ZZT);
+		def.setBoardWidth(96);
+		def.setBoardHeight(80);
+		def.setMaxBoardSize(20000);
+		def.setMaxStatCount(128 + 1);
+		def.setElements(ElementLibrarySuperZZT.INSTANCE);
+		def.setOopParserConfiguration(OopParserConfiguration.buildZztParser()); // TODO: Add SUper ZZT features
+		return def;
+	}
+
+	public static EngineDefinition classicZoo() {
+		EngineDefinition def = zzt();
+		def.setMaxBoardSize(65500);
+		return def;
+	}
+
+	public static EngineDefinition superClassicZoo() {
+		EngineDefinition def = superZzt();
+		def.setMaxBoardSize(65500);
+		return def;
+	}
 }

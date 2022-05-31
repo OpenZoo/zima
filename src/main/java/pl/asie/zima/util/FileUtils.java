@@ -30,6 +30,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 public final class FileUtils {
     // TODO: move elsewhere
@@ -54,8 +56,24 @@ public final class FileUtils {
 	}
 
 	public static String getExtension(File file) {
+		if (!file.getName().contains(".")) {
+			return "";
+		}
 		String[] parts = file.getName().split("\\.");
 		return parts[parts.length - 1];
+	}
+
+	public static File withExtension(File file, String ext) {
+		if (!file.getName().contains(".")) {
+			return new File(file.getPath() + "." + ext);
+		}
+		String[] parts = file.getPath().split("\\.");
+		parts[parts.length - 1] = ext;
+		return new File(String.join(".", parts));
+	}
+
+	public static Optional<File> firstExists(File... files) {
+		return Stream.of(files).filter(File::exists).findFirst();
 	}
 
 	public static void setProjectDirectory(File directory) {

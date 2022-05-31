@@ -24,7 +24,6 @@ import pl.asie.libzzt.Board;
 import pl.asie.libzzt.Element;
 import pl.asie.libzzt.EngineDefinition;
 import pl.asie.libzzt.WeaveZZTPlatformData;
-import pl.asie.libzzt.ElementLibraryZZT;
 import pl.asie.libzzt.PaletteLoaderUtils;
 import pl.asie.zima.util.ZimaPlatform;
 import pl.asie.libzzt.TextVisualData;
@@ -315,11 +314,11 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.PLAYER_Y, this.playerYEdit);
 			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.playerYEdit.setModel(boardCoordsModel(((Number) this.playerYEdit.getValue()).intValue(), true)));
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Max. stats", this.maxStatCountEdit = new JSpinner(statCountModel(EngineDefinition.ZZT.getMaxStatCount())));
+			appendTabRow(this.optionsBoardPanel, gbc, "Max. stats", this.maxStatCountEdit = new JSpinner(statCountModel(EngineDefinition.zzt().getMaxStatCount())));
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.MAX_STAT_COUNT, this.maxStatCountEdit);
 			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.maxStatCountEdit.setModel(statCountModel(((Number) this.maxStatCountEdit.getValue()).intValue())));
 
-			appendTabRow(this.optionsBoardPanel, gbc, "Max. board size", this.maxBoardSizeEdit = new JSpinner(boardSizeModel(EngineDefinition.ZZT.getMaxBoardSize())));
+			appendTabRow(this.optionsBoardPanel, gbc, "Max. board size", this.maxBoardSizeEdit = new JSpinner(boardSizeModel(EngineDefinition.zzt().getMaxBoardSize())));
 			bindPropertyInt(this.profile.getProperties(), ZimaConversionProfile.MAX_BOARD_SIZE, this.maxBoardSizeEdit);
 			this.profile.getProperties().addChangeListener(ZimaConversionProfile.PLATFORM, (k, v) -> this.maxBoardSizeEdit.setModel(boardSizeModel(((Number) this.maxBoardSizeEdit.getValue()).intValue())));
 
@@ -779,7 +778,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		File file = showLoadDialog("worlds", new FileNameExtensionFilter("WeaveZZT 2.5 configuration file", "cfg"));
 		if (file != null) {
 			try (FileInputStream fis = new FileInputStream(file)) {
-				EngineDefinition platformData = WeaveZZTPlatformData.parse(ElementLibraryZZT.INSTANCE, fis);
+				EngineDefinition platformData = WeaveZZTPlatformData.apply(EngineDefinition.zzt(), fis);
 				return platformData;
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);

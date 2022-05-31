@@ -350,6 +350,7 @@ public class BinaryProgram implements BinarySerializable {
 			code.add(cmd.getValue());
 		} else if (command instanceof OopCommandDie) {
 			code.add(0x1B);
+			code.add(0x00);
 		} else if (command instanceof OopCommandBind cmd) {
 			try {
 				int bindId = context.getNameId(cmd.getTargetName());

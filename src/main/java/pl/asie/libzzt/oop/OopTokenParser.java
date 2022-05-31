@@ -20,4 +20,18 @@ package pl.asie.libzzt.oop;
 
 public interface OopTokenParser<T> {
 	T parse(OopParserContext context);
+
+	static <T> OopTokenParser<T> and(OopTokenParser<T>... parsers) {
+		return context -> {
+			OopParserState currState = context.pushState();
+			for (OopTokenParser<T> parser : parsers) {
+				T object = parser.parse(context);
+				if (object != null) {
+					return object;
+				}
+				context.popState(currState);
+			}
+			return null;
+		};
+	}
 }

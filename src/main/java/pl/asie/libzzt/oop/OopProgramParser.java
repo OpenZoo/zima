@@ -131,7 +131,7 @@ public class OopProgramParser implements OopParserContext {
 
 	@Override
 	public <T> T parseType(Class<T> cl) {
-		return getConfig().getClassParser(cl).parse(this);
+		return getConfig().getParser(cl).parse(this);
 	}
 
 	private OopCommandTextLine parseTextLine(String s) {
@@ -161,7 +161,7 @@ public class OopProgramParser implements OopParserContext {
 			return parseInstruction();
 		} else {
 			popState(lastState);
-			return getConfig().getClassParser(OopCommand.class).parse(this);
+			return getConfig().getParser(OopCommand.class).parse(this);
 		}
 	}
 

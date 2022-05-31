@@ -23,6 +23,10 @@ import pl.asie.libzxt.ZxtCannotParseException;
 import pl.asie.libzxt.ZxtExtensionHeader;
 import pl.asie.libzxt.ZxtExtensionParser;
 import pl.asie.libzxt.ZxtFlag;
+import pl.asie.libzxt.zzt.ZxtCannotApplyException;
+import pl.asie.libzxt.zzt.ZxtReader;
+import pl.asie.libzxt.zzt.ZxtWorld;
+import pl.asie.libzzt.EngineDefinition;
 import pl.asie.zima.util.ZimaPlatform;
 import pl.asie.libzzt.World;
 import pl.asie.libzzt.ZInputStream;
@@ -35,12 +39,17 @@ import java.io.IOException;
 public class LinterWorldHolder {
 	protected final ZxtExtensionParser zxtParser = new ZxtExtensionParser();
 	@Getter
-	protected ZxtExtensionHeader zxtHeader;
+	protected ZxtWorld zxtWorld;
 	@Getter
 	protected World world;
 	@Getter
 	protected LinterCheck linterCheck;
 	protected boolean showZxtWarning;
+
+	public void clearWorld() {
+		zxtWorld = null;
+		world = null;
+	}
 
 	public boolean isShowZxtWarning() {
 		if (showZxtWarning) {
@@ -51,26 +60,18 @@ public class LinterWorldHolder {
 		}
 	}
 
-	public void read(File file) throws IOException, ZxtCannotParseException {
-		try (FileInputStream fis = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(fis)) {
-			showZxtWarning = false;
-			zxtHeader = zxtParser.readHeader(bis);
-			if (zxtHeader != null) {
-				if (zxtHeader.getBlocks().stream().anyMatch(block -> (block.getFlags() & (ZxtFlag.PARSING_MUST | ZxtFlag.READING_MUST | ZxtFlag.WRITING_MUST | ZxtFlag.PLAYING_MUST)) != 0)) {
-					throw new IOException("Unsupported ZXT extensions!");
-				} else if (zxtHeader.getBlocks().stream().anyMatch(block -> (block.getFlags() & (ZxtFlag.EDITING_SHOULD)) != 0)) {
-					showZxtWarning = true;
-				}
-			}
+	public void read(File file) throws IOException, ZxtCannotApplyException, ZxtCannotParseException {
+		world = null;
 
-			try (ZInputStream zis = new ZInputStream(bis, ZimaPlatform.ZZT.getZztEngineDefinition())) {
-				world = new World(ZimaPlatform.ZZT.getZztEngineDefinition());
-				world.readZ(zis);
-			}
+		zxtWorld = ZxtReader.loadWorldWithExtensions(
+				EngineDefinition.zzt(), file,
+				ZxtFlag.PARSING_MUST | ZxtFlag.READING_MUST | ZxtFlag.WRITING_MUST | ZxtFlag.PLAYING_MUST
+		);
+		world = zxtWorld.getWorld();
 
-			if (this.linterCheck == null || this.linterCheck.getWorld() != this.world) {
-				this.linterCheck = new LinterCheck(this.world);
-			}
+		showZxtWarning = (zxtWorld.getZxtUnsatisfiedFlags() & ZxtFlag.EDITING_SHOULD) != 0;
+		if (this.linterCheck == null || this.linterCheck.getWorld() != this.zxtWorld.getWorld()) {
+			this.linterCheck = new LinterCheck(this.zxtWorld.getWorld());
 		}
 	}
 }

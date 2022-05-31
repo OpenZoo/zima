@@ -18,8 +18,6 @@
  */
 package pl.asie.libzzt.oop;
 
-import lombok.Builder;
-import lombok.Singular;
 import pl.asie.libzzt.Element;
 import pl.asie.libzzt.oop.commands.OopCommand;
 import pl.asie.libzzt.oop.commands.OopCommandBecome;
@@ -72,21 +70,49 @@ import pl.asie.libzzt.oop.directions.OopDirectionSeek;
 import pl.asie.libzzt.oop.directions.OopDirectionSouth;
 import pl.asie.libzzt.oop.directions.OopDirectionWest;
 
+import java.util.HashMap;
 import java.util.Map;
 
-@Builder(toBuilder = true)
+@SuppressWarnings("unchecked")
 public class OopParserConfiguration {
-	@Singular
-	private final Map<Class<?>, OopTokenParser<?>> classParsers;
-	@Singular
-	private final Map<String, Integer> colors;
+	private final Map<Class<?>, OopTokenParser<?>> classParsers = new HashMap<>();
+	private final Map<String, Integer> colors = new HashMap<>();
 
-	@SuppressWarnings("unchecked")
-	public <T> OopTokenParser<T> getClassParser(Class<T> cl) {
-		return (OopTokenParser<T>) this.classParsers.get(cl);
+	public OopParserConfiguration addColor(String name, int value) {
+		this.colors.put(name, value);
+		return this;
 	}
 
-	private static OopTokenParser<Object> parseGiveOrTake(boolean isTake) {
+	public OopParserConfiguration setColors(Map<String, Integer> colors, boolean replace) {
+		if (replace) this.colors.clear();
+		this.colors.putAll(colors);
+		return this;
+	}
+
+	public <T> OopParserConfiguration addParser(Class<T> type, OopTokenParser<T> parser) {
+		if (this.classParsers.containsKey(type)) {
+			this.classParsers.put(type, OopTokenParser.and(parser, (OopTokenParser<T>) this.classParsers.get(type)));
+		} else {
+			this.classParsers.put(type, parser);
+		}
+		return this;
+	}
+
+	public <T> OopParserConfiguration addParser(Class<T> type, String word, OopTokenParser<T> parser) {
+		OopTokenParser<T> parentParser = (OopTokenParser<T>) this.classParsers.get(type);
+		if (!(parentParser instanceof OopTokenWordDiscriminator<T>)) {
+			throw new RuntimeException("Invalid parentParser for " + type.getName());
+		}
+		((OopTokenWordDiscriminator<T>) parentParser).addWord(word, parser);
+		return this;
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T> OopTokenParser<T> getParser(Class<T> type) {
+		return (OopTokenParser<T>) this.classParsers.get(type);
+	}
+
+	private static OopTokenParser<OopCommand> parseGiveOrTake(boolean isTake) {
 		return context -> {
 			OopCounterType type = context.parseType(OopCounterType.class);
 			if (type == null) {
@@ -101,135 +127,134 @@ public class OopParserConfiguration {
 		};
 	}
 
-	public static final OopParserConfiguration ZZT = OopParserConfiguration.builder()
-			.color("BLUE", 9)
-			.color("GREEN", 10)
-			.color("CYAN", 11)
-			.color("RED", 12)
-			.color("PURPLE", 13)
-			.color("YELLOW", 14)
-			.color("WHITE", 15)
-			.classParser(OopCounterType.class, context -> {
-				context.readWord();
-				try {
-					return OopCounterType.valueOf(context.getWord());
-				} catch (IllegalArgumentException e) {
-					return null;
-				}
-			})
-			.classParser(OopLabelTarget.class, context ->  {
-				context.readWord();
-				return new OopLabelTarget(context.getWord());
-			})
-			.classParser(OopCondition.class, OopTokenWordDiscriminator.builder()
-					.defaultParser(context -> new OopConditionFlag(context.getWord()))
-					.word("NOT", context -> new OopConditionNot(context.parseType(OopCondition.class)))
-					.word("ALLIGNED", context -> new OopConditionAlligned())
-					.word("CONTACT", context -> new OopConditionContact())
-					.word("BLOCKED", context -> new OopConditionBlocked(context.parseType(OopDirection.class)))
-					.word("ENERGIZED", context -> new OopConditionEnergized())
-					.word("ANY", context -> new OopConditionAny(context.parseType(OopTile.class)))
-					.build()
-			)
-			.classParser(OopDirection.class, OopTokenWordDiscriminator.builder()
-					.word("N", context -> new OopDirectionNorth())
-					.word("NORTH", context -> new OopDirectionNorth())
-					.word("S", context -> new OopDirectionSouth())
-					.word("SOUTH", context -> new OopDirectionSouth())
-					.word("W", context -> new OopDirectionWest())
-					.word("WEST", context -> new OopDirectionWest())
-					.word("E", context -> new OopDirectionEast())
-					.word("EAST", context -> new OopDirectionEast())
-					.word("I", context -> new OopDirectionIdle())
-					.word("IDLE", context -> new OopDirectionIdle())
-					.word("SEEK", context -> new OopDirectionSeek())
-					.word("FLOW", context -> new OopDirectionFlow())
-					.word("RND", context -> new OopDirectionRnd())
-					.word("RNDNS", context -> new OopDirectionRndns())
-					.word("RNDNE", context -> new OopDirectionRndne())
-					.word("CW", context -> new OopDirectionCw(context.parseType(OopDirection.class)))
-					.word("CCW", context -> new OopDirectionCcw(context.parseType(OopDirection.class)))
-					.word("RNDP", context -> new OopDirectionRndp(context.parseType(OopDirection.class)))
-					.word("OPP", context -> new OopDirectionOpp(context.parseType(OopDirection.class)))
-					.build()
-			)
-			.classParser(OopCommand.class, OopTokenWordDiscriminator.builder()
-					.defaultParser(context -> {
-						// TODO: This doesn't handle #TEXT right if TEXT doesn't lead to a valid target.
-						return new OopCommandSend(new OopLabelTarget(context.getWord()));
-					})
-					.word("GO", context -> new OopCommandGo(context.parseType(OopDirection.class)))
-					.word("TRY", context -> new OopCommandTry(context.parseType(OopDirection.class), context.parseCommand()))
-					.word("WALK", context -> new OopCommandWalk(context.parseType(OopDirection.class)))
-					.word("SET", context -> {
-						context.readWord();
-						return new OopCommandSet(context.getWord());
-					})
-					.word("CLEAR", context -> {
-						context.readWord();
-						return new OopCommandClear(context.getWord());
-					})
-					.word("IF", context -> {
-						OopCondition cond = context.parseType(OopCondition.class);
-						return new OopCommandIf(cond, context.parseCommand());
-					})
-					.word("SHOOT", context -> new OopCommandShoot(context.parseType(OopDirection.class)))
-					.word("THROWSTAR", context -> new OopCommandThrowstar(context.parseType(OopDirection.class)))
-					.word("GIVE", parseGiveOrTake(false))
-					.word("TAKE", parseGiveOrTake(true))
-					.word("END", context -> new OopCommandEnd())
-					.word("ENDGAME", context -> new OopCommandEndgame())
-					.word("IDLE", context -> new OopCommandIdle())
-					.word("RESTART", context -> new OopCommandRestart())
-					.word("ZAP", context -> new OopCommandZap(context.parseType(OopLabelTarget.class)))
-					.word("RESTORE", context -> new OopCommandRestore(context.parseType(OopLabelTarget.class)))
-					.word("LOCK", context -> new OopCommandLock())
-					.word("UNLOCK", context -> new OopCommandUnlock())
-					.word("SEND", context -> new OopCommandSend(context.parseType(OopLabelTarget.class)))
-					.word("BECOME", context -> new OopCommandBecome(context.parseType(OopTile.class)))
-					.word("PUT", context -> {
-						OopDirection dir = context.parseType(OopDirection.class);
-						OopTile tile = context.parseType(OopTile.class);
-						return new OopCommandPut(dir, tile);
-					})
-					.word("CHANGE", context -> {
-						OopTile tileFrom = context.parseType(OopTile.class);
-						OopTile tileTo = context.parseType(OopTile.class);
-						return new OopCommandChange(tileFrom, tileTo);
-					})
-					.word("PLAY", context -> {
-						context.getState().lineFinished = false;
-						return new OopCommandPlay(new OopSound(context, context.parseLineToEnd()));
-					})
-					.word("CYCLE", context -> {
-						context.readValue();
-						return new OopCommandCycle(context.getValue());
-					})
-					.word("CHAR", context -> {
-						context.readValue();
-						return new OopCommandChar(context.getValue());
-					})
-					.word("DIE", context -> new OopCommandDie())
-					.word("BIND", context -> {
-						context.readWord();
-						return new OopCommandBind(context.getWord());
-					})
-					.build()
-			)
-			.classParser(OopTile.class, context -> {
-				int color = 0;
+	public static OopParserConfiguration buildZztParser() {
+		OopParserConfiguration config = new OopParserConfiguration();
+		config.addColor("BLUE", 9);
+		config.addColor("GREEN", 10);
+		config.addColor("CYAN", 11);
+		config.addColor("RED", 12);
+		config.addColor("PURPLE", 13);
+		config.addColor("YELLOW", 14);
+		config.addColor("WHITE", 15);
+		config.addParser(OopCounterType.class, context -> {
+			context.readWord();
+			try {
+				return OopCounterType.valueOf(context.getWord());
+			} catch (IllegalArgumentException e) {
+				return null;
+			}
+		});
+		config.addParser(OopLabelTarget.class, context ->  {
+			context.readWord();
+			return new OopLabelTarget(context.getWord());
+		});
+		config.addParser(OopTile.class, context -> {
+			int color = 0;
 
+			context.readWord();
+			if (context.getConfig().colors.containsKey(context.getWord())) {
+				color = context.getConfig().colors.get(context.getWord());
 				context.readWord();
-				if (context.getConfig().colors.containsKey(context.getWord())) {
-					color = context.getConfig().colors.get(context.getWord());
+			}
+
+			Element element = context.getEngine().getElements().byOopTokenName(context.getWord());
+			if (element == null) {
+				throw new OopParseException("Bad object kind: " + context.getWord());
+			}
+			return new OopTile(element, color);
+		});
+		config.addParser(OopCondition.class, new OopTokenWordDiscriminator<OopCondition>()
+				.setDefaultParser(context -> new OopConditionFlag(context.getWord()))
+				.addWord("NOT", context -> new OopConditionNot(context.parseType(OopCondition.class)))
+				.addWord("ALLIGNED", context -> new OopConditionAlligned())
+				.addWord("CONTACT", context -> new OopConditionContact())
+				.addWord("BLOCKED", context -> new OopConditionBlocked(context.parseType(OopDirection.class)))
+				.addWord("ENERGIZED", context -> new OopConditionEnergized())
+				.addWord("ANY", context -> new OopConditionAny(context.parseType(OopTile.class)))
+		);
+		config.addParser(OopDirection.class, new OopTokenWordDiscriminator<OopDirection>()
+				.addWord("N", context -> new OopDirectionNorth())
+				.addWord("NORTH", context -> new OopDirectionNorth())
+				.addWord("S", context -> new OopDirectionSouth())
+				.addWord("SOUTH", context -> new OopDirectionSouth())
+				.addWord("W", context -> new OopDirectionWest())
+				.addWord("WEST", context -> new OopDirectionWest())
+				.addWord("E", context -> new OopDirectionEast())
+				.addWord("EAST", context -> new OopDirectionEast())
+				.addWord("I", context -> new OopDirectionIdle())
+				.addWord("IDLE", context -> new OopDirectionIdle())
+				.addWord("SEEK", context -> new OopDirectionSeek())
+				.addWord("FLOW", context -> new OopDirectionFlow())
+				.addWord("RND", context -> new OopDirectionRnd())
+				.addWord("RNDNS", context -> new OopDirectionRndns())
+				.addWord("RNDNE", context -> new OopDirectionRndne())
+				.addWord("CW", context -> new OopDirectionCw(context.parseType(OopDirection.class)))
+				.addWord("CCW", context -> new OopDirectionCcw(context.parseType(OopDirection.class)))
+				.addWord("RNDP", context -> new OopDirectionRndp(context.parseType(OopDirection.class)))
+				.addWord("OPP", context -> new OopDirectionOpp(context.parseType(OopDirection.class)))
+		);
+		config.addParser(OopCommand.class, new OopTokenWordDiscriminator<OopCommand>()
+				.setDefaultParser(context -> {
+					// TODO: This doesn't handle #TEXT right if TEXT doesn't lead to a valid target.
+					return new OopCommandSend(new OopLabelTarget(context.getWord()));
+				})
+				.addWord("GO", context -> new OopCommandGo(context.parseType(OopDirection.class)))
+				.addWord("TRY", context -> new OopCommandTry(context.parseType(OopDirection.class), context.parseCommand()))
+				.addWord("WALK", context -> new OopCommandWalk(context.parseType(OopDirection.class)))
+				.addWord("SET", context -> {
 					context.readWord();
-				}
-
-				Element element = context.getEngine().getElements().byOopTokenName(context.getWord());
-				if (element == null) {
-					throw new OopParseException("Bad object kind: " + context.getWord());
-				}
-				return new OopTile(element, color);
-			})
-			.build();
+					return new OopCommandSet(context.getWord());
+				})
+				.addWord("CLEAR", context -> {
+					context.readWord();
+					return new OopCommandClear(context.getWord());
+				})
+				.addWord("IF", context -> {
+					OopCondition cond = context.parseType(OopCondition.class);
+					return new OopCommandIf(cond, context.parseCommand());
+				})
+				.addWord("SHOOT", context -> new OopCommandShoot(context.parseType(OopDirection.class)))
+				.addWord("THROWSTAR", context -> new OopCommandThrowstar(context.parseType(OopDirection.class)))
+				.addWord("GIVE", parseGiveOrTake(false))
+				.addWord("TAKE", parseGiveOrTake(true))
+				.addWord("END", context -> new OopCommandEnd())
+				.addWord("ENDGAME", context -> new OopCommandEndgame())
+				.addWord("IDLE", context -> new OopCommandIdle())
+				.addWord("RESTART", context -> new OopCommandRestart())
+				.addWord("ZAP", context -> new OopCommandZap(context.parseType(OopLabelTarget.class)))
+				.addWord("RESTORE", context -> new OopCommandRestore(context.parseType(OopLabelTarget.class)))
+				.addWord("LOCK", context -> new OopCommandLock())
+				.addWord("UNLOCK", context -> new OopCommandUnlock())
+				.addWord("SEND", context -> new OopCommandSend(context.parseType(OopLabelTarget.class)))
+				.addWord("BECOME", context -> new OopCommandBecome(context.parseType(OopTile.class)))
+				.addWord("PUT", context -> {
+					OopDirection dir = context.parseType(OopDirection.class);
+					OopTile tile = context.parseType(OopTile.class);
+					return new OopCommandPut(dir, tile);
+				})
+				.addWord("CHANGE", context -> {
+					OopTile tileFrom = context.parseType(OopTile.class);
+					OopTile tileTo = context.parseType(OopTile.class);
+					return new OopCommandChange(tileFrom, tileTo);
+				})
+				.addWord("PLAY", context -> {
+					context.getState().lineFinished = false;
+					return new OopCommandPlay(new OopSound(context, context.parseLineToEnd()));
+				})
+				.addWord("CYCLE", context -> {
+					context.readValue();
+					return new OopCommandCycle(context.getValue());
+				})
+				.addWord("CHAR", context -> {
+					context.readValue();
+					return new OopCommandChar(context.getValue());
+				})
+				.addWord("DIE", context -> new OopCommandDie())
+				.addWord("BIND", context -> {
+					context.readWord();
+					return new OopCommandBind(context.getWord());
+				})
+		);
+		return config;
+	}
 }

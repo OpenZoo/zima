@@ -16,32 +16,20 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.libzxt;
+package pl.asie.libzxt.zzt;
 
-import lombok.Getter;
-import lombok.With;
+import pl.asie.libzxt.ZxtExtensionBlock;
+import pl.asie.libzzt.EngineDefinition;
+import pl.asie.libzzt.oop.OopTokenParser;
+import pl.asie.libzzt.oop.commands.OopCommand;
 
-@Getter
-@With
-public class ZxtExtensionBlock {
-    private final short flags;
-    private final ZxtExtensionId id;
-    private final byte reserved0;
-    private final byte[] data;
+public interface ZxtEngineDefinitionApplier {
+	boolean apply(EngineDefinition definition, ZxtExtensionBlock block);
 
-    public ZxtExtensionBlock(short flags, ZxtExtensionId id, byte reserved0, byte[] data) {
-        this.flags = flags;
-        this.id = id;
-        this.reserved0 = reserved0;
-        this.data = data;
-    }
-
-    public ZxtExtensionBlock(short flags, ZxtExtensionId id, byte[] data) {
-        this(flags, id, (byte) 0, data);
-    }
-
-    public ZxtExtensionBlock(short flags, ZxtExtensionId id) {
-        this(flags, id, null);
-    }
-
+	static ZxtEngineDefinitionApplier quirk(String name) {
+		return (definition, block) -> {
+			definition.addQuirk(name);
+			return true;
+		};
+	}
 }

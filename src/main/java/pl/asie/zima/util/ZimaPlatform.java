@@ -19,14 +19,12 @@
 package pl.asie.zima.util;
 
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.With;
 import pl.asie.libzzt.ElementLibrary;
 import pl.asie.libzzt.ElementLibraryNull;
-import pl.asie.libzzt.ElementLibraryZZT;
 import pl.asie.libzzt.EngineDefinition;
 import pl.asie.libzzt.TextVisualData;
 import pl.asie.libzzt.WeaveZZTPlatformData;
@@ -86,13 +84,13 @@ public final class ZimaPlatform {
     }
 
     static {
-        ZZT = ZimaPlatform.builder().zztEngineDefinition(EngineDefinition.ZZT).build();
-        SUPER_ZZT = ZimaPlatform.builder().zztEngineDefinition(EngineDefinition.SUPER_ZZT).doubleWide(true).build();
-        SUPER_CLASSICZOO = ZimaPlatform.builder().zztEngineDefinition(EngineDefinition.SUPER_CLASSICZOO).doubleWide(true).build();
+        ZZT = ZimaPlatform.builder().zztEngineDefinition(EngineDefinition.zzt()).build();
+        SUPER_ZZT = ZimaPlatform.builder().zztEngineDefinition(EngineDefinition.superZzt()).doubleWide(true).build();
+        SUPER_CLASSICZOO = ZimaPlatform.builder().zztEngineDefinition(EngineDefinition.superClassicZoo()).doubleWide(true).build();
         MEGAZEUX = ZimaPlatform.builder().defaultBoardWidth(80).defaultBoardHeight(25).supportsBlinking(false).build();
 
         try {
-            WEAVE_ZZT_25 = ZimaPlatform.builder().zztEngineDefinition(WeaveZZTPlatformData.parse(ElementLibraryZZT.INSTANCE, null)).build();
+            WEAVE_ZZT_25 = ZimaPlatform.builder().zztEngineDefinition(WeaveZZTPlatformData.apply(EngineDefinition.zzt(), null)).build();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

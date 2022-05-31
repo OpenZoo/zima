@@ -76,14 +76,15 @@ public class WeaveZZTPlatformData {
             Map.entry("WHITE", 15)
     );
 
-    public static EngineDefinition parse(ElementLibrary base, InputStream is) throws IOException {
-        List<Element> elements = new ArrayList<>(base.getElements());
-        List<String> names = elements.stream().map(base::getInternalName).toList();
+    public static EngineDefinition apply(EngineDefinition base, InputStream is) throws IOException {
+        ElementLibrary elem = base.getElements();
+        List<Element> elements = new ArrayList<>(elem.getElements());
+        List<String> names = elements.stream().map(elem::getInternalName).toList();
         List<String> weaveNames = names.stream().map(e -> INTERNAL_TO_WEAVE.getOrDefault(e, e)).toList();
         int[] palette = Arrays.copyOf(Constants.EGA_PALETTE, 16);
         boolean blinkingDisabled = false;
         boolean paletteModified = false;
-        int maxStatCount = 150;
+        int maxStatCount = base.getMaxStatCount();
 
         // Weave ZZT default patches
         {
@@ -186,20 +187,18 @@ public class WeaveZZTPlatformData {
             }
         }
 
-        return EngineDefinition.ZZT.toBuilder()
-                .maxBoardSize(65500)
-                .maxStatCount(maxStatCount + 1)
-                .elements(new ElementLibrary(elements,
-                        IntStream.range(0, elements.size()).boxed().collect(Collectors.toMap(
-                                elements::get, names::get
-                        ))
+        base.setMaxBoardSize(65500);
+        base.setMaxStatCount(maxStatCount + 1);
+        base.setElements(new ElementLibrary(elements,
+                IntStream.range(0, elements.size()).boxed().collect(Collectors.toMap(
+                        elements::get, names::get
                 ))
-                .oopParserConfiguration(EngineDefinition.ZZT.getOopParserConfiguration().toBuilder()
-                        .colors(COLOR_NUMBERS)
-                        .build()
-                )
-                .blinkingDisabled(blinkingDisabled)
-                .customPalette(paletteModified ? palette : null)
-                .build();
+        ));
+        base.setOopParserConfiguration(OopParserConfiguration.buildZztParser()
+                .setColors(COLOR_NUMBERS, true)
+        );
+        base.setBlinkingDisabled(blinkingDisabled);
+        base.setCustomPalette(paletteModified ? palette : null);
+        return base;
     }
 }

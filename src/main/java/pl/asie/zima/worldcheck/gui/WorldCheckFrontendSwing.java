@@ -172,11 +172,6 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 			// uiOopCodePane.getPane().getVerticalScrollBar().setValue(0);
 		}
 
-		void clearWorld() {
-			zxtHeader = null;
-			world = null;
-		}
-
 		TreeModel buildLocationTreeModel() {
 			if (this.world == null) {
 				return new DefaultTreeModel(null);
@@ -483,10 +478,6 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 	}
 
 	public void onOpenSecondWorld(ActionEvent event) {
-		/* if (world.zxtHeader != null) {
-			JOptionPane.showMessageDialog(this.window, "Comparing ZXT worlds not supported!");
-			return;
-		} */
 		world2.clearWorld();
 
 		File file = showLoadDialog("world",

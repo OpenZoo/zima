@@ -27,6 +27,7 @@ import pl.asie.tinyzooconv.BinarySerializer;
 import pl.asie.tinyzooconv.BinaryWorldPack;
 import pl.asie.zima.CliPlugin;
 import pl.asie.zima.binconv.BinconvArgs;
+import pl.asie.zima.binconv.BinconvGlobalConfig;
 import pl.asie.zima.binconv.BinconvPlatform;
 import pl.asie.zima.binconv.BinconvPlatformGb;
 
@@ -56,10 +57,13 @@ public class BinconvCliPlugin extends CliPlugin {
 				throw new RuntimeException("Unknown platform: " + args.getPlatform());
 			}
 
+			BinconvGlobalConfig.apply(args);
+
 			ZxtReader reader = platform.createZxtReader();
 			BinaryWorldPack worlds = new BinaryWorldPack();
 			for (String fn : args.getFiles()) {
 				File file = new File(fn);
+				System.err.println("Adding " + file.getName());
 				ZxtWorld zw = reader.loadWorldWithExtensions(
 						EngineDefinition.zzt(), file,
 						ZxtFlag.READING_MUST | ZxtFlag.PLAYING_MUST
@@ -74,7 +78,7 @@ public class BinconvCliPlugin extends CliPlugin {
 				platform.write(fos, serializer);
 			}
 		} catch (Exception e) {
-			throw new RuntimeException("Conversion error!", e);
+			throw new RuntimeException("Conversion error: " + e.getMessage(), e);
 		}
 	}
 }

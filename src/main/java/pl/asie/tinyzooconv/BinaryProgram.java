@@ -479,9 +479,9 @@ public class BinaryProgram implements BinarySerializable {
 					OopCommandTextLine prev = textLines.get(0);
 					if (!isMergeableWith(tl, prev)) {
 						commands.add(new OopCommandTZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
-						if (prev.getType() == OopCommandTextLine.Type.HYPERLINK) {
+						/* if (prev.getType() == OopCommandTextLine.Type.HYPERLINK) {
 							System.out.println(textLines);
-						}
+						} */
 						textLines.clear();
 					}
 				}
@@ -548,9 +548,9 @@ public class BinaryProgram implements BinarySerializable {
 					OopCommandTextLine prev = textLines.get(0);
 					if (!isMergeableWith(tl, prev)) {
 						commands.add(new OopCommandTZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
-						if (prev.getType() == OopCommandTextLine.Type.HYPERLINK) {
+						/* if (prev.getType() == OopCommandTextLine.Type.HYPERLINK) {
 							System.out.println(textLines);
-						}
+						} */
 						textLines.clear();
 					}
 				}

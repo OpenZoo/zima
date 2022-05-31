@@ -28,6 +28,9 @@ import java.util.List;
 @Getter
 @Parameters(commandDescription = "Convert ZZT worlds to the TinyZoo format.")
 public class BinconvArgs {
+	@Parameter(names = {"--verbose"}, description = "Verbose output")
+	private boolean verbose = false;
+
 	@Parameter(names = {"-p", "--platform"}, description = "Platform name", required = true)
 	private String platform;
 

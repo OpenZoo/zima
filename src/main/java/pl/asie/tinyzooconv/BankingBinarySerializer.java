@@ -20,6 +20,7 @@ package pl.asie.tinyzooconv;
 
 import lombok.Builder;
 import pl.asie.tinyzooconv.exceptions.BinarySerializerException;
+import pl.asie.zima.binconv.BinconvGlobalConfig;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -113,7 +114,7 @@ public class BankingBinarySerializer implements BinarySerializer {
 		}
 
 		if (!collectorMap.containsKey(object)) {
-			System.out.println("serializing " + object.toString());
+			BinconvGlobalConfig.printIfVerbose("serializing " + object.toString());
 			Collector collector = new Collector();
 			object.serialize(collector);
 			if (this.firstObject == null) {

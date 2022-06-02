@@ -212,13 +212,13 @@ public class OopProgramParser implements OopParserContext {
 			return cmd;
 		} else if (getChar() == '#') {
 			OopCommand cmd = parseCommand();
+			if (this.state.lineFinished) {
+				skipLine();
+			}
+
 			if (cmd != null) {
 				cmd.setPosition(lastPosition);
 				return cmd;
-			}
-
-			if (this.state.lineFinished) {
-				skipLine();
 			}
 			return null;
 		} else if (getChar() == 13) {

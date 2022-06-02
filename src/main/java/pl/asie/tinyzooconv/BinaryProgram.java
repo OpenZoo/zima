@@ -419,20 +419,25 @@ public class BinaryProgram implements BinarySerializable {
 		return cmd instanceof OopCommandTextLine && !((OopCommandTextLine) cmd).getMessage().isEmpty();
 	}
 
-	private boolean isMergeableWith(OopCommandTextLine a, OopCommandTextLine b) {
-		if (a.getType() != b.getType()) {
+	private boolean isMergeableWith(OopCommandTextLine a, OopCommandTextLine other) {
+		if (a.getType() != other.getType()) {
 			return false;
 		}
 		if (a.getType() == OopCommandTextLine.Type.HYPERLINK) {
-			if (!Objects.equals(a.getDestination(), b.getDestination())) {
+			if (!Objects.equals(a.getDestination(), other.getDestination())) {
 				return false;
 			}
 			return false; // TODO: Cyber Purge needs this, but other programs might not like it
 		} else if (a.getType() == OopCommandTextLine.Type.EXTERNAL_HYPERLINK) {
-			if (!Objects.equals(a.getExternalDestination(), b.getExternalDestination())) {
+			if (!Objects.equals(a.getExternalDestination(), other.getExternalDestination())) {
 				return false;
 			}
 			return false; // TODO: Cyber Purge needs this, but other programs might not like it
+		}
+		if (a.getType() == OopCommandTextLine.Type.REGULAR) {
+			if ("".equals(a.getMessage())) {
+				return false;
+			}
 		}
 		return true;
 	}
@@ -638,5 +643,10 @@ public class BinaryProgram implements BinarySerializable {
 				output.writeByte(labels.get(i));
 			}
 		}
+	}
+
+	@Override
+	public String toString() {
+		return this.program.toString();
 	}
 }

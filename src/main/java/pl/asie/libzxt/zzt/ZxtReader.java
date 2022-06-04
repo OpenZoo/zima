@@ -19,26 +19,22 @@
 package pl.asie.libzxt.zzt;
 
 import lombok.Builder;
-import lombok.Singular;
 import pl.asie.libzxt.ZxtCannotParseException;
 import pl.asie.libzxt.ZxtExtensionBlock;
 import pl.asie.libzxt.ZxtExtensionHeader;
 import pl.asie.libzxt.ZxtExtensionId;
 import pl.asie.libzxt.ZxtExtensionParser;
-import pl.asie.libzxt.ZxtFlag;
 import pl.asie.libzzt.EngineDefinition;
 import pl.asie.libzzt.World;
 import pl.asie.libzzt.ZInputStream;
 import pl.asie.zima.util.FileUtils;
-import pl.asie.zima.util.ZimaPlatform;
-import pl.asie.zima.worldcheck.LinterCheck;
 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Builder
@@ -47,6 +43,11 @@ public final class ZxtReader {
 	private final Set<ZxtExtensionId> supportedIds = null;
 	@Builder.Default
 	private final Set<ZxtExtensionId> unsupportedIds = null;
+	private final Set<ZxtExtensionId> activeExtensionIds = new HashSet<>();
+
+	public Set<ZxtExtensionId> getActiveExtensionIds() {
+		return Collections.unmodifiableSet(activeExtensionIds);
+	}
 
 	/**
 	 * Apply the given ZXT extensions to a given engine definition.
@@ -67,7 +68,7 @@ public final class ZxtReader {
 			boolean isUnsupported = unsupportedIds != null && unsupportedIds.contains(zxtBlock.getId());
 			//noinspection StatementWithEmptyBody
 			if (isSupported && !isUnsupported && applier != null && applier.apply(src, zxtBlock)) {
-				// success!
+				activeExtensionIds.add(zxtBlock.getId());
 			} else {
 				if ((zxtBlock.getFlags() & requiredFlags) != 0) {
 					throw new ZxtCannotApplyException(zxtBlock.getId());
@@ -113,6 +114,6 @@ public final class ZxtReader {
 			}
 		}
 
-		return new ZxtWorld(zxtHeader, zxtUnsatisfiedFlags, world);
+		return new ZxtWorld(zxtHeader, activeExtensionIds, zxtUnsatisfiedFlags, world);
 	}
 }

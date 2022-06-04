@@ -29,7 +29,9 @@ import pl.asie.zima.CliPlugin;
 import pl.asie.zima.binconv.BinconvArgs;
 import pl.asie.zima.binconv.BinconvGlobalConfig;
 import pl.asie.zima.binconv.BinconvPlatform;
+import pl.asie.zima.binconv.BinconvPlatformFactory;
 import pl.asie.zima.binconv.BinconvPlatformGb;
+import pl.asie.zima.binconv.BinconvPlatformGg;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -50,12 +52,8 @@ public class BinconvCliPlugin extends CliPlugin {
 				.parse(argsStr);
 
 		try {
-			BinconvPlatform platform = null;
-			if ("gb".equals(args.getPlatform())) {
-				platform = new BinconvPlatformGb(args);
-			} else {
-				throw new RuntimeException("Unknown platform: " + args.getPlatform());
-			}
+			BinconvPlatform platform = BinconvPlatformFactory.create(args);
+			BinconvGlobalConfig.PLATFORM = platform;
 
 			BinconvGlobalConfig.apply(args);
 
@@ -70,7 +68,7 @@ public class BinconvCliPlugin extends CliPlugin {
 						EngineDefinition.zzt(), file,
 						ZxtFlag.READING_MUST | ZxtFlag.PLAYING_MUST
 				);
-				worlds.addWorld(zw.getWorld());
+				worlds.addWorld(zw);
 			}
 
 			long timeRead = System.currentTimeMillis();

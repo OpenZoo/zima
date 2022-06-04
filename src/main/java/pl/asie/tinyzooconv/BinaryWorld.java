@@ -19,6 +19,7 @@
 package pl.asie.tinyzooconv;
 
 import lombok.Getter;
+import pl.asie.libzxt.zzt.ZxtWorld;
 import pl.asie.tinyzooconv.exceptions.BinarySerializerException;
 import pl.asie.tinyzooconv.exceptions.IdNotFoundException;
 import pl.asie.libzzt.Board;
@@ -34,12 +35,14 @@ import java.util.List;
 public class BinaryWorld implements BinarySerializable {
 	private static final int MAX_FLAGS = 255;
 
+	private final ZxtWorld zxtParent;
 	private final World parent;
 	private final List<BinaryBoard> boards;
 	private final List<String> allFlags;
 
-	public BinaryWorld(World parent) throws BinarySerializerException {
-		this.parent = parent;
+	public BinaryWorld(ZxtWorld zxtParent) throws BinarySerializerException {
+		this.zxtParent = zxtParent;
+		this.parent = zxtParent.getWorld();
 		this.boards = new ArrayList<>(this.parent.getBoards().size());
 		for (int i = 0; i < this.parent.getBoards().size(); i++) {
 			try {

@@ -16,30 +16,22 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.libzzt.oop;
+package pl.asie.zima.binconv;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-import pl.asie.libzzt.EngineDefinition;
-import pl.asie.libzzt.oop.commands.OopCommand;
+import java.io.IOException;
 
-import java.util.ArrayList;
-import java.util.List;
+public final class BinconvPlatformFactory {
+	private BinconvPlatformFactory() {
 
-@Getter
-@Setter
-@EqualsAndHashCode
-@ToString
-public class OopProgram {
-	String windowName;
-	String name;
-	List<OopCommand> commands = new ArrayList<>();
-
-	public OopProgram(EngineDefinition engineDefinition, String data) throws OopParseException {
-		OopProgramParser parser = new OopProgramParser(engineDefinition);
-		parser.parse(this, data);
 	}
 
+	public static BinconvPlatform create(BinconvArgs args) throws IOException {
+		if ("gb".equals(args.getPlatform())) {
+			return new BinconvPlatformGb(args);
+		} else if ("gg".equals(args.getPlatform())) {
+			return new BinconvPlatformGg(args);
+		} else {
+			throw new RuntimeException("Unknown platform: " + args.getPlatform());
+		}
+	}
 }

@@ -20,11 +20,15 @@ package pl.asie.libzxt.zzt;
 
 import lombok.Data;
 import pl.asie.libzxt.ZxtExtensionHeader;
+import pl.asie.libzxt.ZxtExtensionId;
 import pl.asie.libzzt.World;
+
+import java.util.Set;
 
 @Data
 public class ZxtWorld {
 	private final ZxtExtensionHeader zxtHeader;
+	private final Set<ZxtExtensionId> zxtActiveIds;
 	private final int zxtUnsatisfiedFlags;
 	private final World world;
 }

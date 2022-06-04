@@ -16,30 +16,38 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.libzzt.oop;
+package pl.asie.libzxt.zzt.oop;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-import pl.asie.libzzt.EngineDefinition;
-import pl.asie.libzzt.oop.commands.OopCommand;
+import pl.asie.libzzt.oop.OopParserContext;
+import pl.asie.libzzt.oop.OopUtils;
 
-import java.util.ArrayList;
-import java.util.List;
+public final class ZxtOopHelpers {
+	private ZxtOopHelpers() {
 
-@Getter
-@Setter
-@EqualsAndHashCode
-@ToString
-public class OopProgram {
-	String windowName;
-	String name;
-	List<OopCommand> commands = new ArrayList<>();
-
-	public OopProgram(EngineDefinition engineDefinition, String data) throws OopParseException {
-		OopProgramParser parser = new OopProgramParser(engineDefinition);
-		parser.parse(this, data);
 	}
 
+	public static long readHex(OopParserContext context, int bits) {
+		long result = 0;
+
+		context.readChar();
+		while (context.getChar() == ' ') {
+			context.readChar();
+		}
+
+		while (true) {
+			int c = OopUtils.upCase(context.getChar());
+
+			if (c >= '0' && c <= '9') {
+				result = (result << 4) | (c - 48);
+			} else if (c >= 'A' && c <= 'F') {
+				result = (result << 4) | (c - 55);
+			} else {
+				break;
+			}
+
+			context.readChar();
+		}
+
+		return result & ((1L << bits) - 1);
+	}
 }

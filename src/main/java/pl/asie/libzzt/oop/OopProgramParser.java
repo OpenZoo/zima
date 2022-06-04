@@ -84,8 +84,7 @@ public class OopProgramParser implements OopParserContext {
 		}
 	}
 
-	@Override
-	public void readValue() {
+	private void readValueInner(boolean signed) {
 		StringBuilder s = new StringBuilder();
 		readChar();
 		while (this.state.oopChar == ' ') {
@@ -93,6 +92,12 @@ public class OopProgramParser implements OopParserContext {
 		}
 
 		this.state.oopChar = OopUtils.upCase(this.state.oopChar);
+		if (signed && this.state.oopChar == '-') {
+			s.appendCodePoint('-');
+			readChar();
+			this.state.oopChar = OopUtils.upCase(this.state.oopChar);
+		}
+
 		while (this.state.oopChar >= '0' && this.state.oopChar <= '9') {
 			s.appendCodePoint(this.state.oopChar);
 			readChar();
@@ -104,10 +109,21 @@ public class OopProgramParser implements OopParserContext {
 		}
 
 		if (s.length() != 0) {
+			// TODO: Val() has weird behaviour in Turbo Pascal 5.5 when significantly out of range.
 			this.state.oopValue = Integer.parseInt(s.toString());
 		} else {
 			this.state.oopValue = -1;
 		}
+	}
+
+	@Override
+	public void readValue() {
+		readValueInner(false);
+	}
+
+	@Override
+	public void readSignedValue() {
+		readValueInner(true);
 	}
 
 	@Override

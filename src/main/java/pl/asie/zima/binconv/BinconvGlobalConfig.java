@@ -23,6 +23,8 @@ public final class BinconvGlobalConfig {
 
 	}
 
+	// FIXME: This is a hack!
+	public static BinconvPlatform PLATFORM;
 	public static boolean VERBOSE = false;
 
 	public static void apply(BinconvArgs args) {

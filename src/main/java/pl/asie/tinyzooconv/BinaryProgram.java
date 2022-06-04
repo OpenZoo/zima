@@ -84,6 +84,9 @@ import pl.asie.libzzt.oop.directions.OopDirectionRndp;
 import pl.asie.libzzt.oop.directions.OopDirectionSeek;
 import pl.asie.libzzt.oop.directions.OopDirectionSouth;
 import pl.asie.libzzt.oop.directions.OopDirectionWest;
+import pl.asie.tinyzooconv.oop.OopCommandTZWrappedTextLines;
+import pl.asie.tinyzooconv.oop.OopTransformers;
+import pl.asie.zima.binconv.BinconvGlobalConfig;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -91,7 +94,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 
 @Getter
 @EqualsAndHashCode
@@ -99,8 +101,8 @@ public class BinaryProgram implements BinarySerializable {
 	private final BinaryProgramBoardContext context;
 	private final OopProgram program;
 	private final Map<Integer, Integer> positionMap = new HashMap<>();
+	private boolean prepared;
 	private static final int CODE_OFFSET = 5;
-	private static final int WORD_WRAP_WIDTH = 19;
 
 	public BinaryProgram(BinaryProgramBoardContext context, OopProgram program) {
 		this.context = context;
@@ -236,7 +238,7 @@ public class BinaryProgram implements BinarySerializable {
 
 	private void serializeCommand(BinarySerializerOutput output, OopCommand command, List<Integer> code, int codeOffset, List<Integer> labels, Map<Integer, BinarySerializable> ptrRequests) throws BinarySerializerException {
 		if (command instanceof OopCommandTextLine cmd) {
-			command = new OopCommandTZWrappedTextLines(List.of(cmd), WORD_WRAP_WIDTH);
+			command = new OopCommandTZWrappedTextLines(List.of(cmd), BinconvGlobalConfig.PLATFORM.getTextWindowWidth());
 		}
 
 		boolean isInner = labels == null;
@@ -419,29 +421,6 @@ public class BinaryProgram implements BinarySerializable {
 		return cmd instanceof OopCommandTextLine && !((OopCommandTextLine) cmd).getMessage().isEmpty();
 	}
 
-	private boolean isMergeableWith(OopCommandTextLine a, OopCommandTextLine other) {
-		if (a.getType() != other.getType()) {
-			return false;
-		}
-		if (a.getType() == OopCommandTextLine.Type.HYPERLINK) {
-			if (!Objects.equals(a.getDestination(), other.getDestination())) {
-				return false;
-			}
-			return false; // TODO: Cyber Purge needs this, but other programs might not like it
-		} else if (a.getType() == OopCommandTextLine.Type.EXTERNAL_HYPERLINK) {
-			if (!Objects.equals(a.getExternalDestination(), other.getExternalDestination())) {
-				return false;
-			}
-			return false; // TODO: Cyber Purge needs this, but other programs might not like it
-		}
-		if (a.getType() == OopCommandTextLine.Type.REGULAR) {
-			if ("".equals(a.getMessage())) {
-				return false;
-			}
-		}
-		return true;
-	}
-
 	public Integer serializeProgramPosition(int position) {
 		if (position == -1) {
 			return -1;
@@ -453,6 +432,7 @@ public class BinaryProgram implements BinarySerializable {
 	}
 
 	public void prepare(BinarySerializerOutput output) throws IOException, BinarySerializerException {
+		if (prepared) return;
 		output = new CountingBinarySerializerOutput(output);
 		positionMap.clear();
 
@@ -462,64 +442,21 @@ public class BinaryProgram implements BinarySerializable {
 		// byte[] windowName = program.getWindowName() != null ? program.getWindowName().getBytes(StandardCharsets.ISO_8859_1) : new byte[0];
 		byte[] windowName = new byte[0];
 
-		List<OopCommand> commands = new ArrayList<>(program.getCommands().size());
-		List<OopCommandTextLine> textLines = new ArrayList<>();
-		for (OopCommand cmd : program.getCommands()) {
-			if (cmd instanceof OopCommandComment) {
-				continue;
-			}
-
-			if (cmd instanceof OopCommandCycle c) {
-				if (c.getValue() <= 0) {
-					continue;
-				}
-			} else if (cmd instanceof OopCommandChar c) {
-				if (c.getValue() <= 0 || c.getValue() > 255) {
-					continue;
-				}
-			}
-
-			if (isNonEmptyText(cmd) && cmd instanceof OopCommandTextLine tl) {
-				if (!textLines.isEmpty()) {
-					OopCommandTextLine prev = textLines.get(0);
-					if (!isMergeableWith(tl, prev)) {
-						commands.add(new OopCommandTZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
-						/* if (prev.getType() == OopCommandTextLine.Type.HYPERLINK) {
-							System.out.println(textLines);
-						} */
-						textLines.clear();
-					}
-				}
-				if (tl.getType() != OopCommandTextLine.Type.EXTERNAL_HYPERLINK) {
-					textLines.add(tl);
-				} else {
-					warnOrError("External hyperlinks not supported!");
-				}
-			} else {
-				if (!textLines.isEmpty()) {
-					commands.add(new OopCommandTZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
-					textLines.clear();
-				}
-				if (cmd instanceof OopCommandTextLine tl) {
-					commands.add(new OopCommandTZWrappedTextLines(List.of(tl), WORD_WRAP_WIDTH));
-				} else {
-					commands.add(cmd);
-				}
-			}
-		}
-		if (!textLines.isEmpty()) {
-			commands.add(new OopCommandTZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
-			textLines.clear();
-		}
+		OopTransformers.INSTANCE.apply(
+				context.getParent().getBoard().getEngineDefinition(),
+				context.getParent().getParent().getZxtParent(),
+				program
+		);
 
 		// Serialization
-		OopCommand lastCmd = null;
-		for (OopCommand cmd : commands) {
+		for (OopCommand cmd : program.getCommands()) {
 			if (cmd.getPosition() != null) {
 				positionMap.put(cmd.getPosition(), code.size());
 			}
 			serializeCommand(output, cmd, code, 0, labels, ptrRequests);
 		}
+
+		prepared = true;
 	}
 
 	@Override
@@ -531,62 +468,9 @@ public class BinaryProgram implements BinarySerializable {
 		// byte[] windowName = program.getWindowName() != null ? program.getWindowName().getBytes(StandardCharsets.ISO_8859_1) : new byte[0];
 		byte[] windowName = new byte[0];
 
-		List<OopCommand> commands = new ArrayList<>(program.getCommands().size());
-		List<OopCommandTextLine> textLines = new ArrayList<>();
-		for (OopCommand cmd : program.getCommands()) {
-			if (cmd instanceof OopCommandComment) {
-				continue;
-			}
-
-			if (cmd instanceof OopCommandCycle c) {
-				if (c.getValue() <= 0) {
-					continue;
-				}
-			} else if (cmd instanceof OopCommandChar c) {
-				if (c.getValue() <= 0 || c.getValue() > 255) {
-					continue;
-				}
-			}
-
-			if (isNonEmptyText(cmd) && cmd instanceof OopCommandTextLine tl) {
-				if (!textLines.isEmpty()) {
-					OopCommandTextLine prev = textLines.get(0);
-					if (!isMergeableWith(tl, prev)) {
-						commands.add(new OopCommandTZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
-						/* if (prev.getType() == OopCommandTextLine.Type.HYPERLINK) {
-							System.out.println(textLines);
-						} */
-						textLines.clear();
-					}
-				}
-				if (tl.getType() != OopCommandTextLine.Type.EXTERNAL_HYPERLINK) {
-					textLines.add(tl);
-				} else {
-					warnOrError("External hyperlinks not supported!");
-				}
-			} else {
-				if (!textLines.isEmpty()) {
-					commands.add(new OopCommandTZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
-					textLines.clear();
-				}
-				if (cmd instanceof OopCommandTextLine tl) {
-					commands.add(new OopCommandTZWrappedTextLines(List.of(tl), WORD_WRAP_WIDTH));
-				} else {
-					commands.add(cmd);
-				}
-			}
-		}
-		if (!textLines.isEmpty()) {
-			commands.add(new OopCommandTZWrappedTextLines(textLines, WORD_WRAP_WIDTH));
-			textLines.clear();
-		}
-
 		// Serialization
 		OopCommand lastCmd = null;
-		for (OopCommand cmd : commands) {
-			if (cmd.getPosition() != null) {
-				positionMap.put(cmd.getPosition(), code.size());
-			}
+		for (OopCommand cmd : program.getCommands()) {
 			serializeCommand(output, cmd, code, 0, labels, ptrRequests);
 			lastCmd = cmd;
 		}

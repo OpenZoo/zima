@@ -18,6 +18,7 @@
  */
 package pl.asie.tinyzooconv;
 
+import pl.asie.libzxt.zzt.ZxtWorld;
 import pl.asie.tinyzooconv.exceptions.BinarySerializerException;
 import pl.asie.libzzt.World;
 
@@ -33,7 +34,7 @@ public class BinaryWorldPack implements BinarySerializable {
 		return Collections.unmodifiableList(this.worldList);
 	}
 
-	public void addWorld(World world) throws BinarySerializerException {
+	public void addWorld(ZxtWorld world) throws BinarySerializerException {
 		int worldId = worldList.size();
 		try {
 			BinaryWorld binaryWorld = new BinaryWorld(world);

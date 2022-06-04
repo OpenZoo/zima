@@ -30,6 +30,7 @@ public class OopCommandIf extends OopCommand {
 	private final OopCondition condition;
 	private final OopCommand trueCommand;
 
+	@Override
 	public List<OopCommand> getChildren() {
 		return trueCommand != null ? List.of(trueCommand) : List.of();
 	}

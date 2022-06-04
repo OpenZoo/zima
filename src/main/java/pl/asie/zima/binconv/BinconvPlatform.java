@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public interface BinconvPlatform {
+	int getTextWindowWidth();
 	ZxtReader createZxtReader();
 	BinarySerializer createBinarySerializer();
 	void write(OutputStream stream, BinarySerializer serializer) throws IOException, BinarySerializerException;

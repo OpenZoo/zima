@@ -28,11 +28,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class BinconvPlatformGb extends BinconvPlatformTinyzooGbBased {
+public class BinconvPlatformGg extends BinconvPlatformTinyzooGbBased {
 	private final byte[] baseImage;
-	private final boolean isTpp1;
-
-	public BinconvPlatformGb(BinconvArgs args) throws IOException {
+	public BinconvPlatformGg(BinconvArgs args) throws IOException {
 		try (FileInputStream fis = new FileInputStream(args.getEngineFile())) {
 			this.baseImage = FileUtils.readAll(fis);
 		}
@@ -40,13 +38,11 @@ public class BinconvPlatformGb extends BinconvPlatformTinyzooGbBased {
 		if (this.baseImage.length < 32768 || (this.baseImage.length % 16384) != 0) {
 			throw new RuntimeException("Invalid base image size!");
 		}
-		this.isTpp1 = this.baseImage[0x147] == (byte)0xBC && this.baseImage[0x149] == (byte)0xC1 && this.baseImage[0x14A] == (byte)0x65
-				&& this.baseImage[0x150] == 1 && this.baseImage[0x151] == 0;
 	}
 
 	@Override
 	public int getTextWindowWidth() {
-		return 19;
+		return 19; // TODO
 	}
 
 	@Override
@@ -62,16 +58,6 @@ public class BinconvPlatformGb extends BinconvPlatformTinyzooGbBased {
 
 	@Override
 	public void write(OutputStream stream, BinarySerializer serializer) throws IOException, BinarySerializerException {
-		// fix ROM size
-		int bankSize = serializer.getBanksUsed() * 16384;
-		int bankSizeShift = 32768;
-		int bankShift = 0;
-		while (bankSizeShift < bankSize) {
-			bankSizeShift *= 2;
-			bankShift++;
-		}
-		this.baseImage[0x148] = (byte) bankShift;
-
 		// write data
 		stream.write(this.baseImage);
 		serializer.writeBankData(stream);

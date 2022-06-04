@@ -16,30 +16,23 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.libzzt.oop;
+package pl.asie.libzxt.zzt.oop.commands;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-import pl.asie.libzzt.EngineDefinition;
+import pl.asie.libzxt.ZxtExtensionId;
 import pl.asie.libzzt.oop.commands.OopCommand;
 
-import java.util.ArrayList;
 import java.util.List;
 
-@Getter
-@Setter
-@EqualsAndHashCode
-@ToString
-public class OopProgram {
-	String windowName;
-	String name;
-	List<OopCommand> commands = new ArrayList<>();
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class OopCommandZxtIfExt extends OopCommand {
+	private final ZxtExtensionId id;
+	private final OopCommand trueCommand;
 
-	public OopProgram(EngineDefinition engineDefinition, String data) throws OopParseException {
-		OopProgramParser parser = new OopProgramParser(engineDefinition);
-		parser.parse(this, data);
+	@Override
+	public List<OopCommand> getChildren() {
+		return trueCommand != null ? List.of(trueCommand) : List.of();
 	}
-
 }

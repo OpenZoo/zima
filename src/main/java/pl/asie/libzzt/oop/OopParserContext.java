@@ -38,6 +38,8 @@ public interface OopParserContext {
 
 	void readValue();
 
+	void readSignedValue();
+
 	String getWord();
 
 	void readWord();

@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with zima.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pl.asie.tinyzooconv;
+package pl.asie.tinyzooconv.oop;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -74,10 +74,6 @@ public class OopCommandTZWrappedTextLines extends OopCommand {
 		if (!lineBuffer.isEmpty()) {
 			addLineBuffer(lineBuffer, wordWrapWidth);
 		}
-
-		/* for (OopCommandTextLine line : lines) {
-			System.out.println(Objects.hashCode(this) + " appending '" + line.getMessage() + "'");
-		} */
 	}
 
 	private void addLineBuffer(List<OopCommandTextLine> buffer, int wordWrapWidth) {
@@ -133,12 +129,6 @@ public class OopCommandTZWrappedTextLines extends OopCommand {
 	}
 
 	private OopCommandTextLine createTextLine(OopCommandTextLine.Type type, OopLabelTarget destination, String externalDestination, String s, int wordWrapWidth) {
-		/* if (type == OopCommandTextLine.Type.CENTERED) {
-			int offset = (wordWrapWidth - s.length()) / 2;
-			if (offset > 0) {
-				s = " ".repeat(offset) + s;
-			}
-		} */
 		if (s.length() > wordWrapWidth) {
 			throw new RuntimeException("Line too long: " + s.length() + " > " + wordWrapWidth);
 		}

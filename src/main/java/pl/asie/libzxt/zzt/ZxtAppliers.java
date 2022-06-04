@@ -19,7 +19,9 @@
 package pl.asie.libzxt.zzt;
 
 import pl.asie.libzxt.ZxtExtensionId;
+import pl.asie.libzxt.zzt.oop.ZxtOopHelpers;
 import pl.asie.libzxt.zzt.oop.commands.OopCommandZxtDieItem;
+import pl.asie.libzxt.zzt.oop.commands.OopCommandZxtIfExt;
 import pl.asie.libzxt.zzt.oop.commands.OopCommandZxtViewport;
 import pl.asie.libzxt.zzt.oop.conditions.OopConditionZxtRnd;
 import pl.asie.libzzt.oop.OopParseException;
@@ -40,6 +42,14 @@ final class ZxtAppliers {
 	static {
 		APPLIER_MAP = new HashMap<>();
 
+		add(0x00000000, 0x0001, (definition, block) -> {
+			definition.getOopParserConfiguration().addParser(OopCommand.class, "IFEXT", context -> {
+				long owner = ZxtOopHelpers.readHex(context, 32);
+				long selector = ZxtOopHelpers.readHex(context, 16);
+				return new OopCommandZxtIfExt(new ZxtExtensionId((int) owner, (short) selector), context.parseCommand());
+			});
+			return true;
+		});
 		add(0x0000A51E, 0x0001, (definition, block) -> {
 			definition.getOopParserConfiguration().addParser(OopCommand.class, "DIE", context -> {
 				context.readWord();

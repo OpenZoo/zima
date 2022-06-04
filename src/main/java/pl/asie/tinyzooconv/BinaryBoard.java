@@ -18,6 +18,7 @@
  */
 package pl.asie.tinyzooconv;
 
+import lombok.Getter;
 import pl.asie.tinyzooconv.exceptions.BinarySerializerException;
 import pl.asie.tinyzooconv.exceptions.TooManyIdsException;
 import pl.asie.libzzt.Board;
@@ -34,6 +35,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
+@Getter
 public class BinaryBoard implements BinarySerializable {
 	final BinaryWorld parent;
 	final Board board;
@@ -138,6 +140,7 @@ public class BinaryBoard implements BinarySerializable {
 					dataOfs = dataOffsets.size();
 					emitNewDataOfs = true;
 				}
+				program.prepare(output);
 			}
 			output.writeShort(dataOfs);
 			int dataPos;
@@ -146,7 +149,6 @@ public class BinaryBoard implements BinarySerializable {
 			} else if (stat.getDataPos() == 0) {
 				dataPos = 0;
 			}  else if (program != null) {
-				program.prepare(output);
 				Integer newDataPos = program.serializeProgramPosition(stat.getDataPos());
 				if (newDataPos != null) {
 					dataPos = newDataPos;

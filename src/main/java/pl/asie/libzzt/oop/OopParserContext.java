@@ -50,7 +50,7 @@ public interface OopParserContext {
 
 	<T> T parseType(Class<T> cl);
 
-	OopCommand parseInstruction();
+	OopCommand parseInstruction(boolean nested);
 
 	OopCommand parseCommand();
 

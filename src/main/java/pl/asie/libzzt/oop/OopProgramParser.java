@@ -174,7 +174,7 @@ public class OopProgramParser implements OopParserContext {
 			readWord();
 		}
 		if (getWord().isEmpty()) {
-			return parseInstruction();
+			return parseInstruction(true);
 		} else {
 			popState(lastState);
 			return getConfig().getParser(OopCommand.class).parse(this);
@@ -182,7 +182,7 @@ public class OopProgramParser implements OopParserContext {
 	}
 
 	@Override
-	public OopCommand parseInstruction() {
+	public OopCommand parseInstruction(boolean nested) {
 		this.state.lineFinished = true;
 		int lastPosition = this.state.position;
 
@@ -195,6 +195,8 @@ public class OopProgramParser implements OopParserContext {
 				program.windowName = parseLineToEnd();
 			} else {
 				skipLine();
+				// OPENZOO: Mark line as skipped for other parsers in the call stack.
+				this.state.lineFinished = false;
 			}
 			return null;
 		} else if (getChar() == '\'' || getChar() == ':') {
@@ -206,12 +208,14 @@ public class OopProgramParser implements OopParserContext {
 				s = s.substring(0, s.length() - 1);
 			}
 			if (WORD_PATTERN.matcher(s).find() && !s.startsWith(":")) {
-				int lastPosition2 = this.state.position;
+				OopParserState lastState = pushState();
 				readChar();
 				this.state.oopChar = OopUtils.upCase(getChar());
 				restoreFindStringVisible &= !((getChar() >= 'A' && getChar() <= 'Z') || (getChar() == '_'));
-				this.state.position = lastPosition2;
-				cmd = new OopCommandLabel(s, zapped, restoreFindStringVisible);
+				popState(lastState);
+				if (!nested) {
+					cmd = new OopCommandLabel(s, zapped, restoreFindStringVisible);
+				}
 			} else if (zapped) {
 				cmd = new OopCommandComment(s);
 			}
@@ -230,6 +234,8 @@ public class OopProgramParser implements OopParserContext {
 			OopCommand cmd = parseCommand();
 			if (this.state.lineFinished) {
 				skipLine();
+				// OPENZOO: Mark line as skipped for other parsers in the call stack.
+				this.state.lineFinished = false;
 			}
 
 			if (cmd != null) {
@@ -240,6 +246,8 @@ public class OopProgramParser implements OopParserContext {
 		} else if (getChar() == 13) {
 			OopCommand cmd = parseTextLine("");
 			cmd.setPosition(lastPosition);
+			// OPENZOO: Mark line as skipped for other parsers in the call stack.
+			this.state.lineFinished = false;
 			return cmd;
 		} else if (getChar() == 0) {
 			// TODO: Formally different from #END (doesn't change position), but does it matter?
@@ -249,6 +257,8 @@ public class OopProgramParser implements OopParserContext {
 		} else {
 			OopCommand cmd = parseTextLine(Character.toString(getChar()) + parseLineToEnd());
 			cmd.setPosition(lastPosition);
+			// OPENZOO: Mark line as skipped for other parsers in the call stack.
+			this.state.lineFinished = false;
 			return cmd;
 		}
 	}
@@ -279,7 +289,7 @@ public class OopProgramParser implements OopParserContext {
 		this.program = program;
 
 		while (this.state.position < data.length()) {
-			OopCommand command = parseInstruction();
+			OopCommand command = parseInstruction(false);
 			if (command != null) {
 				program.commands.add(command);
 			}

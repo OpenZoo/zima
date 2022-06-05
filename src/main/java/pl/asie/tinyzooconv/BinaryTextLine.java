@@ -19,6 +19,7 @@
 package pl.asie.tinyzooconv;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import pl.asie.tinyzooconv.exceptions.BinarySerializerException;
@@ -27,6 +28,7 @@ import pl.asie.libzzt.oop.commands.OopCommandTextLine;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+@Getter
 @RequiredArgsConstructor
 @EqualsAndHashCode
 @ToString

@@ -81,14 +81,14 @@ public class BankingBinarySerializer implements BinarySerializer {
 	private final Map<BinarySerializable, Collector> collectorMap = new HashMap<>();
 	private final Multimap<BinarySerializable, Collector> collectorListeners = HashMultimap.create();
 	private BinarySerializable firstObject;
-	private final Map<Integer, List<BinarySerializable>> objectsPerBank = new HashMap<>();
+	private final Map<Integer, List<Collector>> objectsPerBank = new HashMap<>();
 
 	private int getObjectSize(BinarySerializable object) {
 		return collectorMap.get(object).size();
 	}
 
-	private int getUsedSpace(List<BinarySerializable> list) {
-		return list != null ? list.stream().mapToInt(this::getObjectSize).sum() : 0;
+	private int getUsedSpace(List<Collector> list) {
+		return list != null ? list.stream().mapToInt(BaseBinarySerializerOutput::size).sum() : 0;
 	}
 
 	private int getUsedSpace(int bank) {
@@ -104,7 +104,7 @@ public class BankingBinarySerializer implements BinarySerializer {
 			throw new RuntimeException("Not enough free space in bank " + bank + " for object! (" + getFreeSpace(bank) + " < " + getObjectSize(object) + ")");
 		}
 		int location = getUsedSpace(bank);
-		objectsPerBank.computeIfAbsent(bank, k -> new ArrayList<>()).add(object);
+		objectsPerBank.computeIfAbsent(bank, k -> new ArrayList<>()).add(collectorMap.get(object));
 		for (Collector c : collectorListeners.get(object)) {
 			c.commitFarPointer(object, bank, this.bankRegionOffset + location);
 		}
@@ -159,11 +159,11 @@ public class BankingBinarySerializer implements BinarySerializer {
 	public void writeBankData(OutputStream stream) throws IOException, BinarySerializerException {
 		int maximumBank = getBanksUsed() - 1;
 		for (int i = firstBankIndex; i <= maximumBank; i++) {
-			List<BinarySerializable> list = this.objectsPerBank.get(i);
+			List<Collector> list = this.objectsPerBank.get(i);
 			int pos = 0;
 			if (list != null) {
-				for (BinarySerializable obj : list) {
-					byte[] data = this.collectorMap.get(obj).toByteArray();
+				for (Collector obj : list) {
+					byte[] data = obj.toByteArray();
 					stream.write(data);
 					pos += data.length;
 				}

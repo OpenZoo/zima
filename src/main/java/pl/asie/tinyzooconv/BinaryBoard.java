@@ -27,6 +27,7 @@ import pl.asie.libzzt.Stat;
 import pl.asie.libzzt.oop.OopProgram;
 import pl.asie.libzzt.oop.commands.OopCommand;
 import pl.asie.libzzt.oop.commands.OopCommandLabel;
+import pl.asie.zima.binconv.BinconvGlobalConfig;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Getter
 public class BinaryBoard implements BinarySerializable {

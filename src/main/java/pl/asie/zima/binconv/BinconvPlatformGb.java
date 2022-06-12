@@ -45,6 +45,16 @@ public class BinconvPlatformGb extends BinconvPlatformTinyzooGbBased {
 	}
 
 	@Override
+	public int getViewportWidth() {
+		return 20;
+	}
+
+	@Override
+	public int getViewportHeight() {
+		return 17;
+	}
+
+	@Override
 	public int getTextWindowWidth() {
 		return 19;
 	}

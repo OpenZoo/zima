@@ -40,8 +40,9 @@ public class OopTokenWordDiscriminator<T> implements OopTokenParser<T> {
 	public OopTokenWordDiscriminator<T> addWord(String word, OopTokenParser<T> parser) {
 		if (this.words.containsKey(word)) {
 			this.words.put(word, OopTokenParser.and(parser, this.words.get(word)));
+		} else {
+			this.words.put(word, parser);
 		}
-		this.words.put(word, parser);
 		return this;
 	}
 

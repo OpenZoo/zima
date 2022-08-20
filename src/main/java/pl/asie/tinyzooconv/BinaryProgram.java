@@ -23,6 +23,8 @@ import lombok.Getter;
 import pl.asie.libzxt.zzt.oop.commands.OopCommandZxtDieItem;
 import pl.asie.libzxt.zzt.oop.commands.OopCommandZxtViewport;
 import pl.asie.libzxt.zzt.oop.conditions.OopConditionZxtRnd;
+import pl.asie.libzxt.zzt.oop.directions.OopDirectionZxtGmAt;
+import pl.asie.libzxt.zzt.oop.directions.OopDirectionZxtGmBy;
 import pl.asie.tinyzooconv.exceptions.BinarySerializerException;
 import pl.asie.tinyzooconv.exceptions.IdNotFoundException;
 import pl.asie.libzzt.oop.OopLabelTarget;
@@ -212,6 +214,14 @@ public class BinaryProgram implements BinarySerializable {
 		} else if (direction instanceof OopDirectionOpp dir) {
 			code.add(0x0D);
 			serializeDirection(dir.getChild(), code);
+		} else if (direction instanceof OopDirectionZxtGmBy dir) {
+			code.add(0x0E);
+			code.add(dir.getX());
+			code.add(dir.getY());
+		} else if (direction instanceof OopDirectionZxtGmAt dir) {
+			code.add(0x0F);
+			code.add(dir.getX());
+			code.add(dir.getY());
 		} else {
 			throw new RuntimeException("Unsupported direction: " + direction);
 		}

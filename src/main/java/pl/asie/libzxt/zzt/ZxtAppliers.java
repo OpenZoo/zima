@@ -24,6 +24,8 @@ import pl.asie.libzxt.zzt.oop.commands.OopCommandZxtDieItem;
 import pl.asie.libzxt.zzt.oop.commands.OopCommandZxtIfExt;
 import pl.asie.libzxt.zzt.oop.commands.OopCommandZxtViewport;
 import pl.asie.libzxt.zzt.oop.conditions.OopConditionZxtRnd;
+import pl.asie.libzxt.zzt.oop.directions.OopDirectionZxtGmAt;
+import pl.asie.libzxt.zzt.oop.directions.OopDirectionZxtGmBy;
 import pl.asie.libzzt.oop.OopParseException;
 import pl.asie.libzzt.oop.commands.OopCommand;
 import pl.asie.libzzt.oop.conditions.OopCondition;
@@ -81,6 +83,23 @@ final class ZxtAppliers {
 				} else {
 					throw new OopParseException("Unrecognized VIEWPORT sub-command: " + word);
 				}
+			});
+			return true;
+		});
+		add(0x79656D74, 0x0001, (definition, block) -> {
+			definition.getOopParserConfiguration().addParser(OopDirection.class, "AT", context -> {
+				context.readValue();
+				int x = context.getValue();
+				context.readValue();
+				int y = context.getValue();
+				return new OopDirectionZxtGmAt(x, y);
+			});
+			definition.getOopParserConfiguration().addParser(OopDirection.class, "BY", context -> {
+				context.readValue();
+				int x = context.getValue();
+				context.readValue();
+				int y = context.getValue();
+				return new OopDirectionZxtGmBy(x, y);
 			});
 			return true;
 		});

@@ -24,13 +24,34 @@ import pl.asie.tinyzooconv.BinarySerializer;
 import pl.asie.tinyzooconv.exceptions.BinarySerializerException;
 import pl.asie.zima.util.FileUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class BinconvPlatformGb extends BinconvPlatformTinyzooGbBased {
 	private final byte[] baseImage;
 	private final boolean isTpp1;
+	private final Integer sramSize;
+	private final Map<Integer, Integer> mbc5SramKbToValue = Map.of(
+			8, 0x02,
+			32, 0x03,
+			128, 0x04,
+			64, 0x05
+	);
+	private final Map<Integer, Integer> tpp1SramKbToValue = Map.of(
+			8, 0x01,
+			16, 0x02,
+			32, 0x03,
+			64, 0x04,
+			128, 0x05,
+			256, 0x06,
+			512, 0x07,
+			1024, 0x08,
+			2048, 0x09
+	);
 
 	public BinconvPlatformGb(BinconvArgs args) throws IOException {
 		try (FileInputStream fis = new FileInputStream(args.getEngineFile())) {
@@ -42,6 +63,7 @@ public class BinconvPlatformGb extends BinconvPlatformTinyzooGbBased {
 		}
 		this.isTpp1 = this.baseImage[0x147] == (byte)0xBC && this.baseImage[0x149] == (byte)0xC1 && this.baseImage[0x14A] == (byte)0x65
 				&& this.baseImage[0x150] == 1 && this.baseImage[0x151] == 0;
+		this.sramSize = args.getSramSize();
 	}
 
 	@Override
@@ -51,7 +73,7 @@ public class BinconvPlatformGb extends BinconvPlatformTinyzooGbBased {
 
 	@Override
 	public int getViewportHeight() {
-		return 17;
+		return 18;
 	}
 
 	@Override
@@ -82,8 +104,43 @@ public class BinconvPlatformGb extends BinconvPlatformTinyzooGbBased {
 		}
 		this.baseImage[0x148] = (byte) bankShift;
 
-		// write data
-		stream.write(this.baseImage);
-		serializer.writeBankData(stream);
+		// fix SRAM size
+		if (this.sramSize != null) {
+			Map<Integer, Integer> sramKbToValue = this.isTpp1 ? tpp1SramKbToValue : mbc5SramKbToValue;
+
+			Integer sramByte = sramKbToValue.get(this.sramSize);
+			if (sramByte == null) {
+				throw new BinarySerializerException("Invalid SRAM size: " + this.sramSize + " KB. Supported values: "
+						+ sramKbToValue.keySet().stream().sorted().map(Object::toString).collect(Collectors.joining(", ")));
+			}
+			this.baseImage[this.isTpp1 ? 0x152 : 0x149] = (byte) sramByte.intValue();
+		}
+
+		// calculate header checksum
+		int headerChecksum = 0;
+		for (int i = 0x134; i < 0x14D; i++) {
+			headerChecksum = (headerChecksum - (((int) this.baseImage[i]) & 0xFF) - 1) & 0xFF;
+		}
+		this.baseImage[0x14D] = (byte) headerChecksum;
+
+		// create ROM
+		ByteArrayOutputStream baos = new ByteArrayOutputStream(bankSize);
+		baos.write(this.baseImage);
+		serializer.writeBankData(baos);
+		byte[] fullImage = baos.toByteArray();
+
+		// calculate global checksum
+		int globalChecksum = 0;
+		for (int i = 0; i < 0x14E; i++) {
+			globalChecksum += ((int) fullImage[i]) & 0xFF;
+		}
+		for (int i = 0x150; i < fullImage.length; i++) {
+			globalChecksum += ((int) fullImage[i]) & 0xFF;
+		}
+		fullImage[0x14E] = (byte) ((globalChecksum >> 8) & 0xFF);
+		fullImage[0x14F] = (byte) (globalChecksum & 0xFF);
+
+		// write final ROM
+		stream.write(fullImage);
 	}
 }

@@ -40,6 +40,9 @@ public class BinconvArgs {
 	@Parameter(names = {"-o", "--output"}, description = "Output file", required = true)
 	private String output;
 
+	@Parameter(names = {"--sram-size"}, description = "SRAM size, in kilobytes, if applicable.")
+	private Integer sramSize;
+
 	@Parameter(description = "Input files", required = true)
 	private List<String> files = new ArrayList<>();
 }

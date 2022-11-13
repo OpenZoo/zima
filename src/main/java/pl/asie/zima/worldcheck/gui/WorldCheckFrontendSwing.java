@@ -87,7 +87,7 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 
 		WorldHolder() {
 			this.worldTreeCellRenderer = new WorldCheckTreeCellRenderer(VISUAL_DATA, ZimaPlatform.ZZT);
-			this.uiCanvas = new BoardCanvas(VISUAL_DATA, ZimaPlatform.ZZT);
+			this.uiCanvas = new BoardCanvas(false, VISUAL_DATA, ZimaPlatform.ZZT);
 
 			this.uiCanvas.setMinimumSize(new Dimension(480, 350));
 			this.uiCanvas.setPreferredSize(new Dimension(480, 350));

@@ -87,6 +87,7 @@ import pl.asie.libzzt.oop.directions.OopDirectionSeek;
 import pl.asie.libzzt.oop.directions.OopDirectionSouth;
 import pl.asie.libzzt.oop.directions.OopDirectionWest;
 import pl.asie.tinyzooconv.oop.OopCommandTZWrappedTextLines;
+import pl.asie.tinyzooconv.oop.OopTransformer;
 import pl.asie.tinyzooconv.oop.OopTransformers;
 import pl.asie.zima.binconv.BinconvGlobalConfig;
 
@@ -103,6 +104,7 @@ public class BinaryProgram implements BinarySerializable {
 	private final BinaryProgramBoardContext context;
 	private final OopProgram program;
 	private final Map<Integer, Integer> positionMap = new HashMap<>();
+	private transient OopTransformer transformer;
 	private boolean prepared;
 	private static final int CODE_OFFSET = 5;
 
@@ -247,9 +249,11 @@ public class BinaryProgram implements BinarySerializable {
 	}
 
 	private void serializeCommand(BinarySerializerOutput output, OopCommand command, List<Integer> code, int codeOffset, List<Integer> labels, Map<Integer, BinarySerializable> ptrRequests) throws BinarySerializerException {
-		if (command instanceof OopCommandTextLine cmd) {
-			command = new OopCommandTZWrappedTextLines(List.of(cmd), BinconvGlobalConfig.PLATFORM.getTextWindowWidth());
-		}
+		command = transformer.transform(
+				context.getParent().getBoard().getEngineDefinition(),
+				context.getParent().getParent().getZxtParent(),
+				program, command
+		);
 
 		boolean isInner = labels == null;
 		if (command instanceof OopCommandLabel label) {
@@ -452,10 +456,11 @@ public class BinaryProgram implements BinarySerializable {
 		// byte[] windowName = program.getWindowName() != null ? program.getWindowName().getBytes(StandardCharsets.ISO_8859_1) : new byte[0];
 		byte[] windowName = new byte[0];
 
-		OopTransformers.INSTANCE.apply(
-				context.getParent().getBoard().getEngineDefinition(),
-				context.getParent().getParent().getZxtParent(),
-				program
+		transformer = new OopTransformers(context.getParent().getBoard().getEngineDefinition());
+		transformer.apply(
+			context.getParent().getBoard().getEngineDefinition(),
+			context.getParent().getParent().getZxtParent(),
+			program
 		);
 
 		// Serialization

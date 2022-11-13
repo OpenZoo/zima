@@ -53,10 +53,12 @@ public class BankingBinarySerializer implements BinarySerializer {
 
 		@Override
 		public void writeFarPointerTo(BinarySerializable object) throws IOException, BinarySerializerException {
-			farPointerLocations.put(bytes.size(), object);
-			bytes.write(0);
-			bytes.write(0);
-			bytes.write(0);
+			if (object != null) {
+				farPointerLocations.put(bytes.size(), object);
+			}
+			bytes.write(0xFF);
+			bytes.write(0xFF);
+			bytes.write(0xFF);
 		}
 
 		private void commitFarPointer(BinarySerializable object, int bank, int position) {
@@ -100,7 +102,11 @@ public class BankingBinarySerializer implements BinarySerializer {
 	}
 
 	private int addToBank(int bank, BinarySerializable object) {
-		if (getFreeSpace(bank) < getObjectSize(object)) {
+		int objSize = getObjectSize(object);
+		if (objSize == 0) {
+			// empty object
+			return 0xFFFF;
+		} else if (objSize > getFreeSpace(bank)) {
 			throw new RuntimeException("Not enough free space in bank " + bank + " for object! (" + getFreeSpace(bank) + " < " + getObjectSize(object) + ")");
 		}
 		int location = getUsedSpace(bank);

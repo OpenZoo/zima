@@ -62,6 +62,15 @@ public class OopTZTextWrapper implements OopTransformer {
 	}
 
 	@Override
+	public OopCommand transform(EngineDefinition definition, ZxtWorld world, OopProgram program, OopCommand command) {
+		if (command instanceof OopCommandTextLine tl) {
+			return new OopCommandTZWrappedTextLines(List.of(tl), wordWrapWidth);
+		} else {
+			return command;
+		}
+	}
+
+	@Override
 	public void apply(EngineDefinition definition, ZxtWorld world, OopProgram program) {
 		List<OopCommandTextLine> textLines = new ArrayList<>();
 		List<OopCommand> commands = new ArrayList<>();

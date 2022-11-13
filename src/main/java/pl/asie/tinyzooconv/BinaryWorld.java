@@ -76,6 +76,15 @@ public class BinaryWorld implements BinarySerializable {
 
 	@Override
 	public void serialize(BinarySerializerOutput output) throws IOException, BinarySerializerException {
+		// ROM info
+		//output.writeByte(0);
+		//output.writeFarPointerTo(null);
+
+		// initial message flags
+		//output.writeByte(0);
+		//output.writeByte(0);
+
+		// RAM info
 		output.writeShort(this.parent.getAmmo());
 		output.writeShort(this.parent.getGems());
 		int keys = 0;
@@ -101,7 +110,7 @@ public class BinaryWorld implements BinarySerializable {
 		}
 		output.writeShort(this.parent.getBoardTimeSec());
 		output.writeShort(this.parent.getBoardTimeHsec());
-		output.writeByte(this.parent.getBoards().size() - 1);
+		output.writeByte(0); // todo: rqemove
 		for (BinaryBoard board : this.boards) {
 			output.writeFarPointerTo(board);
 		}

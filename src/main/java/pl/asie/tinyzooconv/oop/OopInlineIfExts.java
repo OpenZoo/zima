@@ -33,6 +33,11 @@ import pl.asie.zima.binconv.BinconvPlatform;
 @Builder
 public class OopInlineIfExts implements OopTransformer {
 	@Override
+	public OopCommand transform(EngineDefinition definition, ZxtWorld world, OopProgram program, OopCommand command) {
+		return command;
+	}
+
+	@Override
 	public void apply(EngineDefinition definition, ZxtWorld world, OopProgram program) {
 		var it = program.getCommands().listIterator();
 

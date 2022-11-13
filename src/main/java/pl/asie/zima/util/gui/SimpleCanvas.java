@@ -27,6 +27,7 @@ import java.awt.image.BufferedImage;
 public class SimpleCanvas extends JComponent {
 	@Getter
 	private BufferedImage image;
+	private final boolean isInPane;
 	@Getter
 	private boolean allowScaling;
 	@Getter
@@ -34,8 +35,9 @@ public class SimpleCanvas extends JComponent {
 	@Getter
 	private boolean scrollable;
 
-	public SimpleCanvas() {
+	public SimpleCanvas(boolean isInPane) {
 		this.allowScaling = false;
+		this.isInPane = isInPane;
 	}
 
 	private int imageWidth() {
@@ -53,7 +55,7 @@ public class SimpleCanvas extends JComponent {
 	@Override
 	public void paintComponent(Graphics graphics) {
 		if (image != null) {
-			Dimension size = allowScaling ? this.getParent().getSize() : this.getSize();
+			Dimension size = isInPane ? this.getParent().getSize() : this.getSize();
 			Graphics2D g2d = (Graphics2D) graphics.create();
 			g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 			if (image.getWidth() == size.width && image.getHeight() == size.height) {
@@ -82,7 +84,7 @@ public class SimpleCanvas extends JComponent {
 	}
 
 	public void updateDimensions() {
-		Dimension parentDim = allowScaling ? this.getParent().getSize() : this.getSize();
+		Dimension parentDim = isInPane ? this.getParent().getSize() : this.getSize();
 		Dimension dimension = (this.image == null || allowScaling) ? parentDim : new Dimension(imageWidth(), imageHeight());
 		if (dimension.width < parentDim.width && dimension.height < parentDim.height) {
 			dimension = parentDim;

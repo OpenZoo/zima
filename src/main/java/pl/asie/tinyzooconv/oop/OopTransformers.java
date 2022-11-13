@@ -21,6 +21,8 @@ package pl.asie.tinyzooconv.oop;
 import pl.asie.libzxt.zzt.ZxtWorld;
 import pl.asie.libzzt.EngineDefinition;
 import pl.asie.libzzt.oop.OopProgram;
+import pl.asie.libzzt.oop.commands.OopCommand;
+import pl.asie.tinyzooconv.TinyzooQuirk;
 import pl.asie.zima.binconv.BinconvGlobalConfig;
 import pl.asie.zima.binconv.BinconvPlatform;
 
@@ -28,16 +30,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OopTransformers implements OopTransformer {
-	public static final OopTransformers INSTANCE = new OopTransformers();
-
 	private final List<OopTransformer> transformers = new ArrayList<>();
 
-	public OopTransformers() {
+	public OopTransformers(EngineDefinition definition) {
 		transformers.add(OopRemoveNoOps.builder().build());
 		transformers.add(OopInlineIfExts.builder().build());
-		transformers.add(OopTZTextWrapper.builder().wordWrapWidth(BinconvGlobalConfig.PLATFORM.getTextWindowWidth()).build());
+		transformers.add(OopTZTextWrapper.builder().wordWrapWidth(((Number) definition.getQuirkValue(TinyzooQuirk.TEXT_WINDOW_WIDTH)).intValue()).build());
 	}
 
+	@Override
+	public OopCommand transform(EngineDefinition definition, ZxtWorld world, OopProgram program, OopCommand command) {
+		for (OopTransformer t : this.transformers) {
+			command = t.transform(definition, world, program, command);
+		}
+		return command;
+	}
 
 	@Override
 	public void apply(EngineDefinition definition, ZxtWorld world, OopProgram program) {

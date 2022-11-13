@@ -40,7 +40,8 @@ public class BoardCanvas extends SimpleCanvas {
 	@Setter
 	private List<ElementLocation> highlights;
 
-	public BoardCanvas(TextVisualData visualData, ZimaPlatform platform) {
+	public BoardCanvas(boolean isInPane, TextVisualData visualData, ZimaPlatform platform) {
+		super(isInPane);
 		this.visualData = visualData;
 		this.platform = platform;
 	}

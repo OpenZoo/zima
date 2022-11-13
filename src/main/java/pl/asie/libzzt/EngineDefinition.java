@@ -25,11 +25,7 @@ import lombok.Setter;
 import pl.asie.libzzt.oop.OopParserConfiguration;
 import pl.asie.zima.Constants;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Getter
 @Setter
@@ -48,14 +44,26 @@ public class EngineDefinition {
 	private OopParserConfiguration oopParserConfiguration;
 	private boolean blinkingDisabled;
 	private int[] customPalette;
-	private final Set<String> quirks = new HashSet<>();
+	private final Map<String, Object> quirks = new HashMap<>();
 
-	public void addQuirk(String name) {
-		quirks.add(name);
+	public void setQuirk(String name, Object value) {
+		quirks.put(name, value);
 	}
 
-	public Set<String> getQuirks() {
-		return Collections.unmodifiableSet(quirks);
+	public void addQuirk(String name) {
+		quirks.put(name, true);
+	}
+
+	public Set<String> getQuirkSet() {
+		return quirks.keySet();
+	}
+
+	public boolean hasQuirk(String name) {
+		return quirks.containsKey(name);
+	}
+
+	public Object getQuirkValue(String name) {
+		return quirks.get(name);
 	}
 
 	public static EngineDefinition zzt() {

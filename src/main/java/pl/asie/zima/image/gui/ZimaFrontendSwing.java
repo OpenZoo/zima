@@ -171,7 +171,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		this.profile.getProperties().set(ZimaConversionProfile.PLATFORM, ZimaPlatform.ZZT);
 		this.profile.getProperties().set(ZimaConversionProfile.FAST_RULESET, new ImageConverterRules(ZimaPlatform.ZZT, false).getRuleset("Blocks"));
 
-		this.previewCanvas = new SimpleCanvas();
+		this.previewCanvas = new SimpleCanvas(true);
 		this.previewCanvas.setScrollable(true);
 		this.statusLabel = new JLabel("Ready.");
 		addGridBag(this.mainPanel, this.previewCanvasPane = new JScrollPane(this.previewCanvas), (c) -> { c.gridx = 0; c.gridy = 0; c.fill = GridBagConstraints.BOTH; c.weightx = 0.8; c.weighty = 1.0; });

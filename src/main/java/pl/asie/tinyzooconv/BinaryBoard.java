@@ -28,13 +28,10 @@ import pl.asie.libzzt.oop.OopProgram;
 import pl.asie.libzzt.oop.commands.OopCommand;
 import pl.asie.libzzt.oop.commands.OopCommandLabel;
 import pl.asie.zima.binconv.BinconvGlobalConfig;
+import pl.asie.zima.binconv.BinconvPlatformGb;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Getter
@@ -92,6 +89,26 @@ public class BinaryBoard implements BinarySerializable {
 				rleCount = 1;
 			}
 		} while (iy <= this.board.getHeight());
+
+		/* if (BinconvGlobalConfig.PLATFORM instanceof BinconvPlatformGb) {
+			// zoo_gb_static_colors
+			BoardColorPairCounter pairCounter = new BoardColorPairCounter(
+					BinconvGlobalConfig.PLATFORM.getViewportWidth(),
+					BinconvGlobalConfig.PLATFORM.getViewportHeight(),
+					0x7F
+			);
+			pairCounter.addBoard(this.board);
+			List<Integer> colors = pairCounter.getMostCommonColors();
+			// game transition color must always be allocated dynamically
+			colors.removeIf(f -> Objects.equals(f, 0x05));
+			for (int i = 0; i < 3; i++) {
+				if (i < colors.size()) {
+					output.writeByte(colors.get(i));
+				} else {
+					output.writeByte(0xFF);
+				}
+			}
+		} */
 
 		// zoo_board_info_t
 		output.writeByte(this.board.getMaxShots());

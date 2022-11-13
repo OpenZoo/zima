@@ -18,11 +18,11 @@ repositories {
 
 dependencies {
     implementation 'com.beust:jcommander:1.82'
-    implementation 'com.github.davidmoten:word-wrap:0.1.9'
-    implementation 'com.google.code.gson:gson:2.9.0'
+    implementation 'com.github.davidmoten:word-wrap:0.1.11'
+    implementation 'com.google.code.gson:gson:2.10'
     implementation 'com.google.guava:guava:31.1-jre'
 
-    testImplementation(platform('org.junit:junit-bom:5.7.0'))
+    testImplementation(platform('org.junit:junit-bom:5.9.0'))
     testImplementation('org.junit.jupiter:junit-jupiter')
 }
 

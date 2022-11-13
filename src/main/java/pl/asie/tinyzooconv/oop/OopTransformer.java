@@ -21,9 +21,11 @@ package pl.asie.tinyzooconv.oop;
 import pl.asie.libzxt.zzt.ZxtWorld;
 import pl.asie.libzzt.EngineDefinition;
 import pl.asie.libzzt.oop.OopProgram;
+import pl.asie.libzzt.oop.commands.OopCommand;
 import pl.asie.zima.binconv.BinconvPlatform;
 
-@FunctionalInterface
 public interface OopTransformer {
+	OopCommand transform(EngineDefinition definition, ZxtWorld world, OopProgram program, OopCommand command);
+
 	void apply(EngineDefinition definition, ZxtWorld world, OopProgram program);
 }

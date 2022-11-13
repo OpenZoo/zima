@@ -25,6 +25,7 @@ import pl.asie.libzxt.zzt.ZxtWorld;
 import pl.asie.libzzt.EngineDefinition;
 import pl.asie.tinyzooconv.BinarySerializer;
 import pl.asie.tinyzooconv.BinaryWorldPack;
+import pl.asie.tinyzooconv.TinyzooQuirk;
 import pl.asie.zima.CliPlugin;
 import pl.asie.zima.binconv.BinconvArgs;
 import pl.asie.zima.binconv.BinconvGlobalConfig;
@@ -53,9 +54,10 @@ public class BinconvCliPlugin extends CliPlugin {
 
 		try {
 			BinconvPlatform platform = BinconvPlatformFactory.create(args);
-			BinconvGlobalConfig.PLATFORM = platform;
-
 			BinconvGlobalConfig.apply(args);
+
+			EngineDefinition engine = EngineDefinition.zzt();
+			engine.setQuirk(TinyzooQuirk.TEXT_WINDOW_WIDTH, platform.getTextWindowWidth());
 
 			long timeStart = System.currentTimeMillis();
 
@@ -65,7 +67,7 @@ public class BinconvCliPlugin extends CliPlugin {
 				File file = new File(fn);
 				System.err.println("Adding " + file.getName());
 				ZxtWorld zw = reader.loadWorldWithExtensions(
-						EngineDefinition.zzt(), file,
+						engine, file,
 						ZxtFlag.READING_MUST | ZxtFlag.PLAYING_MUST
 				);
 				worlds.addWorld(zw);

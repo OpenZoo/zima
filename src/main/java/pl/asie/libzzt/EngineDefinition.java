@@ -78,13 +78,13 @@ public class EngineDefinition {
 	}
 
 	public static EngineDefinition superZzt() {
-		EngineDefinition def = new EngineDefinition(EngineBaseKind.ZZT);
+		EngineDefinition def = new EngineDefinition(EngineBaseKind.SUPER_ZZT);
 		def.setBoardWidth(96);
 		def.setBoardHeight(80);
 		def.setMaxBoardSize(20000);
 		def.setMaxStatCount(128 + 1);
 		def.setElements(ElementLibrarySuperZZT.INSTANCE);
-		def.setOopParserConfiguration(OopParserConfiguration.buildZztParser()); // TODO: Add SUper ZZT features
+		def.setOopParserConfiguration(OopParserConfiguration.buildZztParser()); // TODO: Add Super ZZT features
 		return def;
 	}
 

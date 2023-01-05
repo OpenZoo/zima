@@ -26,6 +26,8 @@ import pl.asie.zima.binconv.BinconvGlobalConfig;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -79,14 +81,21 @@ public class BankingBinarySerializer implements BinarySerializer {
 	private final int maxBanks;
 	private final int bankRegionOffset;
 	private final int bankSizeBytes;
+	@Builder.Default
+	private final int padByte = 0;
 	private final boolean padToPowerOfTwo;
+	private final boolean calculateChecksum;
 	private final Map<BinarySerializable, Collector> collectorMap = new HashMap<>();
 	private final Multimap<BinarySerializable, Collector> collectorListeners = HashMultimap.create();
 	private BinarySerializable firstObject;
 	private final Map<Integer, List<Collector>> objectsPerBank = new HashMap<>();
 
 	private int getObjectSize(BinarySerializable object) {
-		return collectorMap.get(object).size();
+		int objectSize = collectorMap.get(object).size();
+		if (object == firstObject && calculateChecksum) {
+			objectSize += 4;
+		}
+		return objectSize;
 	}
 
 	private int getUsedSpace(List<Collector> list) {
@@ -94,7 +103,11 @@ public class BankingBinarySerializer implements BinarySerializer {
 	}
 
 	private int getUsedSpace(int bank) {
-		return getUsedSpace(objectsPerBank.get(bank));
+		int usedSpace = getUsedSpace(objectsPerBank.get(bank));
+		if (bank == 0 && calculateChecksum) {
+			usedSpace += 4;
+		}
+		return usedSpace;
 	}
 
 	private int getFreeSpace(int bank) {
@@ -167,6 +180,26 @@ public class BankingBinarySerializer implements BinarySerializer {
 		for (int i = firstBankIndex; i <= maximumBank; i++) {
 			List<Collector> list = this.objectsPerBank.get(i);
 			int pos = 0;
+			if (calculateChecksum && i == firstBankIndex) {
+				// calculate checksum
+				try {
+					MessageDigest digest = MessageDigest.getInstance("SHA-256");
+					for (int ii = firstBankIndex; ii <= maximumBank; ii++) {
+						List<Collector> list2 = this.objectsPerBank.get(ii);
+						if (list2 != null) {
+							for (Collector obj : list2) {
+								byte[] data = obj.toByteArray();
+								digest.update(data);
+							}
+						}
+					}
+					byte[] checksum = digest.digest();
+					stream.write(checksum, 0, 4);
+					pos += 4;
+				} catch (NoSuchAlgorithmException e) {
+					throw new BinarySerializerException("Could not calculate checksum", e);
+				}
+			}
 			if (list != null) {
 				for (Collector obj : list) {
 					byte[] data = obj.toByteArray();
@@ -175,7 +208,7 @@ public class BankingBinarySerializer implements BinarySerializer {
 				}
 			}
 			while (pos < bankSizeBytes) {
-				stream.write(0);
+				stream.write(this.padByte);
 				pos++;
 			}
 		}

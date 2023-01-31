@@ -6,7 +6,7 @@ configuration flexibility to allow artists and creators to fine-tune the end res
 
 ## Requirements
 
-* Java 11+ (tested with OpenJDK) - download via [AdoptOpenJDK](https://adoptopenjdk.net/index.html)
+* Java 17+ (tested with OpenJDK) - download via [AdoptOpenJDK](https://adoptopenjdk.net/index.html)
 
 ## Building
 

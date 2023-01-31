@@ -23,12 +23,7 @@ import pl.asie.libzzt.Element;
 import pl.asie.zima.util.ZimaPlatform;
 import pl.asie.zima.util.Pair;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ImageConverterRules {
@@ -180,6 +175,11 @@ public class ImageConverterRules {
 		Element messageTimer = platform.getLibrary().byInternalName("MESSAGE_TIMER");
 		if (messageTimer.getCharacter() != 32 && messageTimer.getCharacter() != 0) {
 			statlessRules.add(ElementRule.element(platform, "MESSAGE_TIMER"));
+		}
+		for (Map.Entry<String, Element> elementByInternalName : platform.getLibrary().getElementsByInternalNames().entrySet()) {
+			if (elementByInternalName.getKey().startsWith("WEAVE3_TEXT_")) {
+				rules.add(ElementRule.text(platform, elementByInternalName.getKey()));
+			}
 		}
 
 		// for custom rulesets

@@ -22,6 +22,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import pl.asie.libzzt.oop.OopParserConfiguration;
 import pl.asie.zima.Constants;
 
@@ -40,6 +41,15 @@ import java.util.stream.IntStream;
 @Getter
 @AllArgsConstructor
 public class WeaveZZTPlatformData {
+    @Getter
+    @RequiredArgsConstructor
+    public enum Version {
+        V2_5("2.5"),
+        V3_0("3.0");
+
+        private final String name;
+    }
+
     private static final BiMap<String, String> INTERNAL_TO_WEAVE = HashBiMap.create(Map.ofEntries(
             Map.entry("BOARD_EDGE", "EDGE"),
             Map.entry("MESSAGE_TIMER", "DARKNESS"),
@@ -76,7 +86,7 @@ public class WeaveZZTPlatformData {
             Map.entry("WHITE", 15)
     );
 
-    public static EngineDefinition apply(EngineDefinition base, InputStream is) throws IOException {
+    public static EngineDefinition apply(EngineDefinition base, InputStream is, Version version) throws IOException {
         ElementLibrary elem = base.getElements();
         List<Element> elements = new ArrayList<>(elem.getElements());
         List<String> names = elements.stream().map(elem::getInternalName).toList();
@@ -86,11 +96,23 @@ public class WeaveZZTPlatformData {
         boolean paletteModified = false;
         int maxStatCount = base.getMaxStatCount();
 
-        // Weave ZZT default patches
+        ElementLibrary.Builder newElem = ElementLibrary.builder();
+
+        // Weave ZZT default patch - CUSTOMTEXT
         {
             int customTextIdx = weaveNames.indexOf("CUSTOMTEXT");
             if (customTextIdx >= 0) {
                 elements.set(customTextIdx, elements.get(customTextIdx).withTextColor(0));
+            }
+        }
+
+        // Weave ZZT 3.0+ default patch - elements 80-FF
+        if (version.ordinal() >= Version.V3_0.ordinal()) {
+            for (int i = 0x00; i < 0x80; i++) {
+                newElem.addElement(Element.builder()
+                        .id(i + 0x80)
+                        .textColor(i)
+                        .build(), "WEAVE3_TEXT_" + Integer.toHexString(i + 0x80).toUpperCase(Locale.ROOT));
             }
         }
 
@@ -189,11 +211,12 @@ public class WeaveZZTPlatformData {
 
         base.setMaxBoardSize(65500);
         base.setMaxStatCount(maxStatCount + 1);
-        base.setElements(new ElementLibrary(elements,
+        newElem.addElements(elements,
                 IntStream.range(0, elements.size()).boxed().collect(Collectors.toMap(
                         elements::get, names::get
                 ))
-        ));
+        );
+        base.setElements(newElem.build());
         base.setOopParserConfiguration(OopParserConfiguration.buildZztParser()
                 .setColors(COLOR_NUMBERS, true)
         );

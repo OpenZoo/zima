@@ -53,6 +53,7 @@ public final class ZimaPlatform {
     public static final ZimaPlatform SUPER_ZZT;
     public static final ZimaPlatform SUPER_CLASSICZOO;
     public static final ZimaPlatform WEAVE_ZZT_25;
+    public static final ZimaPlatform WEAVE_ZZT_30;
     public static final ZimaPlatform MEGAZEUX;
 
     public int getDefaultBoardWidth() {
@@ -90,7 +91,8 @@ public final class ZimaPlatform {
         MEGAZEUX = ZimaPlatform.builder().defaultBoardWidth(80).defaultBoardHeight(25).supportsBlinking(false).build();
 
         try {
-            WEAVE_ZZT_25 = ZimaPlatform.builder().zztEngineDefinition(WeaveZZTPlatformData.apply(EngineDefinition.zzt(), null)).build();
+            WEAVE_ZZT_25 = ZimaPlatform.builder().zztEngineDefinition(WeaveZZTPlatformData.apply(EngineDefinition.zzt(), null, WeaveZZTPlatformData.Version.V2_5)).build();
+            WEAVE_ZZT_30 = ZimaPlatform.builder().zztEngineDefinition(WeaveZZTPlatformData.apply(EngineDefinition.zzt(), null, WeaveZZTPlatformData.Version.V3_0)).build();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

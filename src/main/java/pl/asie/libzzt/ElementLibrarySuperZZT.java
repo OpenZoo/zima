@@ -114,6 +114,6 @@ public class ElementLibrarySuperZZT {
                 Field::getName
         ));
         List<Element> elements = fields.stream().map(ElementLibrarySuperZZT::getElement).toList();
-        INSTANCE = new ElementLibrary(elements, names);
+        INSTANCE = ElementLibrary.builder().addElements(elements, names).build();
     }
 }

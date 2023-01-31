@@ -97,7 +97,8 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 	private final List<Pair<String, ZimaPlatform>> platforms = List.of(
 			new Pair<>("ZZT", ZimaPlatform.ZZT),
 			new Pair<>("Super ZZT", ZimaPlatform.SUPER_ZZT),
-			new Pair<>("WeaveZZT 2.5", ZimaPlatform.WEAVE_ZZT_25),
+			new Pair<>("Weave 2.5", ZimaPlatform.WEAVE_ZZT_25),
+			new Pair<>("Weave 3.0", ZimaPlatform.WEAVE_ZZT_30),
 			new Pair<>("Super ClassicZoo", ZimaPlatform.SUPER_CLASSICZOO),
 			new Pair<>("MegaZeux", ZimaPlatform.MEGAZEUX)
 	);
@@ -106,6 +107,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			ZimaPlatform.ZZT, new ImageConverterRules(ZimaPlatform.ZZT, false),
 			ZimaPlatform.SUPER_ZZT, new ImageConverterRules(ZimaPlatform.SUPER_ZZT, true),
 			ZimaPlatform.WEAVE_ZZT_25, new ImageConverterRules(ZimaPlatform.WEAVE_ZZT_25, false),
+			ZimaPlatform.WEAVE_ZZT_30, new ImageConverterRules(ZimaPlatform.WEAVE_ZZT_30, false),
 			ZimaPlatform.SUPER_CLASSICZOO, new ImageConverterRules(ZimaPlatform.SUPER_ZZT, true),
 			ZimaPlatform.MEGAZEUX, new ImageConverterRules()
 	);
@@ -245,8 +247,12 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 				ZimaPlatform newPlatform = newEntry.getSecond();
 				Boolean blinkingDisabled = null;
 
-				if ("WeaveZZT 2.5".equals(newEntry.getFirst())) {
-					EngineDefinition platformData = loadWeaveCfgEngineDef();
+				if (newEntry.getFirst() != null && newEntry.getFirst().startsWith("Weave ")) {
+					WeaveZZTPlatformData.Version version = WeaveZZTPlatformData.Version.V2_5;
+					if ("Weave 3.0".equals(newEntry.getFirst())) {
+						version = WeaveZZTPlatformData.Version.V3_0;
+					}
+					EngineDefinition platformData = loadWeaveCfgEngineDef(version);
 					if (platformData != null) {
 						newPlatform = newPlatform.withZztEngineDefinition(platformData);
 						blinkingDisabled = platformData.isBlinkingDisabled();
@@ -589,6 +595,7 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 			i++;
 			if ((i % 3) == 0) gbc.gridy++;
 		}
+		if ((i % 3) != 0) gbc.gridy++;
 
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -774,12 +781,11 @@ public class ZimaFrontendSwing extends BaseFrontendSwing {
 		}
 	}
 
-	private EngineDefinition loadWeaveCfgEngineDef() {
-		File file = showLoadDialog("worlds", new FileNameExtensionFilter("WeaveZZT 2.5 configuration file", "cfg"));
+	private EngineDefinition loadWeaveCfgEngineDef(WeaveZZTPlatformData.Version version) {
+		File file = showLoadDialog("worlds", new FileNameExtensionFilter("Weave " + version.getName() + " configuration file", "cfg"));
 		if (file != null) {
 			try (FileInputStream fis = new FileInputStream(file)) {
-				EngineDefinition platformData = WeaveZZTPlatformData.apply(EngineDefinition.zzt(), fis);
-				return platformData;
+				return WeaveZZTPlatformData.apply(EngineDefinition.zzt(), fis, version);
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(this.window, "Error loading file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 				e.printStackTrace();

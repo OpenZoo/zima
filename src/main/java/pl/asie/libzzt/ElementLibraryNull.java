@@ -30,6 +30,6 @@ public class ElementLibraryNull {
     public static final ElementLibrary INSTANCE;
 
     static {
-        INSTANCE = new ElementLibrary(List.of(EMPTY), Map.of(EMPTY, "EMPTY"));
+        INSTANCE = ElementLibrary.builder().addElement(EMPTY, "EMPTY").build();
     }
 }

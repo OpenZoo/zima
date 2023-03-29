@@ -3,3 +3,4 @@ Bugs fixed:
 * Fixed board, stat names not displaying correctly in the World Checker if using extended codepage characters.
 * Fixed exception when opening a new world in the World Checker after having opened two worlds already.
 * Fixed OOP parser ignoring non-tokenizable unzapped labels.
+* Fixed World Checker CLI throwing an exception if no arguments are provided.

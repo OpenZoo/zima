@@ -80,6 +80,7 @@ public class LinterCliPlugin extends CliPlugin {
 			} else {
 				jc.getCommands().get(jc.getParsedCommand()).usage();
 			}
+			return;
 		}
 
 		switch (jc.getParsedCommand()) {

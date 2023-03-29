@@ -229,11 +229,13 @@ public class WorldCheckFrontendSwing extends BaseFrontendSwing {
 		void updateBoardPreview() {
 			synchronized (uiCanvas) {
 				Board board = null;
-				if (this.currentLocation != null) {
-					if (this.currentLocation.getBoardId() != null) {
-						board = world.getBoards().get(this.currentLocation.getBoardId());
-					} else {
-						board = world.getBoards().get(world.getCurrentBoard());
+				if (this.world != null) {
+					if (this.currentLocation != null) {
+						if (this.currentLocation.getBoardId() != null) {
+							board = world.getBoards().get(this.currentLocation.getBoardId());
+						} else {
+							board = world.getBoards().get(world.getCurrentBoard());
+						}
 					}
 				}
 				this.uiCanvas.setBoard(board);

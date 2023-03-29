@@ -1,0 +1,4 @@
+Bugs fixed:
+
+* Fixed exception when opening a new world in the World Checker after having opened two worlds already.
+* Fixed OOP parser ignoring non-tokenizable unzapped labels.

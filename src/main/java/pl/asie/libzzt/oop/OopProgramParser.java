@@ -207,7 +207,8 @@ public class OopProgramParser implements OopParserContext {
 			while (s.endsWith(" ")) {
 				s = s.substring(0, s.length() - 1);
 			}
-			if (WORD_PATTERN.matcher(s).find() && !s.startsWith(":")) {
+			boolean tokenizable = WORD_PATTERN.matcher(s).find() && !s.startsWith(":");
+			if (tokenizable || !zapped) {
 				OopParserState lastState = pushState();
 				readChar();
 				this.state.oopChar = OopUtils.upCase(getChar());
@@ -216,7 +217,8 @@ public class OopProgramParser implements OopParserContext {
 				if (!nested) {
 					cmd = new OopCommandLabel(s, zapped, restoreFindStringVisible);
 				}
-			} else if (zapped) {
+			} else {
+				// Zapped, non-tokenizable labels cannot be un-ZAPped, so they are comments.
 				cmd = new OopCommandComment(s);
 			}
 			if (cmd != null) {

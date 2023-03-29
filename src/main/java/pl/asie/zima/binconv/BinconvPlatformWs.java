@@ -107,14 +107,12 @@ public class BinconvPlatformWs extends BinconvPlatformTinyzooGbBased {
 		int headerOffset = fullImage.length - 16;
 
 		// fix ROM size
-		if (this.sramSize != null) {
-			Integer romByte = this.romBanksToValue.get(bankSizeShift >> 16);
-			if (romByte == null) {
-				throw new BinarySerializerException("Invalid ROM size: " + bankSizeShift + " bytes. Supported values: "
-						+ this.romBanksToValue.keySet().stream().sorted().map(Object::toString).collect(Collectors.joining(", ")));
-			}
-			fullImage[headerOffset + 10] = (byte) romByte.intValue();
+		Integer romByte = this.romBanksToValue.get(bankSizeShift >> 16);
+		if (romByte == null) {
+			throw new BinarySerializerException("Invalid ROM size: " + bankSizeShift + " bytes. Supported values: "
+					+ this.romBanksToValue.keySet().stream().sorted().map(Object::toString).collect(Collectors.joining(", ")));
 		}
+		fullImage[headerOffset + 10] = (byte) romByte.intValue();
 
 		// fix SRAM size
 		if (this.sramSize != null) {

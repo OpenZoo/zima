@@ -30,6 +30,8 @@ public final class BinconvPlatformFactory {
 			return new BinconvPlatformGb(args);
 		} else if ("gg".equals(args.getPlatform())) {
 			return new BinconvPlatformGg(args);
+		} else if ("ws".equals(args.getPlatform())) {
+			return new BinconvPlatformWs(args);
 		} else {
 			throw new RuntimeException("Unknown platform: " + args.getPlatform());
 		}

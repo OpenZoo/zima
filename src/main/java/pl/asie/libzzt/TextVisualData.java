@@ -46,4 +46,20 @@ public final class TextVisualData {
 		}
 		return true;
 	}
+
+	public int getPixelAtBorder(int chr, int cx, int cy) {
+		if (cx >= 0 && cy >= 0 && cx < this.getCharWidth() && cy < this.getCharHeight()) {
+			return (this.getCharData()[(chr * this.getCharHeight()) + cy] >> (7 - cx)) & 1;
+		} else {
+			return 0;
+		}
+	}
+
+	public int getPixelAtWrap(int chr, int cx, int cy) {
+		if (cx < 0) cx = 0;
+		else if (cx >= this.getCharWidth()) cx = this.getCharWidth() - 1;
+		if (cy < 0) cy = 0;
+		else if (cy >= this.getCharHeight()) cy = this.getCharHeight() - 1;
+		return (this.getCharData()[(chr * this.getCharHeight()) + cy] >> (7 - cx)) & 1;
+	}
 }

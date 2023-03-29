@@ -4,3 +4,4 @@ Improvements:
   * This module checks for common flaws and bugs in ZZT 3.2 worlds.
 * New module: TinyZoo Converter! (Currently CLI-only)
 * Partial ZXT world support.
+* Partial Weave 3 support.

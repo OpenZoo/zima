@@ -58,21 +58,6 @@ public class GmseImageMseCalculator implements ImageMseCalculator {
 		private final List<float[]> cache;
 		private final Gaussian2DKernel kernel;
 
-		private static int getCharPixelAt(TextVisualData visual, int chr, int cx, int cy) {
-			if (cx < 0) cx = 0;
-			else if (cx >= visual.getCharWidth()) cx = visual.getCharWidth() - 1;
-			if (cy < 0) cy = 0;
-			else if (cy >= visual.getCharHeight()) cy = visual.getCharHeight() - 1;
-			return (visual.getCharData()[(chr * visual.getCharHeight()) + cy] >> (7 - cx)) & 1;
-
-
-			/* if (cx >= 0 && cy >= 0 && cx < visual.getCharWidth() && cy < visual.getCharHeight()) {
-				return (visual.getCharData()[(chr * visual.getCharHeight()) + cy] >> (7 - cx)) & 1;
-			} else {
-				return 0;
-			} */
-		}
-
 		public GaussianCharCache(TextVisualData visual, int radius, float sigma) {
 			this.visual = visual;
 			this.kernel = new Gaussian2DKernel(sigma, radius);
@@ -85,7 +70,7 @@ public class GmseImageMseCalculator implements ImageMseCalculator {
 						float cv = 0.0f;
 						for (int ky = -radius; ky <= radius; ky++) {
 							for (int kx = -radius; kx <= radius; kx++) {
-								int v = getCharPixelAt(visual, chr, cx + kx, cy + ky);
+								int v = visual.getPixelAtWrap(chr, cx + kx, cy + ky);
 								float k = kernel.at(kx, ky);
 								cv += k * v;
 							}

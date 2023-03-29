@@ -89,6 +89,7 @@ public class BinconvPlatformGb extends BinconvPlatformTinyzooGbBased {
 				.bankRegionOffset(0x4000)
 				.bankSizeBytes(16384)
 				.padToPowerOfTwo(true)
+				.trim(false)
 				.build();
 	}
 

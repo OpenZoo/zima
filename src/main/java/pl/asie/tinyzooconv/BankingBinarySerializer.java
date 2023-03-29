@@ -85,6 +85,7 @@ public class BankingBinarySerializer implements BinarySerializer {
 	private final int padByte = 0;
 	private final boolean padToPowerOfTwo;
 	private final boolean calculateChecksum;
+	private final boolean trim;
 	private final Map<BinarySerializable, Collector> collectorMap = new HashMap<>();
 	private final Multimap<BinarySerializable, Collector> collectorListeners = HashMultimap.create();
 	private BinarySerializable firstObject;
@@ -207,9 +208,11 @@ public class BankingBinarySerializer implements BinarySerializer {
 					pos += data.length;
 				}
 			}
-			while (pos < bankSizeBytes) {
-				stream.write(this.padByte);
-				pos++;
+			if (!this.trim || i != maximumBank) {
+				while (pos < bankSizeBytes) {
+					stream.write(this.padByte);
+					pos++;
+				}
 			}
 		}
 	}

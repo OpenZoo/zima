@@ -30,6 +30,7 @@ import pl.asie.libzzt.Stat;
 import pl.asie.libzzt.World;
 import pl.asie.libzzt.oop.OopProgram;
 import pl.asie.libzzt.oop.commands.OopCommand;
+import pl.asie.zima.util.MiscUtils;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -137,7 +138,7 @@ public final class ElementLocation implements Comparable<ElementLocation> {
 				if (program != null) {
 					if (program.getWindowName() != null && !program.getWindowName().isBlank()) {
 						sb.append(": ");
-						sb.append(program.getWindowName());
+						sb.append(MiscUtils.zztToUtf(program.getWindowName()));
 					}
 
 					if (getStatLine() != null) {
@@ -155,12 +156,12 @@ public final class ElementLocation implements Comparable<ElementLocation> {
 				if (getBoardId() == world.getCurrentBoard()) {
 					sb.append("*");
 				}
-				sb.append(getBoardId()).append(": ").append(board.getName());
+				sb.append(getBoardId()).append(": ").append(MiscUtils.zztToUtf(board.getName()));
 				return sb.toString();
 			}
 		} else {
 			if (world.getName() != null && !world.getName().isBlank()) {
-				return world.getName();
+				return MiscUtils.zztToUtf(world.getName());
 			} else {
 				return "World";
 			}

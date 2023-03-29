@@ -18,11 +18,21 @@
  */
 package pl.asie.zima.util;
 
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.function.IntFunction;
 
 public final class MiscUtils {
     private MiscUtils() {
 
+    }
+
+    public static String zztToUtf(String s) {
+        try {
+            return new String(s.getBytes("Latin1"), "Cp437");
+        } catch (UnsupportedEncodingException e) {
+            return s;
+        }
     }
 
     public static int clamp(int i, int min, int max) {
